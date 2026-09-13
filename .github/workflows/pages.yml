@@ -3,9 +3,13 @@ name: Deploy to GitHub Pages
 # Publishes the whole repo as a static site. There is no build step — these
 # are plain HTML files — so this just uploads them.
 #
-# `enablement: true` below turns Pages on for the repo the first time this
-# runs, so there is nothing to click. If the token is ever refused, do it by
-# hand: Settings → Pages → Build and deployment → Source: "GitHub Actions".
+# ONE-TIME SETUP (about ten seconds, and it cannot be scripted — GitHub
+# refuses to let a workflow token switch Pages on for the first time):
+#
+#   https://github.com/mohamedsucule-debug/Projects/settings/pages
+#   → Build and deployment → Source → "GitHub Actions"
+#
+# After that, every push to main republishes the site automatically.
 
 on:
   push:
@@ -41,8 +45,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
