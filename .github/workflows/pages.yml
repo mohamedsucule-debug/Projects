@@ -3,9 +3,9 @@ name: Deploy to GitHub Pages
 # Publishes the whole repo as a static site. There is no build step — these
 # are plain HTML files — so this just uploads them.
 #
-# One-time setup: repo Settings → Pages → Build and deployment →
-# Source: "GitHub Actions". After that every push to the branch below
-# republishes the site.
+# `enablement: true` below turns Pages on for the repo the first time this
+# runs, so there is nothing to click. If the token is ever refused, do it by
+# hand: Settings → Pages → Build and deployment → Source: "GitHub Actions".
 
 on:
   push:
@@ -41,6 +41,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
