@@ -1,0 +1,13 @@
+{
+  "name": "design-engineering-lab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Six interfaces for systems that refuse to be simple — each built from the algorithm up.",
+  "type": "module",
+  "scripts": {
+    "test": "node tests/run.mjs",
+    "dev": "npx --yes http-server -p 8080 -c-1 ."
+  },
+  "engines": { "node": ">=18" },
+  "license": "MIT"
+}

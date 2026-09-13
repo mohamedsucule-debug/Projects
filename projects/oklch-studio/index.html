@@ -1,0 +1,397 @@
+<title>OKLCH Studio</title>
+<meta name="description" content="Build a colour system in a perceptual space, map it into sRGB honestly, and audit every pair with APCA." />
+<link rel="stylesheet" href="../../shared/lab.css" />
+<style>
+  main {
+    display: grid;
+    grid-template-columns: 296px minmax(0, 1fr) 320px;
+    gap: 10px; padding: 10px 12px; min-height: 0;
+  }
+  @media (max-width: 1260px) { main { grid-template-columns: 276px minmax(0,1fr); } main > .third { display: none; } }
+  .mid { display: grid; grid-template-rows: auto minmax(0,1fr); gap: 10px; min-height: 0; }
+
+  /* ── family controls ─────────────────────────────────────── */
+  .fam { border-top: 1px solid var(--line); padding: 9px 0 4px; }
+  .fam:first-child { border-top: 0; padding-top: 0; }
+  .fam .top { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; }
+  .fam .chip { width: 15px; height: 15px; border-radius: 4px; border: 1px solid rgba(255,255,255,.14); flex: none; }
+  .fam .nm { font: 500 12px/1 var(--mono); flex: 1; }
+  .fam .nm input { border: 0; background: transparent; padding: 0; font: 500 12px/1 var(--mono); color: var(--fg); }
+  .fam .rm { font-size: 10px; padding: 3px 5px; }
+  .sl { display: grid; grid-template-columns: 30px 1fr 40px; align-items: center; gap: 6px; }
+  .sl .k { font: 400 9.5px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--fg-mute); }
+  .sl .v { font: 400 10px/1 var(--mono); color: var(--fg-dim); text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* ── palette grid ────────────────────────────────────────── */
+  .grid { display: flex; flex-direction: column; gap: 4px; padding: 4px 2px 2px; }
+  .grow { display: flex; align-items: center; gap: 4px; }
+  .grow .lbl { width: 62px; flex: none; font: 500 10.5px/1 var(--mono); color: var(--fg-mute); text-align: right; padding-right: 4px; }
+  .sw {
+    flex: 1; height: 46px; border-radius: var(--r-sm); position: relative; cursor: pointer;
+    border: 1px solid rgba(0,0,0,.18);
+    display: flex; align-items: flex-end; justify-content: center; padding-bottom: 3px;
+    transition: transform .1s;
+  }
+  .sw:hover { transform: translateY(-2px); }
+  .sw.sel { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .sw span { font: 500 9px/1 var(--mono); opacity: .8; }
+  .sw .clip {
+    position: absolute; top: 3px; right: 4px; width: 5px; height: 5px; border-radius: 50%;
+    background: rgba(0,0,0,.45); box-shadow: 0 0 0 1px rgba(255,255,255,.35);
+  }
+  .scalehead { display: flex; gap: 4px; padding-left: 66px; }
+  .scalehead span { flex: 1; text-align: center; font: 400 9.5px/1 var(--mono); color: var(--fg-ghost); }
+
+  /* ── contrast matrix ─────────────────────────────────────── */
+  .mx { border-collapse: separate; border-spacing: 2px; font: 400 10px/1 var(--mono); }
+  .mx th { font: 500 9.5px/1 var(--mono); color: var(--fg-mute); padding: 2px; font-weight: 400; }
+  .mx td { width: 34px; height: 24px; text-align: center; border-radius: 3px; font-variant-numeric: tabular-nums; cursor: default; }
+  .mx td.r5 { background: color-mix(in oklab, var(--ok) 55%, transparent); color: var(--ink-900); }
+  .mx td.r4 { background: color-mix(in oklab, var(--ok) 34%, transparent); color: var(--fg); }
+  .mx td.r3 { background: color-mix(in oklab, var(--ok) 18%, transparent); color: var(--fg-dim); }
+  .mx td.r2 { background: color-mix(in oklab, var(--warn) 22%, transparent); color: var(--fg-dim); }
+  .mx td.r1 { background: color-mix(in oklab, var(--bad) 18%, transparent); color: var(--fg-mute); }
+  .mx td.r0 { background: var(--ink-750); color: var(--fg-ghost); }
+
+  .legend { display: flex; gap: 10px; flex-wrap: wrap; font: 400 10px/1.6 var(--mono); color: var(--fg-mute); margin-top: 8px; }
+  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+
+  /* ── right panel ─────────────────────────────────────────── */
+  .big { height: 74px; border-radius: var(--r); border: 1px solid rgba(0,0,0,.2); margin-bottom: 9px; display: grid; place-items: center; }
+  .big span { font: 500 12px/1 var(--mono); }
+  .kv { font: 400 11px/1.7 var(--mono); }
+  .kv .r { display: flex; gap: 8px; border-bottom: 1px solid color-mix(in oklab, var(--line) 55%, transparent); }
+  .kv .k { color: var(--fg-mute); width: 92px; flex: none; }
+  .kv .v { color: var(--fg-dim); }
+  h3.sec { font: 600 10px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--fg-mute); margin: 14px 0 7px; }
+  h3.sec:first-child { margin-top: 0; }
+  pre.code { font: 400 10.5px/1.55 var(--mono); background: var(--ink-750); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px; margin: 0; max-height: 190px; overflow: auto; color: var(--fg-dim); }
+
+  /* ── live preview ────────────────────────────────────────── */
+  .preview { border-radius: var(--r); padding: 13px; border: 1px solid var(--line); }
+  .preview h4 { margin: 0 0 5px; font: 600 14px/1.3 var(--sans); letter-spacing: -.01em; }
+  .preview p { margin: 0 0 10px; font: 400 12px/1.55 var(--sans); }
+  .preview .btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .preview .b { font: 500 11.5px/1 var(--sans); padding: 7px 11px; border-radius: 5px; border: 1px solid transparent; }
+  .preview .pill { font: 500 10px/1 var(--mono); padding: 4px 7px; border-radius: 99px; }
+</style>
+
+<div class="shell">
+  <header class="bar">
+    <a class="home" href="../../index.html">&larr; INDEX</a>
+    <h1>OKLCH Studio</h1>
+    <span class="sub">a colour system that survives contact with a contrast checker</span>
+    <span class="spacer"></span>
+    <span class="hint" style="margin-right:8px">click a swatch &mdash; every pair is audited</span>
+    <button id="theme" class="mono ghost">&#9681; dark</button>
+  </header>
+
+  <main>
+    <section style="display:grid; grid-template-rows:auto minmax(0,1fr); gap:10px; min-height:0">
+      <div class="panel">
+        <div class="head">ramp shape</div>
+        <div class="body" id="shape"></div>
+      </div>
+      <div class="panel">
+        <div class="head">families <span class="spacer"></span><button id="addfam" class="ghost mono">+ add</button></div>
+        <div class="body" id="families"></div>
+      </div>
+    </section>
+
+    <section class="mid">
+      <div class="panel" style="flex:none">
+        <div class="head">palette <span class="spacer"></span><span class="mute num" id="palmeta"></span></div>
+        <div class="body"><div class="scalehead" id="scalehead"></div><div class="grid" id="grid"></div></div>
+      </div>
+      <div class="panel">
+        <div class="head">
+          contrast matrix
+          <span class="spacer"></span>
+          <span class="seg" id="metric">
+            <button data-m="apca" class="on">APCA Lc</button>
+            <button data-m="wcag">WCAG 2.1</button>
+          </span>
+        </div>
+        <div class="body" id="matrix"></div>
+      </div>
+    </section>
+
+    <section class="panel third">
+      <div class="head" id="rightHead">swatch</div>
+      <div class="body" id="right"></div>
+    </section>
+  </main>
+
+  <footer class="status" id="status"></footer>
+</div>
+
+<script type="module">
+import { h, $, themeToggle, clamp } from '../../shared/lab.js';
+import { palette, PRESET, DEFAULT_SCALE, apca, apcaUse, wcagRatio, fromHex, toCss, toJson, audit } from './engine.js';
+
+themeToggle($('#theme'));
+
+let families = structuredClone(PRESET);
+let shape = { steps: 11, lMax: 0.975, lMin: 0.22, ease: 1.15, peak: 0.55 };
+let metric = 'apca';
+let sel = { fam: 1, step: 6 };
+let pal = [];
+
+const slider = (key, label, min, max, step, obj, fmtv = (v) => v.toFixed(2), after) =>
+  h('div', { class: 'sl' },
+    h('span', { class: 'k' }, label),
+    h('input', {
+      type: 'range', min, max, step, value: obj[key],
+      oninput: (e) => { obj[key] = +e.target.value; after?.(); rebuild(); },
+    }),
+    h('span', { class: 'v' }, fmtv(obj[key])));
+
+/* ── controls ───────────────────────────────────────────────────────────── */
+function renderShape() {
+  const box = $('#shape');
+  box.textContent = '';
+  box.append(
+    slider('steps', 'steps', 3, 15, 1, shape, (v) => String(v)),
+    slider('lMax', 'L max', 0.8, 1, 0.005, shape, (v) => (v * 100).toFixed(0) + '%'),
+    slider('lMin', 'L min', 0.05, 0.6, 0.005, shape, (v) => (v * 100).toFixed(0) + '%'),
+    slider('ease', 'ease', 0.6, 2, 0.01, shape),
+    slider('peak', 'peak', 0.15, 0.9, 0.01, shape),
+    h('div', { class: 'hint', style: { marginTop: '8px' } },
+      'Lightness is eased so the pale end gets finer steps — that is where surfaces live. Chroma follows a bell centred on ',
+      h('b', {}, 'peak'), ', keeping both ends near-neutral so they can sit under text.')
+  );
+}
+
+function renderFamilies() {
+  const box = $('#families');
+  box.textContent = '';
+  families.forEach((f, i) => {
+    const mid = pal[i]?.swatches[Math.floor(shape.steps / 2)];
+    box.append(h('div', { class: 'fam' },
+      h('div', { class: 'top' },
+        h('span', { class: 'chip', style: { background: mid?.hex || '#888' } }),
+        h('span', { class: 'nm' }, h('input', {
+          value: f.name, spellcheck: 'false',
+          oninput: (e) => { f.name = e.target.value.replace(/\s+/g, '-') || 'colour'; rebuild(false); },
+        })),
+        families.length > 1 ? h('button', { class: 'rm ghost', onclick: () => { families.splice(i, 1); sel.fam = 0; rebuild(); } }, '✕') : null),
+      slider('hue', 'hue', 0, 360, 1, f, (v) => v.toFixed(0) + '°'),
+      slider('chroma', 'chr', 0, 0.33, 0.002, f, (v) => v.toFixed(3)),
+      slider('torsion', 'twist', -60, 60, 1, f, (v) => v.toFixed(0) + '°')));
+  });
+  box.append(h('div', { style: { marginTop: '10px' } },
+    h('div', { class: 'k', style: { font: '500 9.5px/1.8 var(--mono)', letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--fg-mute)' } }, 'seed from a brand hex'),
+    h('input', {
+      type: 'text', placeholder: '#3b82f6', spellcheck: 'false',
+      oninput: (e) => {
+        const c = fromHex(e.target.value.trim());
+        if (!c) return;
+        const f = families[sel.fam];
+        f.hue = c.oklch[2];
+        f.chroma = Math.max(c.oklch[1], 0.02);
+        rebuild();
+      },
+    }),
+    h('div', { class: 'hint', style: { marginTop: '5px' } },
+      'Pastes into the selected family: the hex is converted to OKLCH and its hue and chroma become the ramp.')));
+}
+
+/* ── palette grid ───────────────────────────────────────────────────────── */
+function renderGrid() {
+  const head = $('#scalehead');
+  head.textContent = '';
+  for (let i = 0; i < shape.steps; i++) head.append(h('span', {}, DEFAULT_SCALE[i] ?? i * 100));
+
+  const grid = $('#grid');
+  grid.textContent = '';
+  pal.forEach((f, fi) => {
+    const row = h('div', { class: 'grow' }, h('span', { class: 'lbl' }, f.name));
+    f.swatches.forEach((s, si) => {
+      const dark = s.L < 0.62;
+      row.append(h('div', {
+        class: 'sw' + (sel.fam === fi && sel.step === si ? ' sel' : ''),
+        style: { background: s.hex, color: dark ? 'rgba(255,255,255,.9)' : 'rgba(0,0,0,.75)' },
+        title: `${s.name} · ${s.hex} · ${s.css}`,
+        onclick: () => { sel = { fam: fi, step: si }; render(); },
+      },
+        h('span', {}, s.hex.slice(1)),
+        s.clipped > 0.004 ? h('i', { class: 'clip', title: `chroma reduced by ${s.clipped.toFixed(3)} to fit sRGB` }) : null));
+    });
+    grid.append(row);
+  });
+  const clipped = pal.flatMap((f) => f.swatches).filter((s) => s.clipped > 0.004).length;
+  $('#palmeta').textContent = `${pal.length} families × ${shape.steps} steps · ${clipped} gamut-mapped`;
+}
+
+/* ── contrast matrix ────────────────────────────────────────────────────── */
+function renderMatrix() {
+  const box = $('#matrix');
+  box.textContent = '';
+  const fam = pal[sel.fam];
+  const neutral = pal.find((f) => f.name === 'neutral') || pal[0];
+  const bgs = [...neutral.swatches];
+  const fgs = fam.swatches;
+
+  const tbl = h('table', { class: 'mx' });
+  const head = h('tr', {}, h('th', {}, ''), ...fgs.map((s) => h('th', {}, s.name.split('-')[1])));
+  tbl.append(h('thead', {}, head));
+  const body = h('tbody', {});
+  for (const bg of bgs) {
+    const row = h('tr', {}, h('th', { style: { textAlign: 'right' } }, bg.name.split('-')[1]));
+    for (const fg of fgs) {
+      const lc = apca(fg.rgb, bg.rgb);
+      const ratio = wcagRatio(fg.rgb, bg.rgb);
+      const rank = metric === 'apca'
+        ? apcaUse(lc).rank
+        : (ratio >= 7 ? 5 : ratio >= 4.5 ? 4 : ratio >= 3 ? 2 : ratio >= 1.6 ? 1 : 0);
+      row.append(h('td', {
+        class: 'r' + rank,
+        title: `${fg.name} on ${bg.name} — APCA Lc ${lc.toFixed(1)} (${apcaUse(lc).label}), WCAG ${ratio.toFixed(2)}:1`,
+      }, metric === 'apca' ? Math.round(lc) : ratio.toFixed(1)));
+    }
+    body.append(row);
+  }
+  tbl.append(body);
+  box.append(h('div', { style: { overflow: 'auto' } }, tbl));
+
+  box.append(h('div', { class: 'legend' },
+    h('span', {}, `rows: ${neutral.name} as background · columns: ${fam.name} as text`),
+    ...(metric === 'apca'
+      ? [['r5', 'Lc 90+ any text'], ['r4', '75+ body'], ['r3', '60+ large body'], ['r2', '45+ large/bold'], ['r1', '30+ non-text'], ['r0', 'invisible']]
+      : [['r5', '7:1 AAA'], ['r4', '4.5:1 AA'], ['r2', '3:1 large'], ['r1', 'fail'], ['r0', 'fail']]
+    ).map(([c, l]) => h('span', {}, h('i', { class: '', style: { background: `var(--${c === 'r5' ? 'ok' : c === 'r4' ? 'ok' : c === 'r3' ? 'ok' : c === 'r2' ? 'warn' : 'bad'})`, opacity: c === 'r5' ? 1 : c === 'r4' ? .6 : .35 } }), l))));
+
+  box.append(h('div', { class: 'hint', style: { marginTop: '9px' } },
+    metric === 'apca'
+      ? 'APCA is asymmetric on purpose: the same two colours score differently as dark-on-light and light-on-dark, because that is how eyes work. It is a WCAG 3 draft, so treat it as guidance, not conformance.'
+      : 'WCAG 2.1 is the normative one you will be audited against. It is also famously wrong about dark themes: the ratio is symmetric, so it cannot tell that white-on-mid-grey is harder to read than the reverse. Compare the two tables on the same palette.'));
+}
+
+/* ── right panel ────────────────────────────────────────────────────────── */
+function renderRight() {
+  const box = $('#right');
+  box.textContent = '';
+  const fam = pal[sel.fam];
+  const s = fam.swatches[clamp(sel.step, 0, fam.swatches.length - 1)];
+  $('#rightHead').textContent = 'swatch · ' + s.name;
+
+  box.append(h('div', { class: 'big', style: { background: s.hex, color: s.L < 0.62 ? '#fff' : '#000' } }, h('span', {}, s.hex)));
+  const kv = h('div', { class: 'kv' });
+  const rows = {
+    oklch: s.css,
+    hex: s.hex,
+    lightness: (s.L * 100).toFixed(1) + '%',
+    chroma: s.C.toFixed(4),
+    hue: s.H.toFixed(1) + '°',
+    'gamut': s.clipped > 0.004 ? `chroma cut by ${s.clipped.toFixed(3)} to fit sRGB` : 'fits sRGB as requested',
+    'on white': `Lc ${apca(s.rgb, [1, 1, 1]).toFixed(1)} · ${wcagRatio(s.rgb, [1, 1, 1]).toFixed(2)}:1`,
+    'on black': `Lc ${apca(s.rgb, [0, 0, 0]).toFixed(1)} · ${wcagRatio(s.rgb, [0, 0, 0]).toFixed(2)}:1`,
+  };
+  for (const [k, v] of Object.entries(rows)) kv.append(h('div', { class: 'r' }, h('span', { class: 'k' }, k), h('span', { class: 'v' }, v)));
+  box.append(kv);
+
+  /* live preview built entirely from the generated ramps */
+  box.append(h('h3', { class: 'sec' }, 'the palette, in use'));
+  const n = (pal.find((f) => f.name === 'neutral') || pal[0]).swatches;
+  const p = fam.swatches;
+  const okF = pal.find((f) => f.name === 'success')?.swatches || p;
+  const badF = pal.find((f) => f.name === 'danger')?.swatches || p;
+  const at = (arr, i) => arr[clamp(i, 0, arr.length - 1)].hex;
+  const last = shape.steps - 1;
+  for (const dark of [false, true]) {
+    const surface = dark ? at(n, last) : at(n, 0);
+    const text = dark ? at(n, 1) : at(n, last);
+    const muted = dark ? at(n, 4) : at(n, 6);
+    box.append(h('div', {
+      class: 'preview',
+      style: { background: surface, borderColor: dark ? at(n, last - 2) : at(n, 2), marginBottom: '9px' },
+    },
+      h('h4', { style: { color: text } }, dark ? 'Dark surface' : 'Light surface'),
+      h('p', { style: { color: muted } }, 'Body copy sitting on the lightest and darkest neutral, with the accent steps the matrix says are safe.'),
+      h('div', { class: 'btns' },
+        h('span', { class: 'b', style: { background: at(p, dark ? 4 : 6), color: dark ? at(n, last) : '#fff' } }, 'Primary'),
+        h('span', { class: 'b', style: { background: 'transparent', borderColor: dark ? at(n, last - 3) : at(n, 3), color: text } }, 'Secondary'),
+        h('span', { class: 'pill', style: { background: dark ? at(okF, last - 2) : at(okF, 1), color: dark ? at(okF, 2) : at(okF, last - 1) } }, 'shipped'),
+        h('span', { class: 'pill', style: { background: dark ? at(badF, last - 2) : at(badF, 1), color: dark ? at(badF, 2) : at(badF, last - 1) } }, 'failing'))));
+  }
+
+  box.append(h('h3', { class: 'sec' }, 'audit'));
+  for (const a of audit(pal)) {
+    box.append(h('div', { style: { display: 'flex', gap: '7px', alignItems: 'baseline', padding: '2px 0', font: '400 11px var(--mono)' } },
+      h('span', { style: { width: '66px', color: 'var(--fg-mute)' } }, a.family),
+      h('span', { class: 'dim' }, 'text: '),
+      h('span', { style: { color: a.textOnLight ? 'var(--ok)' : 'var(--bad)' } }, a.textOnLight || 'none passes'),
+      h('span', { class: 'mute' }, 'on light')));
+  }
+  box.append(h('div', { class: 'hint', style: { marginTop: '6px' } },
+    'The lightest step of each family that reaches Lc 75 on the lightest neutral — the step you can actually set body text in.'));
+
+  box.append(h('h3', { class: 'sec' }, 'export'));
+  const css = toCss(pal);
+  const json = toJson(pal);
+  let showing = 'css';
+  const pre = h('pre', { class: 'code' }, css);
+  const swap = (which) => { showing = which; pre.textContent = which === 'css' ? css : json; };
+  box.append(h('div', { style: { display: 'flex', gap: '6px', marginBottom: '7px' } },
+    h('button', { onclick: () => swap('css') }, 'CSS variables'),
+    h('button', { onclick: () => swap('json') }, 'JSON'),
+    h('button', {
+      class: 'ghost',
+      onclick: async (e) => {
+        try { await navigator.clipboard.writeText(showing === 'css' ? css : json); e.target.textContent = 'copied'; setTimeout(() => (e.target.textContent = 'copy'), 1100); }
+        catch { e.target.textContent = 'blocked'; }
+      },
+    }, 'copy')));
+  box.append(pre);
+}
+
+/* ── loop ───────────────────────────────────────────────────────────────── */
+function rebuild(full = true) {
+  pal = palette(families, shape);
+  sel.fam = clamp(sel.fam, 0, pal.length - 1);
+  sel.step = clamp(sel.step, 0, shape.steps - 1);
+  renderGrid(); renderMatrix(); renderRight(); renderStatus();
+  if (full) {
+    // keep slider focus: only redraw the family chips, not the inputs
+    for (const [i, el] of [...$('#families').querySelectorAll('.fam .chip')].entries()) {
+      const mid = pal[i]?.swatches[Math.floor(shape.steps / 2)];
+      if (mid) el.style.background = mid.hex;
+    }
+  }
+}
+
+function render() {
+  pal = palette(families, shape);
+  renderShape(); renderFamilies(); renderGrid(); renderMatrix(); renderRight(); renderStatus();
+}
+
+function renderStatus() {
+  const st = $('#status');
+  st.textContent = '';
+  const all = pal.flatMap((f) => f.swatches);
+  const clipped = all.filter((s) => s.clipped > 0.004);
+  const worst = clipped.sort((a, b) => b.clipped - a.clipped)[0];
+  st.append(...[
+    h('span', {}, h('b', {}, 'colours '), all.length),
+    h('span', {}, h('b', {}, 'gamut-mapped '), `${clipped.length}${worst ? ` (worst: ${worst.name}, −${worst.clipped.toFixed(3)} chroma)` : ''}`),
+    h('span', {}, h('b', {}, 'pairs audited '), pal.length * shape.steps * shape.steps),
+    h('span', { style: { flex: 1 } }),
+    h('span', {}, 'OKLab · APCA W3 0.1.9 · WCAG 2.1'),
+  ]);
+}
+
+$('#addfam').onclick = () => {
+  families.push({ name: 'colour-' + (families.length + 1), hue: Math.round(Math.random() * 360), chroma: 0.14, torsion: 0 });
+  sel.fam = families.length - 1;
+  render();
+};
+$('#metric').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  metric = b.dataset.m;
+  [...$('#metric').children].forEach((c) => c.classList.toggle('on', c === b));
+  renderMatrix();
+});
+
+render();
+</script>

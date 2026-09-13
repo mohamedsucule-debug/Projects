@@ -1,0 +1,365 @@
+<title>Query Planner</title>
+<meta name="description" content="A cost-based SQL optimiser with its reasoning exposed: change the statistics and watch the plan flip." />
+<link rel="stylesheet" href="../../shared/lab.css" />
+<style>
+  main {
+    display: grid;
+    grid-template-columns: 316px minmax(0, 1fr) 336px;
+    gap: 10px;
+    padding: 10px 12px;
+    min-height: 0;
+  }
+  @media (max-width: 1240px) { main { grid-template-columns: 290px minmax(0,1fr); } main > .third { display: none; } }
+
+  .sqlbox { display: flex; flex-direction: column; gap: 8px; }
+  textarea#sql { height: 118px; line-height: 1.6; font-size: 12.5px; }
+  .examples { display: flex; flex-wrap: wrap; gap: 5px; }
+  .examples button { font: 400 11px/1 var(--sans); padding: 5px 8px; }
+  .sqlerr { color: var(--bad); font: 400 11.5px/1.5 var(--mono); }
+
+  /* ── catalog ─────────────────────────────────────────────── */
+  .tbl { border-top: 1px solid var(--line); padding: 9px 0 6px; }
+  .tbl:first-child { border-top: 0; padding-top: 2px; }
+  .tbl .name { display: flex; align-items: baseline; gap: 6px; font: 500 12px/1 var(--mono); color: var(--fg); }
+  .tbl .name .rows { margin-left: auto; color: var(--accent); font-size: 11px; }
+  .idxs { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .idxs label {
+    display: inline-flex; align-items: center; gap: 4px;
+    font: 400 10.5px/1 var(--mono); color: var(--fg-mute);
+    border: 1px solid var(--line); border-radius: 3px; padding: 4px 6px; cursor: pointer;
+  }
+  .idxs label.on { color: var(--accent); border-color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 10%, transparent); }
+  .idxs input { display: none; }
+
+  /* ── plan tree ───────────────────────────────────────────── */
+  .tree { padding: 4px 2px; }
+  .node { position: relative; padding-left: 16px; }
+  .node.root { padding-left: 0; }
+  .node::before {
+    content: ''; position: absolute; left: 5px; top: 0; bottom: 14px;
+    border-left: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    width: 9px; height: 19px; border-bottom-left-radius: 5px;
+  }
+  .node.root::before { display: none; }
+  .card {
+    border: 1px solid var(--line); border-radius: var(--r-sm);
+    background: var(--ink-750); padding: 7px 9px; margin-bottom: 6px; cursor: pointer;
+    transition: border-color .12s, background .12s;
+  }
+  .card:hover { border-color: var(--line-bright); }
+  .card.sel { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 8%, var(--ink-750)); }
+  .card .top { display: flex; align-items: baseline; gap: 8px; }
+  .card .op { font: 600 12px/1.2 var(--sans); letter-spacing: -.01em; }
+  .card .op.scan { color: var(--accent); }
+  .card .op.join { color: var(--viol); }
+  .card .op.blocking { color: var(--warn); }
+  .card .meta { margin-left: auto; font: 400 11px/1 var(--mono); color: var(--fg-mute); font-variant-numeric: tabular-nums; }
+  .card .meta b { color: var(--fg-dim); font-weight: 500; }
+  .card .sub { font: 400 11px/1.45 var(--mono); color: var(--fg-mute); margin-top: 3px; }
+  .card .share { height: 3px; background: var(--ink-700); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+  .card .share > i { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
+  .card .share.hot > i { background: var(--bad); }
+
+  /* ── why panel ───────────────────────────────────────────── */
+  .kv { font: 400 11.5px/1.6 var(--mono); }
+  .kv .r { display: flex; gap: 8px; padding: 3px 0; border-bottom: 1px solid color-mix(in oklab, var(--line) 55%, transparent); }
+  .kv .k { color: var(--fg-mute); flex: none; width: 96px; }
+  .kv .v { color: var(--fg-dim); word-break: break-word; }
+  .why { font: 400 11.5px/1.6 var(--sans); color: var(--fg-dim); }
+  .why li { margin-bottom: 5px; }
+  .why ul { padding-left: 16px; margin: 4px 0; }
+
+  .alt { display: flex; align-items: center; gap: 8px; padding: 6px 7px; border-radius: var(--r-sm); border: 1px solid transparent; }
+  .alt.win { border-color: color-mix(in oklab, var(--ok) 40%, transparent); background: color-mix(in oklab, var(--ok) 8%, transparent); }
+  .alt .n { font: 500 11.5px/1 var(--sans); }
+  .alt .c { margin-left: auto; font: 400 11px/1 var(--mono); color: var(--fg-mute); font-variant-numeric: tabular-nums; }
+  .alt .ratio { font: 400 10px/1 var(--mono); color: var(--fg-ghost); }
+
+  .flash { animation: flash .9s ease; }
+  @keyframes flash { 0% { background: color-mix(in oklab, var(--accent) 26%, transparent); } 100% { background: transparent; } }
+
+  .delta { color: var(--accent); }
+  h3.sec { font: 600 10.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--fg-mute); margin: 14px 0 7px; }
+  h3.sec:first-child { margin-top: 2px; }
+</style>
+
+<div class="shell">
+  <header class="bar">
+    <a class="home" href="../../index.html">&larr; INDEX</a>
+    <h1>Query Planner</h1>
+    <span class="sub">EXPLAIN, with the reasoning still attached</span>
+    <span class="spacer"></span>
+    <span class="hint" style="margin-right:8px">drag a row count &mdash; the plan re-plans</span>
+    <button id="theme" class="mono ghost">&#9681; dark</button>
+  </header>
+
+  <main>
+    <section style="display:grid; grid-template-rows:auto minmax(0,1fr); gap:10px; min-height:0">
+      <div class="panel">
+        <div class="head">query</div>
+        <div class="body sqlbox">
+          <textarea id="sql" spellcheck="false"></textarea>
+          <div class="sqlerr" id="sqlerr" hidden></div>
+          <div class="examples" id="examples"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="head">catalog <span class="spacer"></span><button id="reset" class="ghost mono">reset</button></div>
+        <div class="body" id="catalog"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="head">chosen plan <span class="spacer"></span><span class="mute num" id="planmeta"></span></div>
+      <div class="body"><div class="tree" id="tree"></div></div>
+    </section>
+
+    <section class="panel third">
+      <div class="head" id="whyhead">why</div>
+      <div class="body" id="why"></div>
+    </section>
+  </main>
+
+  <footer class="status" id="status"></footer>
+</div>
+
+<script type="module">
+import { h, $, themeToggle, fmt, clamp } from '../../shared/lab.js';
+import { plan, SqlError, DEMO_CATALOG, COST, fmtPred } from './engine.js';
+
+themeToggle($('#theme'));
+
+const EXAMPLES = [
+  ['point lookup', `SELECT *
+FROM customers c
+JOIN orders o ON o.customer_id = c.id
+WHERE c.id = 42`],
+  ['wide scan', `SELECT c.country, count(*)
+FROM orders o
+JOIN customers c ON o.customer_id = c.id
+WHERE o.status = 1
+GROUP BY c.country`],
+  ['four-way join', `SELECT p.category, sum(l.price)
+FROM orders o
+JOIN line_items l ON o.id = l.order_id
+JOIN products p ON l.sku = p.sku
+JOIN customers c ON o.customer_id = c.id
+WHERE c.country = 3 AND p.category = 7
+GROUP BY p.category`],
+  ['deceptive limit', `SELECT o.id, o.total
+FROM orders o
+WHERE o.total > 4000
+ORDER BY o.total DESC
+LIMIT 10`],
+  ['index-friendly', `SELECT *
+FROM orders o
+WHERE o.customer_id = 9001 AND o.status = 2`],
+];
+
+const SIZE_KEYS = Object.keys(DEMO_CATALOG);
+let catalog = structuredClone(DEMO_CATALOG);
+let selected = null;          // path of indices into the tree
+let lastSignature = null;
+let lastCost = null;
+
+const opClass = (op) => (/Scan/.test(op) ? 'scan' : /Join|Loop/.test(op) ? 'join' : /Sort|Aggregate/.test(op) ? 'blocking' : '');
+
+/* ── catalog editor ─────────────────────────────────────────────────────── */
+function renderCatalog() {
+  const box = $('#catalog');
+  box.textContent = '';
+  for (const name of SIZE_KEYS) {
+    const t = catalog[name];
+    const wrap = h('div', { class: 'tbl' });
+    const rowsLabel = h('span', { class: 'rows' }, fmt.n(t.rows) + ' rows');
+    wrap.append(h('div', { class: 'name' }, name, rowsLabel));
+    const slider = h('input', {
+      type: 'range', min: 2, max: 8, step: 0.02,
+      value: Math.log10(Math.max(100, t.rows)),
+      oninput: (e) => {
+        const rows = Math.round(10 ** +e.target.value);
+        t.rows = rows;
+        // distinct-value counts that were unique stay unique
+        for (const [c, st] of Object.entries(t.cols)) if (st.unique || st.ndv >= (t.baseRows || t.rows)) st.ndv = rows;
+        rowsLabel.textContent = fmt.n(rows) + ' rows';
+        recompute(false);
+      },
+    });
+    wrap.append(slider);
+    const idxs = h('div', { class: 'idxs' });
+    for (const idx of DEMO_CATALOG[name].indexes) {
+      const on = (t.indexes || []).some((x) => x.name === idx.name);
+      const label = h('label', { class: on ? 'on' : '' },
+        h('input', {
+          type: 'checkbox', checked: on,
+          onchange: (e) => {
+            if (e.target.checked) t.indexes = [...t.indexes, structuredClone(idx)].sort((a, b) => a.name.localeCompare(b.name));
+            else t.indexes = t.indexes.filter((x) => x.name !== idx.name);
+            label.classList.toggle('on', e.target.checked);
+            recompute(false);
+          },
+        }),
+        idx.clustered ? '◆' : '◇', idx.cols.join('+'));
+      idxs.append(label);
+    }
+    wrap.append(idxs);
+    box.append(wrap);
+  }
+  box.append(h('div', { class: 'hint', style: { marginTop: '10px' } },
+    '◆ clustered · ◇ secondary. Row counts are log-scaled. Every number in the plan is derived from exactly these statistics — nothing is measured, which is precisely how a real optimiser gets it wrong.'));
+}
+
+/* ── plan tree ──────────────────────────────────────────────────────────── */
+function renderTree(result) {
+  const box = $('#tree');
+  box.textContent = '';
+  const total = result.root.cost;
+  const render = (node, path, isRoot) => {
+    const el = h('div', { class: 'node' + (isRoot ? ' root' : '') });
+    const share = node.selfCost / total;
+    const card = h('div', {
+      class: 'card' + (path === selected ? ' sel' : ''),
+      onclick: () => { selected = path; renderTree(result); renderWhy(result); },
+    },
+      h('div', { class: 'top' },
+        h('span', { class: 'op ' + opClass(node.op) }, node.op),
+        node.index ? h('span', { class: 'tag mute' }, node.index) : null,
+        node.rel && !node.index ? h('span', { class: 'tag mute' }, node.rel) : null,
+        h('span', { class: 'meta' }, h('b', {}, fmt.n(node.rows)), ' rows · ', h('b', {}, fmt.n(Math.round(node.cost))), ' cost')
+      ),
+      node.cond ? h('div', { class: 'sub' }, node.cond) : null,
+      typeof node.parameterized === 'string' ? h('div', { class: 'sub' }, 'probed with ' + node.parameterized) : null,
+      !node.cond && node.detail?.filters && node.detail.filters !== 'none' ? h('div', { class: 'sub' }, 'filter: ' + node.detail.filters) : null,
+      h('div', { class: 'share' + (share > 0.5 ? ' hot' : '') }, h('i', { style: { width: (share * 100).toFixed(1) + '%' } }))
+    );
+    el.append(card);
+    (node.kids || []).forEach((k, i) => el.append(render(k, path + '.' + i, false)));
+    return el;
+  };
+  box.append(render(result.root, '0', true));
+  $('#planmeta').textContent = `${result.considered} plans costed · total ${fmt.n(Math.round(result.root.cost))}`;
+}
+
+function findNode(root, path) {
+  let n = root;
+  for (const seg of path.split('.').slice(1)) n = n.kids[+seg];
+  return n;
+}
+
+/* ── why panel ──────────────────────────────────────────────────────────── */
+function renderWhy(result) {
+  const box = $('#why');
+  box.textContent = '';
+  const node = selected ? (() => { try { return findNode(result.root, selected); } catch { return result.root; } })() : result.root;
+  $('#whyhead').textContent = `why · ${node.op}`;
+
+  if (node.why?.length) {
+    box.append(h('h3', { class: 'sec' }, 'reasoning'));
+    box.append(h('div', { class: 'why' }, h('ul', {}, ...node.why.map((w) => h('li', {}, w)))));
+  }
+  if (node.detail) {
+    box.append(h('h3', { class: 'sec' }, 'estimate'));
+    const kv = h('div', { class: 'kv' });
+    for (const [k, v] of Object.entries(node.detail)) kv.append(h('div', { class: 'r' }, h('span', { class: 'k' }, k), h('span', { class: 'v' }, String(v))));
+    const self = node.selfCost >= 10 ? fmt.n(Math.round(node.selfCost)) : node.selfCost.toFixed(2);
+    kv.append(h('div', { class: 'r' }, h('span', { class: 'k' }, 'self cost'), h('span', { class: 'v' }, `${self} (${(node.selfCost / result.root.cost * 100).toFixed(1)}% of the query)`)));
+    box.append(kv);
+  }
+
+  box.append(h('h3', { class: 'sec' }, 'alternatives at the top join'));
+  if (result.alternatives.length <= 1) {
+    box.append(h('div', { class: 'hint' }, 'Only one relation — there is no join order to choose.'));
+  } else {
+    const best = result.alternatives[0].cost;
+    for (const a of result.alternatives) {
+      box.append(h('div', { class: 'alt' + (a === result.alternatives[0] ? ' win' : '') },
+        h('span', { class: 'n' }, a.op),
+        h('span', { class: 'ratio' }, a === result.alternatives[0] ? 'chosen' : `${(a.cost / best).toFixed(a.cost / best > 100 ? 0 : 1)}x`),
+        h('span', { class: 'c' }, fmt.n(Math.round(a.cost)))
+      ));
+    }
+    box.append(h('div', { class: 'hint', style: { marginTop: '8px' } },
+      `The optimiser costed ${result.considered} plans to pick one. The ratio column is why the second-best plan is not a rounding error away from being chosen.`));
+  }
+
+  box.append(h('h3', { class: 'sec' }, 'cost model'));
+  const kv2 = h('div', { class: 'kv' });
+  for (const [k, v] of Object.entries(COST)) kv2.append(h('div', { class: 'r' }, h('span', { class: 'k' }, k), h('span', { class: 'v' }, String(v))));
+  box.append(kv2);
+  box.append(h('div', { class: 'hint', style: { marginTop: '6px' } },
+    'Costs are in units of one sequential page read, the same convention PostgreSQL uses. They are not milliseconds and never claim to be.'));
+}
+
+/* ── plan diffing ───────────────────────────────────────────────────────── */
+const signature = (n) => n.op + (n.index ? '[' + n.index + ']' : '') + '(' + (n.kids || []).map(signature).join(' ') + ')';
+
+function shapeOf(n, out = []) { out.push(n.op); (n.kids || []).forEach((k) => shapeOf(k, out)); return out; }
+
+function diffNote(prevSig, prevCost, result) {
+  if (!prevSig) return null;
+  const sig = signature(result.root);
+  if (sig === prevSig) return null;
+  const before = prevSig.match(/[A-Z][A-Za-z ]+/g) || [];
+  const after = shapeOf(result.root);
+  const gone = before.filter((o) => !after.includes(o.trim()));
+  const added = after.filter((o) => !before.some((b) => b.trim() === o));
+  const costDelta = prevCost ? (result.root.cost / prevCost) : 1;
+  const parts = [];
+  if (added.length || gone.length) parts.push(`${gone.join(', ') || 'nothing'} → ${added.join(', ') || 'nothing'}`);
+  else parts.push('join order changed');
+  parts.push(costDelta < 0.98 ? `${(1 / costDelta).toFixed(1)}x cheaper` : costDelta > 1.02 ? `${costDelta.toFixed(1)}x dearer` : 'same cost');
+  return parts.join(' · ');
+}
+
+/* ── main loop ──────────────────────────────────────────────────────────── */
+function recompute(resetSelection = true) {
+  const sql = $('#sql').value;
+  let result;
+  try {
+    result = plan(sql, catalog);
+    $('#sqlerr').hidden = true;
+  } catch (e) {
+    if (!(e instanceof SqlError)) throw e;
+    const err = $('#sqlerr');
+    err.hidden = false;
+    err.textContent = '';
+    const line = sql.slice(0, e.at).split('\n').length;
+    err.append(h('div', {}, `line ${line}: ${e.message}`));
+    return;
+  }
+  if (resetSelection) selected = '0';
+  const note = diffNote(lastSignature, lastCost, result);
+  lastSignature = signature(result.root);
+  lastCost = result.root.cost;
+
+  renderTree(result);
+  renderWhy(result);
+
+  const st = $('#status');
+  st.textContent = '';
+  st.append(...[
+    h('span', {}, h('b', {}, 'relations '), result.query.rels.length),
+    h('span', {}, h('b', {}, 'predicates '), result.query.preds.length),
+    h('span', {}, h('b', {}, 'plans costed '), result.considered),
+    h('span', {}, h('b', {}, 'estimated rows '), fmt.n(result.root.rows)),
+    note && h('span', { class: 'delta' }, '\u27f3 ' + note),
+    h('span', { style: { flex: 1 } }),
+    h('span', {}, 'Selinger DP \u00b7 no database attached'),
+  ].filter(Boolean));
+  if (note) { st.classList.remove('flash'); void st.offsetWidth; st.classList.add('flash'); }
+}
+
+/* ── wiring ─────────────────────────────────────────────────────────────── */
+const ex = $('#examples');
+EXAMPLES.forEach(([label, sql], i) => {
+  ex.append(h('button', {
+    onclick: () => { $('#sql').value = sql; lastSignature = null; recompute(); },
+  }, label));
+});
+$('#sql').value = EXAMPLES[0][1];
+$('#sql').addEventListener('input', () => recompute(false));
+$('#reset').onclick = () => { catalog = structuredClone(DEMO_CATALOG); renderCatalog(); recompute(false); };
+
+renderCatalog();
+recompute();
+</script>

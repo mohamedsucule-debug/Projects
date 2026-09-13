@@ -1,0 +1,465 @@
+<title>Trace Explorer</title>
+<meta name="description" content="Distributed tracing with the analysis done for you: critical path, span waterfall, and findings derived from span shape." />
+<link rel="stylesheet" href="../../shared/lab.css" />
+<style>
+  main {
+    display: grid;
+    grid-template-columns: 292px minmax(0, 1fr) 320px;
+    gap: 10px; padding: 10px 12px; min-height: 0;
+  }
+  @media (max-width: 1260px) { main { grid-template-columns: 268px minmax(0,1fr); } main > .third { display: none; } }
+  .mid { display: grid; grid-template-rows: auto minmax(0,1fr); gap: 10px; min-height: 0; }
+
+  /* ── fleet tiles ─────────────────────────────────────────── */
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+  .tile { background: var(--ink-750); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 6px 7px; }
+  .tile .k { font: 500 9px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--fg-mute); }
+  .tile .v { font: 500 13px/1.3 var(--mono); color: var(--fg); font-variant-numeric: tabular-nums; }
+  .tile.hot .v { color: var(--bad); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+  .chips button { font: 400 10.5px/1 var(--mono); padding: 5px 7px; }
+
+  /* ── trace list ──────────────────────────────────────────── */
+  .tl { display: flex; flex-direction: column; }
+  .tr {
+    display: grid; grid-template-columns: 54px 1fr 52px; gap: 2px 7px; align-items: center;
+    padding: 5px 6px 6px; border-radius: var(--r-sm); cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .tr:hover { background: var(--ink-750); }
+  .tr.sel { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 10%, transparent); }
+  .tr .id { font: 400 10.5px/1 var(--mono); color: var(--fg-ghost); }
+  .tr .ep { font: 400 11.5px/1.3 var(--sans); color: var(--fg-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tr .ms { font: 400 11px/1 var(--mono); text-align: right; color: var(--fg-mute); font-variant-numeric: tabular-nums; }
+  .tr.err .ep { color: var(--bad); }
+  .tr .bar { grid-column: 1 / 4; height: 2px; background: var(--ink-700); border-radius: 1px; overflow: hidden; }
+  .tr .bar > i { display: block; height: 100%; background: var(--accent); }
+  .tr.err .bar > i { background: var(--bad); }
+
+  /* ── waterfall ───────────────────────────────────────────── */
+  .wf { padding: 0 0 8px; font: 400 11px/1 var(--mono); }
+  .wfhead { display: flex; padding: 6px 10px; border-bottom: 1px solid var(--line); color: var(--fg-ghost); font-size: 10px; position: sticky; top: 0; background: var(--ink-800); z-index: 2; }
+  .wfhead .name { width: 250px; flex: none; }
+  .wfhead .track { flex: 1; position: relative; }
+  .wfhead .dur { width: 62px; flex: none; text-align: right; }
+  .wfhead .track span { position: absolute; transform: translateX(-50%); }
+  .srow { display: flex; align-items: center; padding: 2px 10px; cursor: pointer; border-left: 2px solid transparent; }
+  .srow:hover { background: var(--ink-750); }
+  .srow.sel { background: color-mix(in oklab, var(--accent) 12%, transparent); border-left-color: var(--accent); }
+  .srow.dim { opacity: .38; }
+  .srow .name { width: 250px; flex: none; display: flex; align-items: center; gap: 5px; overflow: hidden; }
+  .srow .name .op { color: var(--fg-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .srow .name .svc { font-size: 10px; flex: none; }
+  .srow .track { flex: 1; position: relative; height: 15px; }
+  .srow .dur { width: 62px; flex: none; text-align: right; color: var(--fg-mute); font-variant-numeric: tabular-nums; }
+  .srow.sel .dur, .srow:hover .dur { color: var(--fg-dim); }
+  .srow .track .b { position: absolute; top: 3px; height: 9px; border-radius: 2px; min-width: 2px; }
+  .srow .track .b.cp { box-shadow: 0 0 0 1.5px var(--fg), 0 0 8px var(--accent-glow); }
+  .srow .track .b.err { background-image: repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(0,0,0,.45) 2px, rgba(0,0,0,.45) 4px); }
+  .srow .track .d { position: absolute; top: 1px; font-size: 10px; color: var(--fg-mute); white-space: nowrap; }
+
+  /* ── histogram ───────────────────────────────────────────── */
+  canvas#hist { width: 100%; height: 116px; display: block; cursor: crosshair; }
+
+  /* ── findings ────────────────────────────────────────────── */
+  .find { border: 1px solid var(--line); border-left-width: 2px; border-radius: var(--r-sm); padding: 8px 9px; margin-bottom: 7px; cursor: pointer; }
+  .find:hover { border-color: var(--line-bright); }
+  .find.high { border-left-color: var(--bad); }
+  .find.warn { border-left-color: var(--warn); }
+  .find.info { border-left-color: var(--accent); }
+  .find .t { font: 600 11.5px/1.4 var(--sans); margin-bottom: 3px; }
+  .find.high .t { color: var(--bad); }
+  .find .b { font: 400 11px/1.5 var(--sans); color: var(--fg-mute); }
+  .find .share { font: 400 10px/1 var(--mono); color: var(--fg-ghost); margin-top: 5px; }
+
+  .kv { font: 400 11px/1.55 var(--mono); }
+  .kv .r { display: flex; gap: 8px; padding: 2px 0; border-bottom: 1px solid color-mix(in oklab, var(--line) 55%, transparent); }
+  .kv .k { color: var(--fg-mute); width: 104px; flex: none; }
+  .kv .v { color: var(--fg-dim); word-break: break-all; }
+  h3.sec { font: 600 10px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--fg-mute); margin: 13px 0 7px; }
+  h3.sec:first-child { margin-top: 0; }
+  .svcdot { width: 7px; height: 7px; border-radius: 2px; display: inline-block; }
+</style>
+
+<div class="shell">
+  <header class="bar">
+    <a class="home" href="../../index.html">&larr; INDEX</a>
+    <h1>Trace Explorer</h1>
+    <span class="sub">where the milliseconds actually went</span>
+    <span class="spacer"></span>
+    <span class="hint" style="margin-right:8px"><span class="kbd">j</span>/<span class="kbd">k</span> next trace &nbsp; drag the histogram to filter</span>
+    <button id="theme" class="mono ghost">&#9681; dark</button>
+  </header>
+
+  <main>
+    <section style="display:grid; grid-template-rows:auto minmax(0,1fr); gap:10px; min-height:0">
+      <div class="panel">
+        <div class="head">fleet <span class="spacer"></span><button id="regen" class="ghost mono">new sample</button></div>
+        <div class="body">
+          <div class="tiles" id="tiles"></div>
+          <table class="data" id="eptable"></table>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="head">traces <span class="spacer"></span><span class="mute num" id="tlmeta"></span></div>
+        <div class="body" style="padding-top:8px">
+          <div class="chips" id="chips"></div>
+          <div class="tl" id="tl"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mid">
+      <div class="panel" style="flex:none">
+        <div class="head">latency distribution <span class="spacer"></span><span class="mute num" id="histmeta"></span></div>
+        <canvas id="hist"></canvas>
+      </div>
+      <div class="panel">
+        <div class="head" id="wfhead2">waterfall</div>
+        <div class="body flush" style="overflow:auto"><div class="wf" id="wf"></div></div>
+      </div>
+    </section>
+
+    <section class="panel third">
+      <div class="head" id="rightHead">findings</div>
+      <div class="body" id="right"></div>
+    </section>
+  </main>
+
+  <footer class="status" id="status"></footer>
+</div>
+
+<script type="module">
+import { h, $, themeToggle, hidpi, css, fmt, clamp } from '../../shared/lab.js';
+import { generate, summarize, findings, criticalPath, criticalSpans, absolutize, selfTime, serviceColor, SERVICES, rankOf, percentile } from './engine.js';
+
+themeToggle($('#theme'));
+
+let traces = generate(260, 11);
+let stats = summarize(traces);
+let filter = { endpoint: null, errorsOnly: false, slowOnly: false, range: null };
+let selectedTrace = null;
+let selectedSpan = null;
+
+const visible = () => traces.filter((t) =>
+  (!filter.endpoint || t.endpoint === filter.endpoint) &&
+  (!filter.errorsOnly || t.status === 'error') &&
+  (!filter.slowOnly || t.duration >= stats.p95) &&
+  (!filter.range || (t.duration >= filter.range[0] && t.duration <= filter.range[1])));
+
+/* ── fleet ──────────────────────────────────────────────────────────────── */
+function renderFleet() {
+  const tiles = $('#tiles');
+  tiles.textContent = '';
+  const cells = [
+    ['p50', fmt.ms(stats.p50), false],
+    ['p95', fmt.ms(stats.p95), false],
+    ['p99', fmt.ms(stats.p99), true],
+    ['errors', (stats.errorRate * 100).toFixed(1) + '%', stats.errorRate > 0.02],
+  ];
+  for (const [k, v, hot] of cells) {
+    tiles.append(h('div', { class: 'tile' + (hot ? ' hot' : '') }, h('div', { class: 'k' }, k), h('div', { class: 'v' }, v)));
+  }
+  const tbl = $('#eptable');
+  tbl.textContent = '';
+  tbl.append(h('thead', {}, h('tr', {},
+    h('th', {}, 'endpoint'), h('th', { class: 'r' }, 'n'), h('th', { class: 'r' }, 'p50'), h('th', { class: 'r' }, 'p95'))));
+  const body = h('tbody', {});
+  for (const e of stats.byEndpoint) {
+    body.append(h('tr', {
+      style: { cursor: 'pointer' },
+      onclick: () => { filter.endpoint = filter.endpoint === e.name ? null : e.name; renderChips(); renderList(); drawHist(); },
+    },
+      h('td', { style: { color: filter.endpoint === e.name ? 'var(--accent)' : '' } }, e.name),
+      h('td', { class: 'r mute' }, e.n),
+      h('td', { class: 'r' }, e.p50.toFixed(0)),
+      h('td', { class: 'r', style: { color: e.p95 > stats.p95 ? 'var(--warn)' : '' } }, e.p95.toFixed(0))));
+  }
+  tbl.append(body);
+}
+
+function renderChips() {
+  const box = $('#chips');
+  box.textContent = '';
+  const chip = (label, on, fn) => box.append(h('button', { class: on ? 'on' : '', onclick: fn }, label));
+  chip('errors', filter.errorsOnly, () => { filter.errorsOnly = !filter.errorsOnly; renderChips(); renderList(); });
+  chip('slowest 5%', filter.slowOnly, () => { filter.slowOnly = !filter.slowOnly; renderChips(); renderList(); });
+  if (filter.endpoint) chip(filter.endpoint + ' ✕', true, () => { filter.endpoint = null; renderChips(); renderList(); drawHist(); });
+  if (filter.range) chip(`${filter.range[0].toFixed(0)}–${filter.range[1].toFixed(0)}ms ✕`, true, () => { filter.range = null; renderChips(); renderList(); drawHist(); });
+}
+
+/* ── trace list ─────────────────────────────────────────────────────────── */
+function renderList() {
+  const list = visible();
+  const box = $('#tl');
+  box.textContent = '';
+  const max = Math.max(1, ...list.map((t) => t.duration));
+  for (const t of list.slice(0, 300)) {
+    box.append(h('div', {
+      class: 'tr' + (t === selectedTrace ? ' sel' : '') + (t.status === 'error' ? ' err' : ''),
+      onclick: () => select(t),
+    },
+      h('span', { class: 'id' }, t.id),
+      h('span', { class: 'ep' }, t.endpoint),
+      h('span', { class: 'ms' }, t.duration.toFixed(0) + 'ms'),
+      h('span', { class: 'bar' }, h('i', { style: { width: (t.duration / max * 100).toFixed(1) + '%' } }))
+    ));
+  }
+  $('#tlmeta').textContent = `${list.length} of ${traces.length}`;
+  if (!list.length) box.append(h('div', { class: 'hint' }, 'No traces match these filters.'));
+}
+
+/* ── waterfall ──────────────────────────────────────────────────────────── */
+function renderWaterfall() {
+  const box = $('#wf');
+  box.textContent = '';
+  if (!selectedTrace) return;
+  const t = selectedTrace;
+  const abs = absolutize(t);
+  const cp = new Set(criticalSpans(t).map((c) => c.span.id));
+  const total = t.duration;
+
+  const head = h('div', { class: 'wfhead' },
+    h('span', { class: 'name' }, `${t.spans.length} spans`),
+    h('span', { class: 'track' },
+      ...[0, 0.25, 0.5, 0.75].map((f) => h('span', { style: { left: (f * 100).toFixed(1) + '%' } }, (total * f).toFixed(0) + 'ms'))),
+    h('span', { class: 'dur' }, 'dur'));
+  box.append(head);
+
+  const order = [];
+  const walk = (s) => { order.push(s); [...(s.children || [])].sort((a, b) => a.start - b.start).forEach(walk); };
+  walk(t.root);
+
+  for (const s of order) {
+    const start = abs.get(s.id);
+    const onPath = cp.has(s.id);
+    const color = serviceColor(s.service);
+    box.append(h('div', {
+      class: 'srow' + (s === selectedSpan ? ' sel' : '') + (!onPath && selectedSpan === null ? '' : ''),
+      onclick: () => { selectedSpan = s; renderWaterfall(); renderRight(); },
+    },
+      h('span', { class: 'name', style: { paddingLeft: (s.depth * 11) + 'px' } },
+        h('span', { class: 'svcdot', style: { background: color } }),
+        h('span', { class: 'op', title: `${s.service}.${s.op}` }, s.op),
+      ),
+      h('span', { class: 'track' },
+        h('span', {
+          class: 'b' + (onPath ? ' cp' : '') + (s.status === 'error' ? ' err' : ''),
+          style: {
+            left: (start / total * 100).toFixed(3) + '%',
+            width: Math.max(0.25, s.dur / total * 100).toFixed(3) + '%',
+            background: color,
+            opacity: onPath ? 1 : 0.5,
+          },
+        }),
+      ),
+      h('span', { class: 'dur', title: `${s.dur.toFixed(2)}ms total, ${selfTime(s).toFixed(2)}ms in itself` },
+        s.dur.toFixed(s.dur < 10 ? 1 : 0) + 'ms')
+    ));
+  }
+  $('#wfhead2').textContent = '';
+  $('#wfhead2').append(
+    document.createTextNode('waterfall'),
+    h('span', { class: 'spacer', style: { flex: 1 } }),
+    h('span', { class: 'mute num' },
+      `${t.id} · ${t.endpoint} · ${t.duration.toFixed(1)}ms · p${(rankOf(t, traces) * 100).toFixed(0)} of this sample`)
+  );
+}
+
+/* ── right panel ────────────────────────────────────────────────────────── */
+function renderRight() {
+  const box = $('#right');
+  box.textContent = '';
+  if (!selectedTrace) { box.append(h('div', { class: 'hint' }, 'Pick a trace on the left.')); return; }
+  const t = selectedTrace;
+
+  const fs = findings(t);
+  $('#rightHead').textContent = `findings · ${fs.length}`;
+  if (!fs.length) box.append(h('div', { class: 'hint' }, 'Nothing stands out in this trace: no repeated calls, no retries, no unexplained gaps.'));
+  for (const f of fs) {
+    box.append(h('div', {
+      class: 'find ' + f.severity,
+      onclick: () => { selectedSpan = t.spans.find((s) => s.id === f.spans[0]) || null; renderWaterfall(); renderRight(); },
+    },
+      h('div', { class: 't' }, f.title),
+      h('div', { class: 'b' }, f.body),
+      h('div', { class: 'share' }, `${(f.share * 100).toFixed(0)}% of this trace · ${f.spans.length} span${f.spans.length === 1 ? '' : 's'}`)
+    ));
+  }
+
+  if (selectedSpan) {
+    const s = selectedSpan;
+    box.append(h('h3', { class: 'sec' }, 'selected span'));
+    const kv = h('div', { class: 'kv' });
+    const rows = {
+      service: s.service, operation: s.op, duration: s.dur.toFixed(2) + 'ms',
+      'self time': selfTime(s).toFixed(2) + 'ms',
+      'share of trace': (s.dur / t.duration * 100).toFixed(1) + '%',
+      status: s.status, children: (s.children || []).length,
+      ...Object.fromEntries(Object.entries(s.attrs || {}).map(([k, v]) => [k, String(v)])),
+    };
+    for (const [k, v] of Object.entries(rows)) kv.append(h('div', { class: 'r' }, h('span', { class: 'k' }, k), h('span', { class: 'v' }, v)));
+    box.append(kv);
+  }
+
+  box.append(h('h3', { class: 'sec' }, 'critical path'));
+  const byService = new Map();
+  for (const seg of criticalPath(t)) {
+    byService.set(seg.span.service, (byService.get(seg.span.service) || 0) + (seg.to - seg.from));
+  }
+  const rows = [...byService.entries()].sort((a, b) => b[1] - a[1]);
+  for (const [svc, ms] of rows) {
+    box.append(h('div', { style: { display: 'flex', alignItems: 'center', gap: '7px', padding: '3px 0' } },
+      h('span', { class: 'svcdot', style: { background: serviceColor(svc) } }),
+      h('span', { style: { font: '400 11.5px var(--sans)', flex: '1' } }, svc),
+      h('span', { class: 'num mute' }, ms.toFixed(1) + 'ms'),
+      h('span', { class: 'num', style: { width: '38px', textAlign: 'right', color: 'var(--fg-dim)' } }, (ms / t.duration * 100).toFixed(0) + '%')));
+  }
+  box.append(h('div', { class: 'hint', style: { marginTop: '8px' } },
+    'The critical path is the chain that sets the total. Shorten anything on it and the request gets faster; shorten anything else and nothing happens.'));
+}
+
+/* ── histogram ──────────────────────────────────────────────────────────── */
+const hist = $('#hist');
+const BUCKETS = 48;
+let hw = 0, hh = 0;
+function histModel() {
+  const durs = traces.map((t) => t.duration);
+  const min = Math.max(1, Math.min(...durs));
+  const max = Math.max(...durs);
+  const lo = Math.log10(min), hi = Math.log10(max * 1.02);
+  const counts = new Array(BUCKETS).fill(0);
+  const bucketOf = (d) => clamp(Math.floor((Math.log10(d) - lo) / (hi - lo) * BUCKETS), 0, BUCKETS - 1);
+  for (const d of durs) counts[bucketOf(d)]++;
+  const edge = (i) => 10 ** (lo + (hi - lo) * (i / BUCKETS));
+  return { counts, lo, hi, bucketOf, edge, max: Math.max(...counts) };
+}
+
+function drawHist() {
+  const ctx = hist.getContext('2d');
+  ctx.clearRect(0, 0, hw, hh);
+  const m = histModel();
+  const pad = { l: 8, r: 8, t: 10, b: 16 };
+  const w = hw - pad.l - pad.r, hgt = hh - pad.t - pad.b;
+  const bw = w / BUCKETS;
+  const vis = new Set(visible().map((t) => t.id));
+
+  for (let i = 0; i < BUCKETS; i++) {
+    const c = m.counts[i];
+    if (!c) continue;
+    const barH = Math.max(1, (c / m.max) * hgt);
+    const inRange = !filter.range || (m.edge(i + 1) >= filter.range[0] && m.edge(i) <= filter.range[1]);
+    ctx.fillStyle = inRange ? css('--accent-deep') : css('--ink-700');
+    ctx.fillRect(pad.l + i * bw, pad.t + hgt - barH, Math.max(1, bw - 1.5), barH);
+  }
+
+  const durs = traces.map((t) => t.duration).sort((a, b) => a - b);
+  for (const [p, label] of [[0.5, 'p50'], [0.95, 'p95'], [0.99, 'p99']]) {
+    const v = percentile(durs, p);
+    const x = pad.l + (Math.log10(v) - m.lo) / (m.hi - m.lo) * w;
+    ctx.strokeStyle = css('--fg-ghost');
+    ctx.setLineDash([2, 3]);
+    ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t + hgt); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = css('--fg-mute');
+    ctx.font = '400 9px ui-monospace, monospace';
+    const flip = x > hw * 0.62;
+    ctx.textAlign = flip ? 'right' : 'left';
+    ctx.fillText(`${label} ${v.toFixed(0)}ms`, x + (flip ? -3 : 3), pad.t + 8 + (label === 'p99' ? 11 : 0));
+  }
+
+  if (selectedTrace) {
+    const x = pad.l + (Math.log10(selectedTrace.duration) - m.lo) / (m.hi - m.lo) * w;
+    ctx.strokeStyle = css('--accent');
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x, pad.t - 4); ctx.lineTo(x, pad.t + hgt); ctx.stroke();
+    ctx.fillStyle = css('--accent');
+    ctx.beginPath(); ctx.moveTo(x, pad.t - 5); ctx.lineTo(x - 3.5, pad.t - 10); ctx.lineTo(x + 3.5, pad.t - 10); ctx.fill();
+  }
+
+  ctx.fillStyle = css('--fg-ghost');
+  ctx.font = '400 9px ui-monospace, monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(m.edge(0).toFixed(0) + 'ms', pad.l, hh - 4);
+  ctx.textAlign = 'right';
+  ctx.fillText(m.edge(BUCKETS).toFixed(0) + 'ms', hw - pad.r, hh - 4);
+  ctx.textAlign = 'center';
+  ctx.fillText('log scale · ' + traces.length + ' traces', hw / 2, hh - 4);
+  $('#histmeta').textContent = filter.range ? `${filter.range[0].toFixed(0)}–${filter.range[1].toFixed(0)}ms selected` : 'drag to select a range';
+}
+
+hidpi(hist, (ctx, w, hgt) => { hw = w; hh = hgt; drawHist(); });
+
+let drag = null;
+const xToMs = (x) => {
+  const m = histModel();
+  const pad = { l: 8, r: 8 };
+  const f = clamp((x - pad.l) / (hw - pad.l - pad.r), 0, 1);
+  return 10 ** (m.lo + (m.hi - m.lo) * f);
+};
+hist.addEventListener('pointerdown', (e) => {
+  drag = xToMs(e.offsetX);
+  hist.setPointerCapture(e.pointerId);
+});
+hist.addEventListener('pointermove', (e) => {
+  if (drag == null) return;
+  const b = xToMs(e.offsetX);
+  filter.range = [Math.min(drag, b), Math.max(drag, b)];
+  renderChips(); renderList(); drawHist();
+});
+hist.addEventListener('pointerup', (e) => {
+  if (drag != null && filter.range && filter.range[1] - filter.range[0] < 1) filter.range = null;
+  drag = null;
+  renderChips(); renderList(); drawHist();
+});
+
+/* ── selection ──────────────────────────────────────────────────────────── */
+function select(t) {
+  selectedTrace = t;
+  selectedSpan = null;
+  renderList(); renderWaterfall(); renderRight(); drawHist(); renderStatus();
+}
+
+function renderStatus() {
+  const st = $('#status');
+  st.textContent = '';
+  const t = selectedTrace;
+  st.append(...[
+    h('span', {}, h('b', {}, 'sample '), traces.length + ' traces'),
+    h('span', {}, h('b', {}, 'services '), Object.keys(SERVICES).length),
+    h('span', {}, h('b', {}, 'spans '), traces.reduce((a, x) => a + x.spans.length, 0)),
+    t && h('span', {}, h('b', {}, 'open '), `${t.id} · ${t.spans.length} spans · ${criticalSpans(t).length} on the critical path`),
+    h('span', { style: { flex: 1 } }),
+    h('span', {}, 'synthetic telemetry · analysis derived from span shape only'),
+  ].filter(Boolean));
+}
+
+/* ── wiring ─────────────────────────────────────────────────────────────── */
+$('#regen').onclick = () => {
+  traces = generate(260, Math.floor(Math.random() * 1e6));
+  stats = summarize(traces);
+  filter = { endpoint: null, errorsOnly: false, slowOnly: false, range: null };
+  renderFleet(); renderChips(); renderList(); drawHist();
+  select(pickInteresting());
+};
+
+addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  const list = visible();
+  const i = list.indexOf(selectedTrace);
+  if (e.key === 'j' && i < list.length - 1) select(list[i + 1]);
+  if (e.key === 'k' && i > 0) select(list[i - 1]);
+});
+
+/** Open on something worth looking at rather than on trace #1. */
+function pickInteresting() {
+  const scored = traces.map((t) => ({ t, f: findings(t) }))
+    .map(({ t, f }) => ({ t, score: f.filter((x) => x.severity === 'high').length * 2 + t.duration / 400 }))
+    .sort((a, b) => b.score - a.score);
+  return scored[0].t;
+}
+
+renderFleet(); renderChips(); renderList();
+select(pickInteresting());
+</script>

@@ -1,0 +1,503 @@
+<title>Raft Lab</title>
+<meta name="description" content="A Raft consensus cluster you can break: partition the network, crash the leader, and watch the safety invariants hold." />
+<link rel="stylesheet" href="../../shared/lab.css" />
+<style>
+  main {
+    display: grid;
+    grid-template-columns: 272px minmax(0, 1fr) 300px;
+    gap: 10px; padding: 10px 12px; min-height: 0;
+  }
+  @media (max-width: 1200px) { main { grid-template-columns: 250px minmax(0,1fr); } main > .third { display: none; } }
+
+  .mid { display: grid; grid-template-rows: minmax(0,1fr) auto; gap: 10px; min-height: 0; }
+  canvas#cluster { width: 100%; height: 100%; display: block; }
+  .cwrap { position: relative; flex: 1; min-height: 0; }
+
+  .row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+  .row .grow { flex: 1; }
+
+  /* ── servers ─────────────────────────────────────────────── */
+  .srv { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-bottom: 1px solid color-mix(in oklab, var(--line) 60%, transparent); }
+  .srv .id { font: 600 11.5px/1 var(--mono); width: 22px; }
+  .srv .role { font: 400 10px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; width: 62px; color: var(--fg-mute); }
+  .srv .role.leader { color: var(--accent); }
+  .srv .role.candidate { color: var(--warn); }
+  .srv .role.dead { color: var(--bad); }
+  .srv .sides { display: inline-flex; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+  .srv .sides button { border: 0; border-radius: 0; padding: 3px 6px; font: 500 10px/1 var(--mono); background: transparent; color: var(--fg-mute); }
+  .srv .sides button.on { background: var(--ink-600); color: var(--accent); }
+  .srv .kill { font: 400 10px/1 var(--mono); padding: 3px 6px; }
+
+  /* ── invariants ──────────────────────────────────────────── */
+  .inv { display: flex; gap: 8px; padding: 7px 0; border-bottom: 1px solid color-mix(in oklab, var(--line) 60%, transparent); }
+  .inv .dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 5px; flex: none; background: var(--ok); box-shadow: 0 0 6px color-mix(in oklab, var(--ok) 70%, transparent); }
+  .inv.bad .dot { background: var(--bad); box-shadow: 0 0 8px var(--bad); }
+  .inv .n { font: 500 11.5px/1.35 var(--sans); }
+  .inv .d { font: 400 10.5px/1.4 var(--sans); color: var(--fg-mute); }
+  .inv.bad .n { color: var(--bad); }
+
+  /* ── log matrix ──────────────────────────────────────────── */
+  .matrix { padding: 8px 10px 10px; overflow: auto; }
+  .mrow { display: flex; align-items: center; gap: 4px; margin-bottom: 3px; }
+  .mrow .lbl { width: 68px; flex: none; font: 500 10.5px/1 var(--mono); color: var(--fg-mute); display: flex; gap: 5px; align-items: center; }
+  .mrow .lbl .pip { width: 6px; height: 6px; border-radius: 50%; background: var(--fg-ghost); }
+  .mrow .lbl .pip.leader { background: var(--accent); }
+  .mrow .lbl .pip.dead { background: var(--bad); }
+  .cellidx { display: flex; gap: 4px; margin-left: 72px; margin-bottom: 2px; }
+  .cellidx span { width: 26px; text-align: center; font: 400 9px/1 var(--mono); color: var(--fg-ghost); }
+  .ent {
+    width: 26px; height: 22px; flex: none; border-radius: 3px;
+    display: grid; place-items: center;
+    font: 500 10px/1 var(--mono);
+    border: 1px solid var(--line);
+    background: var(--ink-750); color: var(--fg-mute);
+  }
+  .ent.has { color: var(--ink-900); font-weight: 600; }
+  .ent.uncommitted { opacity: .55; border-style: dashed; }
+  .ent.gap { background: repeating-linear-gradient(45deg, transparent, transparent 3px, var(--ink-700) 3px, var(--ink-700) 6px); }
+
+  /* ── events ──────────────────────────────────────────────── */
+  .ev { font: 400 11px/1.55 var(--mono); }
+  .ev .e { display: flex; gap: 6px; padding: 1px 0; }
+  .ev .t { color: var(--fg-ghost); width: 46px; flex: none; text-align: right; }
+  .ev .k-leader { color: var(--accent); }
+  .ev .k-election { color: var(--warn); }
+  .ev .k-commit { color: var(--ok); }
+  .ev .k-crash, .ev .k-truncate, .ev .k-reject { color: var(--bad); }
+  .ev .k-partition, .ev .k-heal { color: var(--viol); }
+  .ev .k-client { color: var(--fg); }
+  .ev .k-stepdown, .ev .k-revive { color: var(--fg-mute); }
+
+  .scenarios { display: flex; flex-wrap: wrap; gap: 5px; }
+  .scenarios button { font: 400 11px/1 var(--sans); padding: 5px 7px; }
+  .legend { display: flex; gap: 10px; flex-wrap: wrap; font: 400 10px/1 var(--mono); color: var(--fg-mute); padding: 0 10px 8px; }
+  .legend i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; }
+</style>
+
+<div class="shell">
+  <header class="bar">
+    <a class="home" href="../../index.html">&larr; INDEX</a>
+    <h1>Raft Lab</h1>
+    <span class="sub">consensus you can break on purpose</span>
+    <span class="spacer"></span>
+    <span class="hint" style="margin-right:8px"><span class="kbd">space</span> run/pause &nbsp; <span class="kbd">w</span> write &nbsp; <span class="kbd">1-9</span> crash a server</span>
+    <button id="theme" class="mono ghost">&#9681; dark</button>
+  </header>
+
+  <main>
+    <section style="display:grid; grid-template-rows:auto auto minmax(0,1fr); gap:10px; min-height:0">
+      <div class="panel">
+        <div class="head">control</div>
+        <div class="body">
+          <div class="row">
+            <button id="run" class="on">&#9205; run</button>
+            <button id="step" class="mono">step 100ms</button>
+            <button id="reset" class="ghost mono">reset</button>
+          </div>
+          <label class="field">
+            <span class="k">speed <b id="speedv">1.0x</b></span>
+            <input id="speed" type="range" min="0.25" max="4" step="0.25" value="1" />
+          </label>
+          <div class="row">
+            <button id="write" style="flex:1">write an entry</button>
+            <button id="burst" class="mono">x5</button>
+          </div>
+          <div class="hr"></div>
+          <div class="scenarios" id="scenarios"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="head">servers <span class="spacer"></span><button id="heal" class="ghost mono">heal network</button></div>
+        <div class="body" id="servers"></div>
+      </div>
+
+      <div class="panel third">
+        <div class="head">safety invariants</div>
+        <div class="body" id="invariants"></div>
+      </div>
+    </section>
+
+    <section class="mid">
+      <div class="panel">
+        <div class="head">cluster <span class="spacer"></span><span class="mute num" id="clockmeta"></span></div>
+        <div class="cwrap"><canvas id="cluster"></canvas></div>
+        <div class="legend">
+          <span><i style="background:var(--accent)"></i>AppendEntries</span>
+          <span><i style="background:var(--warn)"></i>RequestVote</span>
+          <span><i style="background:var(--fg-mute)"></i>response</span>
+          <span><i style="background:var(--bad)"></i>dropped at the partition</span>
+        </div>
+      </div>
+      <div class="panel" style="flex:none">
+        <div class="head">replicated log <span class="spacer"></span><span class="mute num" id="logmeta"></span></div>
+        <div class="matrix" id="matrix"></div>
+      </div>
+    </section>
+
+    <section class="panel third">
+      <div class="head">events</div>
+      <div class="body" id="events"></div>
+    </section>
+  </main>
+
+  <footer class="status" id="status"></footer>
+</div>
+
+<script type="module">
+import { h, $, themeToggle, hidpi, css, ticker, clamp } from '../../shared/lab.js';
+import { Cluster, CFG } from './engine.js';
+
+themeToggle($('#theme'));
+
+const SIZE = 5;
+let cluster = new Cluster(SIZE, 7);
+let speed = 1;
+let followEvents = true;
+
+/* ── scenarios: one click, one story ────────────────────────────────────── */
+const SCENARIOS = {
+  'split brain': (c) => {
+    const L = c.nodes.find((n) => n.role === 'leader')?.id ?? 0;
+    c.setPartition(L, 1);
+    c.setPartition((L + 1) % SIZE, 1);
+    // hand the write to the *isolated* leader: it will accept it, replicate
+    // to its one reachable peer, and never reach a quorum to commit it
+    queue(400, () => c.clientTo(L, 'ghost'));
+  },
+  'kill the leader': (c) => {
+    const L = c.nodes.find((n) => n.role === 'leader')?.id;
+    if (L != null) c.kill(L); else c.log('reject', 'no leader to kill yet', null);
+  },
+  'lose the quorum': (c) => {
+    const dead = c.nodes.filter((n) => n.alive).slice(0, 3);
+    for (const n of dead) c.kill(n.id);
+    queue(1500, () => c.client('doomed'));
+  },
+  'heal + write': (c) => {
+    c.healPartitions();
+    for (const n of c.nodes) if (!n.alive) c.revive(n.id);
+    queue(2500, () => c.client('after'));
+  },
+};
+const pending = [];
+const queue = (delay, fn) => pending.push({ at: cluster.now + delay, fn });
+
+/* ── canvas ─────────────────────────────────────────────────────────────── */
+const canvas = $('#cluster');
+let W = 0, H = 0;
+hidpi(canvas, (ctx, w, hh) => { W = w; H = hh; });
+
+function nodePositions() {
+  const split = new Set(cluster.nodes.map((n) => n.partition)).size > 1;
+  const cx = W / 2, cy = H / 2;
+  const r = Math.min(W, H) * 0.33;
+  const pos = [];
+  if (!split) {
+    cluster.nodes.forEach((n, i) => {
+      const a = -Math.PI / 2 + (i / SIZE) * Math.PI * 2;
+      pos[n.id] = { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r };
+    });
+  } else {
+    const groups = [[], []];
+    for (const n of cluster.nodes) groups[n.partition ? 1 : 0].push(n);
+    groups.forEach((g, gi) => {
+      const gx = cx + (gi ? 1 : -1) * W * 0.21;
+      g.forEach((n, i) => {
+        const a = -Math.PI / 2 + (i / Math.max(1, g.length)) * Math.PI * 2;
+        const rr = g.length === 1 ? 0 : Math.min(W * 0.14, r * 0.8);
+        pos[n.id] = { x: gx + Math.cos(a) * rr, y: cy + Math.sin(a) * rr };
+      });
+    });
+  }
+  return pos;
+}
+
+function draw() {
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  const pos = nodePositions();
+  const split = new Set(cluster.nodes.map((n) => n.partition)).size > 1;
+  const C = {
+    line: css('--line'), bright: css('--line-bright'), mute: css('--fg-mute'), fg: css('--fg'),
+    accent: css('--accent'), warn: css('--warn'), bad: css('--bad'), ok: css('--ok'), ink: css('--ink-700'), panel: css('--ink-800'),
+  };
+
+  if (split) {                                   // the tear in the network
+    ctx.save();
+    ctx.strokeStyle = C.bad;
+    ctx.globalAlpha = .5;
+    ctx.setLineDash([5, 7]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let y = 0; y <= H; y += 16) {
+      const x = W / 2 + Math.sin(y / 26) * 5;
+      y === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+    ctx.font = '500 10px ui-monospace, monospace';
+    ctx.fillStyle = C.bad;
+    ctx.textAlign = 'center';
+    ctx.fillText('NETWORK PARTITION', W / 2, 16);
+    ctx.restore();
+  }
+
+  // idle links
+  ctx.strokeStyle = C.line;
+  ctx.lineWidth = 1;
+  for (let i = 0; i < SIZE; i++) for (let j = i + 1; j < SIZE; j++) {
+    if (cluster.nodes[i].partition !== cluster.nodes[j].partition) continue;
+    ctx.globalAlpha = .5;
+    ctx.beginPath();
+    ctx.moveTo(pos[i].x, pos[i].y);
+    ctx.lineTo(pos[j].x, pos[j].y);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // messages in flight
+  for (const m of cluster.messages) {
+    const a = pos[m.from], b = pos[m.to];
+    if (!a || !b) continue;
+    const t = clamp((cluster.now - m.sentAt) / (m.deliverAt - m.sentAt), 0, 1);
+    const tt = m.lost ? Math.min(t, 0.46) : t;
+    const x = a.x + (b.x - a.x) * tt, y = a.y + (b.y - a.y) * tt;
+    const isReq = m.type === 'AppendEntries' || m.type === 'RequestVote';
+    ctx.beginPath();
+    ctx.arc(x, y, m.lost ? 2.6 : isReq ? 3.4 : 2.6, 0, Math.PI * 2);
+    ctx.fillStyle = m.lost ? C.bad : m.type === 'RequestVote' ? C.warn : isReq ? C.accent : C.mute;
+    ctx.globalAlpha = m.lost ? Math.max(0, 1 - (t - 0.46) * 3) : 1;
+    ctx.fill();
+    if (m.type === 'AppendEntries' && m.payload.entries.length && !m.lost) {
+      ctx.globalAlpha = .85;
+      ctx.font = '500 9px ui-monospace, monospace';
+      ctx.fillStyle = C.accent;
+      ctx.textAlign = 'center';
+      ctx.fillText('+' + m.payload.entries.length, x, y - 7);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // nodes
+  for (const n of cluster.nodes) {
+    const p = pos[n.id];
+    const R = 25;
+    const isLeader = n.role === 'leader' && n.alive;
+
+    if (n.alive && n.role !== 'leader') {         // election countdown ring
+      const left = clamp((n.electionAt - cluster.now) / CFG.electionMax, 0, 1);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, R + 5, -Math.PI / 2, -Math.PI / 2 + (1 - left) * Math.PI * 2);
+      ctx.strokeStyle = n.role === 'candidate' ? C.warn : C.bright;
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+    }
+
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, R, 0, Math.PI * 2);
+    ctx.fillStyle = !n.alive ? C.panel : C.ink;
+    ctx.fill();
+    if (isLeader) {                               // canvas has no color-mix:
+      ctx.globalAlpha = .24;                      // tint by overpainting
+      ctx.fillStyle = C.accent;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    ctx.lineWidth = isLeader ? 2 : 1;
+    ctx.strokeStyle = !n.alive ? C.bad : isLeader ? C.accent : n.role === 'candidate' ? C.warn : C.bright;
+    ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = !n.alive ? C.bad : C.fg;
+    ctx.font = '600 13px ui-monospace, monospace';
+    ctx.fillText('s' + n.id, p.x, p.y - 5);
+    ctx.font = '400 9.5px ui-monospace, monospace';
+    ctx.fillStyle = !n.alive ? C.mute : isLeader ? C.accent : C.mute;
+    ctx.fillText(!n.alive ? 'down' : `t${n.term} · ${n.log.length}`, p.x, p.y + 8);
+
+    if (isLeader) {
+      ctx.font = '500 9px ui-monospace, monospace';
+      ctx.fillStyle = C.accent;
+      ctx.fillText('LEADER', p.x, p.y - R - 9);
+    }
+    if (n.role === 'candidate' && n.alive) {
+      ctx.font = '500 9px ui-monospace, monospace';
+      ctx.fillStyle = C.warn;
+      ctx.fillText(`${n.votes.size}/${SIZE} VOTES`, p.x, p.y - R - 9);
+    }
+  }
+}
+
+/* ── DOM panels ─────────────────────────────────────────────────────────── */
+function renderServers() {
+  const box = $('#servers');
+  box.textContent = '';
+  for (const n of cluster.nodes) {
+    box.append(h('div', { class: 'srv' },
+      h('span', { class: 'id' }, 's' + n.id),
+      h('span', { class: 'role ' + (!n.alive ? 'dead' : n.role) }, !n.alive ? 'down' : n.role),
+      h('span', { class: 'sides' },
+        ...[0, 1].map((g) => h('button', {
+          class: n.partition === g ? 'on' : '',
+          title: 'move to network side ' + (g ? 'B' : 'A'),
+          onclick: () => { cluster.setPartition(n.id, g); renderServers(); },
+        }, g ? 'B' : 'A'))),
+      h('span', { style: { flex: 1 } }),
+      h('button', {
+        class: 'kill',
+        onclick: () => { n.alive ? cluster.kill(n.id) : cluster.revive(n.id); renderServers(); },
+      }, n.alive ? 'crash' : 'restart')
+    ));
+  }
+}
+
+function renderInvariants() {
+  const box = $('#invariants');
+  box.textContent = '';
+  for (const c of cluster.check()) {
+    box.append(h('div', { class: 'inv' + (c.ok ? '' : ' bad') },
+      h('span', { class: 'dot' }),
+      h('div', {},
+        h('div', { class: 'n' }, c.name, c.ok ? '' : ' — VIOLATED'),
+        h('div', { class: 'd' }, c.note || c.detail))
+    ));
+  }
+  box.append(h('div', { class: 'hint', style: { marginTop: '9px' } },
+    'These are the safety properties from the Raft paper, re-checked every frame against live state. Break the cluster however you like: they should never go red.'));
+}
+
+const TERM_HUES = [190, 268, 44, 150, 330, 16, 210, 90];
+const termColor = (t) => `oklch(0.68 0.16 ${TERM_HUES[t % TERM_HUES.length]})`;
+
+function renderMatrix() {
+  const box = $('#matrix');
+  box.textContent = '';
+  const maxLen = Math.max(0, ...cluster.nodes.map((n) => n.log.length));
+  if (maxLen === 0) {
+    box.append(h('div', { class: 'hint', style: { padding: '10px 2px' } },
+      'No entries yet. Press ', h('span', { class: 'kbd' }, 'w'), ' (or “write an entry”) to send a command to the leader and watch it replicate.'));
+    $('#logmeta').textContent = 'empty';
+    return;
+  }
+  const cols = Math.min(maxLen, 22);
+  const from = Math.max(0, maxLen - cols);
+
+  const idx = h('div', { class: 'cellidx' });
+  for (let i = from; i < from + cols; i++) idx.append(h('span', {}, i + 1));
+  box.append(idx);
+
+  for (const n of cluster.nodes) {
+    const row = h('div', { class: 'mrow' });
+    row.append(h('div', { class: 'lbl' },
+      h('span', { class: 'pip ' + (!n.alive ? 'dead' : n.role === 'leader' ? 'leader' : '') }),
+      's' + n.id,
+      h('span', { class: 'mute' }, 't' + n.term)));
+    for (let i = from; i < from + cols; i++) {
+      const e = n.log[i];
+      if (!e) { row.append(h('div', { class: 'ent gap' })); continue; }
+      const committed = i + 1 <= n.commitIndex;
+      row.append(h('div', {
+        class: 'ent has' + (committed ? '' : ' uncommitted'),
+        style: { background: termColor(e.term), borderColor: termColor(e.term) },
+        title: `index ${i + 1} · term ${e.term} · "${e.value}" · ${committed ? 'committed' : 'not yet committed'}`,
+      }, e.value.length > 3 ? e.value.slice(0, 3) : e.value));
+    }
+    box.append(row);
+  }
+  box.append(h('div', { class: 'hint', style: { marginTop: '8px' } },
+    'Colour is the term that created the entry. Dashed cells are replicated but not yet committed — those are the ones a new leader may overwrite.'));
+  const committed = Math.max(...cluster.nodes.map((n) => n.commitIndex));
+  $('#logmeta').textContent = `${maxLen} entries · ${committed} committed`;
+}
+
+let lastEventCount = 0;
+let lastServerSig = '';
+function renderEvents() {
+  if (cluster.events.length === lastEventCount) return;
+  lastEventCount = cluster.events.length;
+  const box = $('#events');
+  box.textContent = '';
+  for (const e of cluster.events.slice(-90)) {
+    box.append(h('div', { class: 'e' },
+      h('span', { class: 't' }, (e.at / 1000).toFixed(1) + 's'),
+      h('span', { class: 'k-' + e.kind }, e.text)));
+  }
+  box.className = 'body ev';
+  if (followEvents) box.scrollTop = box.scrollHeight;
+}
+
+function renderStatus() {
+  const s = cluster.snapshot();
+  const st = $('#status');
+  st.textContent = '';
+  st.append(...[
+    h('span', {}, h('b', {}, 'term '), s.term),
+    h('span', {}, h('b', {}, 'leader '), s.leader === null ? 'none' : 's' + s.leader),
+    h('span', {}, h('b', {}, 'committed '), s.committed),
+    h('span', {}, h('b', {}, 'in flight '), s.inFlight),
+    h('span', {}, h('b', {}, 'delivered '), cluster.delivered),
+    h('span', {}, h('b', {}, 'dropped '), cluster.dropped),
+    h('span', { style: { flex: 1 } }),
+    h('span', {}, `election timeout ${CFG.electionMin}-${CFG.electionMax}ms · heartbeat ${CFG.heartbeat}ms`),
+  ]);
+  $('#clockmeta').textContent = `t = ${(cluster.now / 1000).toFixed(1)}s`;
+}
+
+/* ── loop ───────────────────────────────────────────────────────────────── */
+let frames = 0;
+const loop = ticker((dt) => {
+  cluster.tick(dt * speed);
+  while (pending.length && pending[0].at <= cluster.now) pending.shift().fn();
+  draw();
+  if (++frames % 6 === 0) {          // DOM work at 10Hz; canvas at 60
+    renderMatrix(); renderInvariants(); renderEvents(); renderStatus();
+    // the server list holds focusable controls, so only rebuild it when
+    // something it displays has actually changed
+    const sig = cluster.nodes.map((n) => `${n.role}${n.alive}${n.partition}`).join('|');
+    if (sig !== lastServerSig) { lastServerSig = sig; renderServers(); }
+  }
+});
+
+/* ── wiring ─────────────────────────────────────────────────────────────── */
+$('#run').onclick = () => {
+  loop.toggle();
+  $('#run').innerHTML = loop.running ? '&#9208; pause' : '&#9205; run';
+  $('#run').classList.toggle('on', loop.running);
+};
+$('#step').onclick = () => {
+  if (loop.running) $('#run').click();
+  for (let i = 0; i < 5; i++) cluster.tick(20);
+  draw(); renderMatrix(); renderInvariants(); renderEvents(); renderStatus(); renderServers();
+};
+$('#reset').onclick = () => {
+  cluster = new Cluster(SIZE, Math.floor(Math.random() * 1e6));
+  pending.length = 0;
+  lastEventCount = -1;
+  renderServers(); renderMatrix(); renderInvariants(); renderEvents(); renderStatus(); draw();
+};
+$('#speed').oninput = (e) => { speed = +e.target.value; $('#speedv').textContent = speed.toFixed(2) + 'x'; };
+$('#write').onclick = () => { cluster.client(); renderEvents(); };
+$('#burst').onclick = () => { for (let i = 0; i < 5; i++) cluster.client(); renderEvents(); };
+$('#heal').onclick = () => { cluster.healPartitions(); renderServers(); };
+
+const sc = $('#scenarios');
+for (const [name, fn] of Object.entries(SCENARIOS)) {
+  sc.append(h('button', { onclick: () => { fn(cluster); if (!loop.running) $('#run').click(); renderServers(); } }, name));
+}
+
+addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === ' ') { $('#run').click(); e.preventDefault(); }
+  if (e.key === 'w') $('#write').click();
+  if (/^[1-9]$/.test(e.key)) {
+    const id = +e.key - 1;
+    if (id < SIZE) { const n = cluster.nodes[id]; n.alive ? cluster.kill(id) : cluster.revive(id); renderServers(); }
+  }
+});
+
+renderServers(); renderMatrix(); renderInvariants(); renderEvents(); renderStatus();
+loop.start();
+</script>
