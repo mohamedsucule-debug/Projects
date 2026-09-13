@@ -1,115 +1,96 @@
-# Design Engineering Lab
+# Playground
 
-Six working tools for systems that refuse to be simple.
+Eleven things I built. All of them run in a browser — no install, no signup,
+no video of someone else using it.
 
-Each project starts with the hard part — a regex compiler, a cost-based query
-optimiser, the Raft protocol, a critical-path analyser, Myers diff, OKLab colour
-maths — implemented from scratch, and then asks the design question that
-usually goes unasked: **what does a person need to see to understand this?**
-
-They are not mockups. Every number on screen is computed live by the engine
-beside it, every algorithm is the real one, and the parts that are
-approximations say so on screen.
-
-```
-open index.html          # the gallery
-npx http-server          # ES modules need a server; nothing else does
-node tests/run.mjs       # 77 tests, no framework, no install
-```
+**→ [Open the playground](https://mohamedsucule-debug.github.io/Projects/)**
+*(or clone it and open `index.html`)*
 
 ---
 
-## The projects
+## The toys
 
-| | What it is | The design problem it solves |
-|---|---|---|
-| **[Regex Lab](projects/regex-lab)** | A regex engine: parser, Thompson NFA, subset construction, and two matchers racing | A regex is a program you never see run. This shows the automaton, the live state set as you scrub the input, and the backtracker's step counter — the number that explains production outages nobody can reproduce. |
-| **[Query Planner](projects/query-planner)** | A cost-based SQL optimiser with statistics, access paths and Selinger join enumeration | `EXPLAIN` tells you what the database decided, never why. Every row estimate here shows its arithmetic. Drag a table's row count and watch the plan flip from hash join to index probe. |
-| **[Raft Lab](projects/raft-lab)** | Five nodes running real Raft on a deterministic clock | Consensus is impossible to read from logs, because everything interesting happens *between* the log lines. Partition the network, crash the leader, then watch the four safety invariants from the paper hold anyway. |
-| **[Trace Explorer](projects/trace-explorer)** | Distributed tracing with critical-path analysis and automated findings | Tracing tools are built for people who already know what they're looking for. This one opens on the worst trace and explains it in sentences — with a denominator. |
-| **[Diff Forge](projects/diff-forge)** | Myers diff, patience diff, and a three-way merge | Merge conflicts are the most-hated interface in software: at the moment you need the most context, you get seven lines of `<<<<<<<`. Rebuilt as a choice, with both intents side by side and the base quoted underneath. |
-| **[OKLCH Studio](projects/oklch-studio)** | Perceptual palette generation, gamut mapping, and an APCA contrast matrix | Most palette tools generate in HSL, which lies about lightness — so your "500" step passes contrast on one accent and fails on the next. Generate where lightness means lightness, then audit every pair. |
+Click any of these and they start immediately.
 
-Each project has its own README covering the design decisions, the algorithms,
+| | |
+|---|---|
+| **[Sandbox](play/sandbox/)** | Pour sand. Add water. Set it on fire and watch the smoke rise. Ten materials that all behave the way you'd expect — water puts out fire, oil floats, lava turns water to steam, acid eats through stone. |
+| **[Beat Lab](play/beats/)** | A drum machine with no sound files in it. Every kick, snare and hat is generated from scratch by the browser. Tap squares, press play, make something. |
+| **[Islandsmith](play/island/)** | Press the button and a new world appears: coastline, mountains, forests, rivers, snow and a name. Every island comes from a single random number. |
+| **[Flow](play/flow/)** | Twenty thousand particles riding an invisible current. Push them around with your mouse, then save the result as a picture. |
+| **[Comet](play/orbit/)** | Move the mouse. Collect the gold. Don't touch the red. Three seconds to learn. |
+
+## The serious ones
+
+Same approach, harder subjects — each one takes something normally invisible and
+puts it on screen. These assume you write software.
+
+| | |
+|---|---|
+| **[Regex Lab](projects/regex-lab/)** | A search pattern compiled into a machine you can watch run, one character at a time — including the kind of pattern that quietly takes a website down. |
+| **[Query Planner](projects/query-planner/)** | A database deciding how to answer a question, with its reasoning attached. Drag a table's size and watch it change its mind. |
+| **[Raft Lab](projects/raft-lab/)** | Five servers agreeing with each other. Cut the network in half, crash the leader, and watch the safety guarantees hold. |
+| **[Trace Explorer](projects/trace-explorer/)** | Where a slow web request actually spent its time, explained in sentences instead of charts. |
+| **[Diff Forge](projects/diff-forge/)** | The merge conflict — software's most hated screen — rebuilt as a choice you can actually read. |
+| **[OKLCH Studio](projects/oklch-studio/)** | Building a colour palette that still passes when someone runs an accessibility check on it. |
+
+Each of these has its own README covering the design decisions, the algorithms,
 and — deliberately — what it does **not** do.
 
 ---
 
-## How it is built
+## How it's built
 
-**Engine and interface are separate.** Every project is a pure `engine.js` —
-no DOM, deterministic, unit-tested — plus an `index.html` that renders it. The
-engine is the part that must be *correct*; the interface is the part that must
-be *understood*. Keeping them apart means the hard logic can be tested from
-Node, and the interface can be rewritten without touching it.
+**No frameworks. No build step. No dependencies.** Every page here is plain
+HTML, CSS and JavaScript. The five toys are each a single self-contained file
+you can open by double-clicking it. Clone this in five years and it still runs.
+
+**The serious ones split in two:** a pure `engine.js` (the algorithm — no
+screen code, testable from a terminal) and an `index.html` (the interface). The
+engine has to be *correct*; the interface has to be *understood*. Different jobs.
 
 ```
-index.html                  the gallery
-shared/lab.css              the design system — every token lives here
-shared/lab.js               60 lines of runtime: element factory, ticker,
-                            HiDPI canvas, seeded PRNG
+index.html              the front page, with a live preview on every card
+play/<name>/index.html  a toy — one file, no imports
 projects/<name>/
-  engine.js                 the algorithm — pure, no DOM
-  index.html                the interface
-  README.md                 the design problem, and the limits
-tests/
-  run.mjs                   the runner
-  *.test.mjs                property tests over each engine
+  engine.js             the algorithm, pure and DOM-free
+  index.html            the interface
+  README.md             the design problem, and the limits
+tests/run.mjs           77 tests, no framework, no install
 ```
 
-**No framework, on purpose.** These are interfaces about data, not about state
-management. The whole shared runtime is 60 lines. No build step, no
-`node_modules`, no lockfile — clone it in five years and it still runs.
-
-**One design system.** `shared/lab.css` holds every colour, size and control.
-One accent, hairline structure, monospace for anything a machine produced and
-sans for anything a human reads. Light and dark are both first-class, and every
-project inherits both for free.
-
-**Tests assert properties, not pixels.** The suite checks the things that make
-each engine *correct*, and several of them caught real bugs during the build:
-
-- the NFA simulation agrees with the platform's own `RegExp` across 32 cases;
-- both diff algorithms' edit scripts reconstruct both inputs, over 800
-  randomised pairs;
-- Raft's safety invariants hold at **every tick** of a scripted chaos run;
-- the critical path's segments tile a trace exactly — no gaps, no double
-  counting — across 200 generated traces;
-- APCA matches its published reference values (black on white is Lc 106).
-
+```bash
+npx http-server        # the serious ones use ES modules, so they need a server
+node tests/run.mjs     # run the tests
 ```
-node tests/run.mjs          # everything
-node tests/run.mjs raft     # one file
-```
-
-**Honest about limits.** Every project README ends with what it doesn't do:
-no capture-group extraction, no log compaction, no rename detection, sRGB only.
-A demo that hides its edges teaches the wrong lesson about the system it models.
-
----
 
 ## Built with Claude Code
 
-The whole repo was written in a single session with [Claude Code](https://claude.ai/code),
-which is the point: the work was directed, not delegated. The loop that
-produced it, and the parts that needed a human judgement call:
+All eleven were built with [Claude Code](https://claude.ai/code) — an AI that
+writes and runs code — across a handful of sessions. The interesting part isn't
+that AI wrote the code. It's which half of the job it couldn't do.
 
-1. **Engine first, in Node.** Get the algorithm right against an oracle — the
-   platform `RegExp`, published APCA values, reconstruction properties — before
-   any pixel exists. A beautiful interface over a wrong engine is worse than no
-   interface.
-2. **Screenshot in the loop.** Every interface was rendered headlessly and
-   *looked at* after each change. That is how the overlapping duration labels,
-   the stray `null` in a status bar, the un-arrowed automaton edges and a diff
-   pane that clipped its own code got caught — none of which any test would
-   have flagged.
-3. **Distrust the green check.** Two tests failed because *the test* was wrong
-   (the greedy/lazy assertion, the self-time-equals-wall-time assumption), and
-   two failed because the *engine* was wrong (the critical path leaked time on
-   overlapping spans; the planner's scans were keyed by table name while its
-   estimates were keyed by alias, so every filter silently fell back to a
-   default selectivity). Telling those apart is the judgement that cannot be
-   handed over.
-4. **Write the copy last, out loud.** "22% of the trace, a single batched query
-   would collapse this to one round trip" is a different product from "p99
-   elevated", and the difference is entirely in the writing.
+**What it's brilliant at:** typing. A working falling-sand simulation, a Raft
+implementation, a Myers diff — from a description, in minutes, with no typos and
+no forgotten edge cases.
+
+**What it can't do:** know that the result is boring. Every screen here was
+rendered and *looked at* after each change, and that's where the real work was:
+
+- the hourglass leaked sand out of the sides, because it was drawn as an X
+  rather than a funnel
+- the forest fire burned one tree and went out, because the match was lit on an
+  isolated tree at the edge
+- the island came out as a perfectly smooth green ellipse, because the noise
+  frequency was so low the whole map sat inside a single noise cell
+- the six "serious" links rendered in shouty uppercase, because a heading and a
+  list both claimed the same HTML id
+
+Every one of those was *technically working code*. No test would have caught a
+single one of them. Two of the tests I wrote were themselves wrong, and two more
+found genuine bugs in the engines — telling those apart is the judgement that
+doesn't get handed over.
+
+The other half is the writing. "Pour sand. Add water. Then set it on fire"
+teaches the sandbox faster than a tutorial would. Deciding what a thing says,
+and what it refuses to say, is design work.

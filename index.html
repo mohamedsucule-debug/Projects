@@ -1,283 +1,725 @@
-<title>Design Engineering Lab</title>
-<meta name="description" content="Six interfaces for deeply technical systems — a regex engine, a query planner, a Raft cluster, a trace explorer, a merge tool and a colour system — each built from the algorithm up." />
-<link rel="stylesheet" href="shared/lab.css" />
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Playground — things you can click</title>
+<meta name="description" content="A sandbox you can set on fire, a drum machine, twenty thousand particles, a tiny arcade game and an island generator. All built in the browser." />
+<meta property="og:title" content="Playground — things you can click" />
+<meta property="og:description" content="Five toys you can play with in about three seconds each, and six serious tools underneath." />
 <style>
-  body { overflow: auto; }
-  .page { max-width: 1180px; margin: 0 auto; padding: 0 24px 72px; }
-
-  header.top {
-    display: flex; align-items: center; gap: 12px;
-    padding: 18px 0 0;
+  :root {
+    --bg: #06070d;
+    --card: #0e111a;
+    --line: rgba(255,255,255,.09);
+    --line2: rgba(255,255,255,.17);
+    --fg: #f3f6fb;
+    --dim: #9aa5b8;
+    --mute: #6c7789;
+    --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
   }
-  header.top .mark {
-    width: 26px; height: 26px; border-radius: 7px;
-    background: linear-gradient(140deg, var(--accent), var(--viol));
-    box-shadow: 0 0 22px var(--accent-glow);
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
-  header.top .who { font: 600 13px/1 var(--sans); letter-spacing: -.01em; }
-  header.top .spacer { flex: 1; }
+  .page { max-width: 1180px; margin: 0 auto; padding: 0 20px 90px; }
+  a { color: inherit; }
 
-  .hero { padding: 64px 0 44px; max-width: 760px; }
+  /* ── nav ───────────────────────────────────────────────── */
+  nav {
+    display: flex; align-items: center; gap: 10px;
+    padding: 18px 0; font-size: 13.5px;
+  }
+  nav .logo {
+    width: 24px; height: 24px; border-radius: 8px;
+    background: conic-gradient(from 140deg, #ffd166, #ff4d8d, #7dd3fc, #a3e635, #ffd166);
+    box-shadow: 0 0 26px -4px rgba(255,120,180,.65);
+  }
+  nav b { font-weight: 700; letter-spacing: -.01em; }
+  nav .spacer { flex: 1; }
+  nav a.ghost { color: var(--dim); text-decoration: none; font-weight: 500; }
+  nav a.ghost:hover { color: var(--fg); }
+
+  /* ── hero ──────────────────────────────────────────────── */
+  .hero { padding: 64px 0 46px; position: relative; }
   .hero h1 {
-    font: 600 clamp(30px, 5vw, 46px)/1.12 var(--sans);
-    letter-spacing: -.03em;
-    margin: 0 0 18px;
+    font-size: clamp(38px, 7.4vw, 78px);
+    line-height: 1.02; letter-spacing: -.045em; font-weight: 700;
+    margin: 0 0 22px; max-width: 15ch;
   }
   .hero h1 em {
     font-style: normal;
-    background: linear-gradient(96deg, var(--accent), var(--viol) 70%);
+    background: linear-gradient(102deg, #ffd166, #ff4d8d 42%, #7dd3fc 88%);
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
-  .hero p { font: 400 15.5px/1.65 var(--sans); color: var(--fg-dim); margin: 0 0 14px; max-width: 640px; }
-  .hero .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+  .hero p {
+    font-size: clamp(16px, 2.1vw, 19px); line-height: 1.62; color: var(--dim);
+    max-width: 60ch; margin: 0 0 14px;
+  }
+  .hero .cta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 28px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 15px; font-weight: 650; text-decoration: none;
+    padding: 14px 22px; border-radius: 13px; border: 1px solid transparent;
+    transition: transform .14s, box-shadow .14s, background .14s;
+  }
+  .btn.primary { background: #ffd166; color: #140f02; box-shadow: 0 14px 40px -14px rgba(255,209,102,.8); }
+  .btn.primary:hover { transform: translateY(-2px); box-shadow: 0 20px 48px -14px rgba(255,209,102,.9); }
+  .btn.ghost { border-color: var(--line2); color: var(--fg); }
+  .btn.ghost:hover { background: rgba(255,255,255,.06); transform: translateY(-2px); }
 
+  /* ── cards ─────────────────────────────────────────────── */
   .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
-    gap: 14px;
+    display: grid; gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   }
 
   a.card {
-    display: flex; flex-direction: column;
-    background: var(--ink-800);
-    border: 1px solid var(--line);
-    border-radius: var(--r-lg);
-    text-decoration: none; color: inherit;
-    overflow: hidden;
-    transition: border-color .16s, transform .16s, box-shadow .16s;
-    position: relative;
+    display: block; text-decoration: none; color: inherit;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 20px; overflow: hidden; position: relative;
+    transition: transform .18s cubic-bezier(.2,.7,.3,1), border-color .18s, box-shadow .18s;
   }
   a.card:hover {
-    border-color: var(--line-bright);
-    transform: translateY(-2px);
-    box-shadow: 0 18px 40px -26px rgba(0,0,0,.9);
+    transform: translateY(-4px);
+    border-color: var(--line2);
+    box-shadow: 0 26px 60px -28px rgba(0,0,0,.95);
   }
-  a.card .sig {
-    height: 118px;
-    background: var(--ink-850);
-    border-bottom: 1px solid var(--line);
-    position: relative;
-    overflow: hidden;
+  a.card .stage { position: relative; aspect-ratio: 16 / 9; background: #05060b; overflow: hidden; }
+  a.card canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  a.card .play {
+    position: absolute; right: 14px; bottom: 14px; z-index: 2;
+    background: rgba(8,10,16,.72); backdrop-filter: blur(10px);
+    border: 1px solid var(--line2); border-radius: 99px;
+    padding: 8px 14px; font-size: 12.5px; font-weight: 650;
+    opacity: 0; transform: translateY(6px); transition: opacity .18s, transform .18s;
   }
-  a.card .sig svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-  a.card .body { padding: 14px 15px 15px; display: flex; flex-direction: column; flex: 1; }
-  a.card h2 { font: 600 16px/1.2 var(--sans); letter-spacing: -.015em; margin: 0 0 3px; }
-  a.card .one { font: 400 12px/1 var(--mono); color: var(--accent); margin-bottom: 9px; }
-  a.card p { font: 400 12.5px/1.55 var(--sans); color: var(--fg-mute); margin: 0 0 12px; flex: 1; }
-  a.card .tags { display: flex; flex-wrap: wrap; gap: 5px; }
-  a.card .t {
-    font: 400 10px/1 var(--mono); letter-spacing: .03em;
-    color: var(--fg-mute); border: 1px solid var(--line);
-    border-radius: 3px; padding: 4px 6px;
+  a.card:hover .play { opacity: 1; transform: translateY(0); }
+  a.card .meta { padding: 16px 18px 18px; }
+  a.card h2 { margin: 0 0 5px; font-size: 19px; letter-spacing: -.02em; }
+  a.card p { margin: 0; color: var(--dim); font-size: 14px; line-height: 1.55; }
+  a.card .tag {
+    position: absolute; left: 14px; top: 14px; z-index: 2;
+    background: rgba(8,10,16,.66); backdrop-filter: blur(10px);
+    border: 1px solid var(--line); border-radius: 99px;
+    padding: 6px 11px; font: 600 11px/1 var(--mono); letter-spacing: .04em; color: var(--fg);
   }
-  a.card .go {
-    position: absolute; top: 12px; right: 13px;
-    font: 500 11px/1 var(--mono); color: var(--fg-ghost);
-    opacity: 0; transition: opacity .16s, transform .16s;
-  }
-  a.card:hover .go { opacity: 1; transform: translateX(2px); }
 
-  section.note { margin-top: 44px; }
-  section.note h3 {
-    font: 600 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase;
-    color: var(--fg-mute); margin: 0 0 14px;
+  /* ── sections ──────────────────────────────────────────── */
+  h3.section {
+    font-size: 13px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--mute); margin: 74px 0 18px;
   }
-  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 22px; }
-  .cols p { font: 400 13px/1.65 var(--sans); color: var(--fg-dim); margin: 0 0 8px; }
-  .cols b { color: var(--fg); font-weight: 600; }
-  .cols code { font: 400 11.5px/1.5 var(--mono); background: var(--ink-750); border: 1px solid var(--line); border-radius: 3px; padding: 1px 5px; }
+  .lead { font-size: 17px; line-height: 1.65; color: var(--dim); max-width: 68ch; margin: 0 0 26px; }
+  .lead b { color: var(--fg); font-weight: 650; }
 
-  footer.end {
-    margin-top: 52px; padding-top: 18px; border-top: 1px solid var(--line);
-    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
-    font: 400 11.5px/1.6 var(--mono); color: var(--fg-mute);
+  .how { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .how div {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 16px; padding: 20px;
   }
+  .how h4 { margin: 0 0 8px; font-size: 15.5px; letter-spacing: -.01em; }
+  .how p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--dim); }
+  .how .n {
+    font: 700 11px/1 var(--mono); color: #ffd166; letter-spacing: .1em;
+    display: block; margin-bottom: 10px;
+  }
+
+  /* ── deep cuts ─────────────────────────────────────────── */
+  .deep { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+  a.row {
+    display: flex; align-items: center; gap: 14px; text-decoration: none;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; padding: 15px 16px;
+    transition: border-color .15s, transform .15s;
+  }
+  a.row:hover { border-color: var(--line2); transform: translateX(3px); }
+  a.row .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  a.row .t { font-size: 15px; font-weight: 650; letter-spacing: -.01em; }
+  a.row .d { font-size: 13px; color: var(--dim); margin-top: 3px; line-height: 1.5; }
+  a.row .arrow { margin-left: auto; color: var(--mute); font-size: 18px; }
+
+  footer {
+    margin-top: 78px; padding-top: 24px; border-top: 1px solid var(--line);
+    display: flex; gap: 14px; flex-wrap: wrap; align-items: center;
+    color: var(--mute); font-size: 13.5px;
+  }
+  footer a { color: var(--dim); }
+
+  @media (max-width: 560px) {
+    nav { font-size: 12.5px; gap: 8px; }
+    nav a.ghost { white-space: nowrap; }
+    nav a.ghost:first-of-type { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
-
+</head>
+<body>
 <div class="page">
-  <header class="top">
-    <span class="mark"></span>
-    <span class="who">Design Engineering Lab</span>
+
+  <nav>
+    <span class="logo"></span>
+    <b>Playground</b>
     <span class="spacer"></span>
-    <span class="hint">no frameworks &middot; no build step &middot; no dependencies</span>
-    <button id="theme" class="mono ghost">&#9681; dark</button>
+    <a class="ghost" href="#how">how it was made</a>
+    <a class="ghost" href="#deep">the serious stuff</a>
+  </nav>
+
+  <header class="hero">
+    <h1>Eleven things I built. <em>All of them run right here.</em></h1>
+    <p>
+      No videos, no screenshots, no “request a demo”. Click any of them and it starts
+      immediately — in your browser, on your phone, with nothing to install.
+    </p>
+    <p>
+      Start with the toys. There is a sandbox you can set on fire, a drum machine with
+      no sound files in it, and an island generator that invents a new world every time
+      you press the button.
+    </p>
+    <div class="cta">
+      <a class="btn primary" href="#toys">Play with something →</a>
+      <a class="btn ghost" href="#how">How I made these</a>
+    </div>
   </header>
 
-  <div class="hero">
-    <h1>Interfaces for systems that <em>refuse to be simple</em>.</h1>
-    <p>
-      Six working tools. Each one starts with the hard part — a regex compiler, a
-      cost-based query optimiser, the Raft protocol, a critical-path analyser, Myers
-      diff, OKLab colour maths — implemented from scratch, and then asks the actual
-      design question: <b>what does a person need to see to understand this?</b>
-    </p>
-    <p>
-      They are not mockups. Every number on screen is computed live by the engine
-      beside it, every algorithm is the real one, and the parts that are
-      approximations say so out loud.
-    </p>
-    <div class="meta">
-      <span class="tag">6 projects</span>
-      <span class="tag mute">6,900 lines</span>
-      <span class="tag mute">0 runtime dependencies</span>
-      <span class="tag mute">77 passing tests</span>
+  <h3 class="section" id="toys">Pick one. They all start instantly.</h3>
+  <div class="grid" id="grid"></div>
+
+  <h3 class="section" id="how">How these were made</h3>
+  <p class="lead">
+    All eleven were built with <b>Claude Code</b>, an AI that writes and runs code, in a
+    handful of sessions. That is not the interesting part — the interesting part is that
+    AI turns out to be very good at the typing and completely useless at the taste.
+  </p>
+  <div class="how">
+    <div>
+      <span class="n">01</span>
+      <h4>I describe it, it builds it, I judge it</h4>
+      <p>
+        The loop is: say what the thing should feel like, get a working version in minutes,
+        then look at it with fresh eyes and say what is wrong. Most of my time goes on that
+        last part, because it is the only part a machine cannot do for me.
+      </p>
+    </div>
+    <div>
+      <span class="n">02</span>
+      <h4>Looking at it beats testing it</h4>
+      <p>
+        Every screen here was rendered and inspected after each change. That is how the
+        hourglass that leaked sand, the forest fire that burned one tree and gave up, and
+        the island that came out as a featureless green blob all got caught. No test would
+        have flagged any of them — they were all technically working.
+      </p>
+    </div>
+    <div>
+      <span class="n">03</span>
+      <h4>The words are half the product</h4>
+      <p>
+        “Pour sand. Add water. Then set it on fire” teaches the sandbox faster than any
+        tutorial could. Deciding what a thing says, and what it refuses to say, is design
+        work — and it is the work I keep for myself.
+      </p>
     </div>
   </div>
 
-  <div class="grid" id="grid"></div>
+  <h3 class="section" id="deep">And six serious ones, for the engineers</h3>
+  <p class="lead">
+    Same approach, harder subjects. Each one takes something normally invisible — what a
+    database is thinking, why servers disagree, where a slow web page actually spends its
+    time — and puts it on screen so you can poke it. <b>Fair warning: these ones assume you
+    write software.</b>
+  </p>
+  <div class="deep" id="deepList"></div>
 
-  <section class="note">
-    <h3>How this is built</h3>
-    <div class="cols">
-      <div>
-        <p><b>Engine and interface are separate.</b> Every project is a pure
-        <code>engine.js</code> — no DOM, deterministic, unit-tested — plus an
-        <code>index.html</code> that renders it. The engines are the part that must be
-        correct; the interfaces are the part that must be understood.</p>
-        <p><b>One design system.</b> <code>shared/lab.css</code> holds every token: one
-        accent, hairline structure, monospace for anything a machine produced and sans
-        for anything a human reads. Both themes are first-class.</p>
-      </div>
-      <div>
-        <p><b>No framework, on purpose.</b> The whole shared runtime is 60 lines: an
-        element factory, a fixed-step ticker, a HiDPI canvas helper, a seeded PRNG.
-        These are interfaces about data, not about state management.</p>
-        <p><b>Honest about limits.</b> Each project's README ends with what it does
-        <i>not</i> do. A demo that hides its edges teaches the wrong lesson about the
-        system it is modelling.</p>
-      </div>
-      <div>
-        <p><b>Run it.</b> Clone, then <code>npx http-server</code> (or any static
-        server) and open the root. ES modules need a server; nothing else does.</p>
-        <p><b>Test it.</b> <code>node tests/run.mjs</code> — no test framework, no
-        install. The suite checks the properties that make each engine correct, not
-        the pixels.</p>
-      </div>
-    </div>
-  </section>
-
-  <footer class="end">
+  <footer>
     <span>Built with Claude Code.</span>
+    <!-- ↓ put your name and links here ↓ -->
     <span class="spacer" style="flex:1"></span>
-    <span>Every engine here is reimplemented from the papers and specs, not wrapped around a library.</span>
+    <a href="https://github.com/mohamedsucule-debug/Projects">Source on GitHub</a>
   </footer>
 </div>
 
 <script type="module">
-import { h, $, themeToggle } from './shared/lab.js';
+/* ───────────────────────────────────────────────────────────────────────────
+   Every card runs a live miniature of the real thing — a few dozen lines each,
+   drawn on a small canvas. They only animate while they are on screen, so the
+   page stays cheap on a phone.
+   ─────────────────────────────────────────────────────────────────────────── */
 
-themeToggle($('#theme'));
-
-/* Each card carries a small signature drawing — the shape of the thing it is
-   about, drawn in that project's own accent. */
-const sig = {
-  regex: (c) => `
-    <svg viewBox="0 0 320 118" fill="none" stroke-linecap="round">
-      ${[[40, 59], [110, 34], [110, 84], [180, 59], [250, 59]].map(([x, y], i) =>
-        `<circle cx="${x}" cy="${y}" r="9" fill="${i === 4 ? 'none' : 'var(--ink-700)'}" stroke="${i === 4 ? c : 'var(--line-bright)'}" stroke-width="1.2"/>`).join('')}
-      <circle cx="250" cy="59" r="13" stroke="${c}" stroke-width="1.2" opacity=".5"/>
-      <path d="M49 57 L101 38 M49 61 L101 81 M119 36 L171 55 M119 82 L171 63 M189 59 L241 59"
-            stroke="${c}" stroke-width="1.3" opacity=".85"/>
-      <path d="M110 25 C 140 4, 80 4, 110 25" stroke="var(--line-bright)" stroke-width="1.2" stroke-dasharray="2 3"/>
-      <text x="70" y="34" font-family="ui-monospace,monospace" font-size="9" fill="var(--fg-mute)">a</text>
-      <text x="70" y="92" font-family="ui-monospace,monospace" font-size="9" fill="var(--fg-mute)">b</text>
-      <text x="212" y="52" font-family="ui-monospace,monospace" font-size="9" fill="var(--fg-mute)">b</text>
-    </svg>`,
-  planner: (c) => `
-    <svg viewBox="0 0 320 118" fill="none">
-      <rect x="112" y="14" width="96" height="20" rx="4" fill="var(--ink-700)" stroke="${c}" stroke-width="1"/>
-      <rect x="52" y="56" width="86" height="20" rx="4" fill="var(--ink-700)" stroke="var(--line-bright)"/>
-      <rect x="182" y="56" width="86" height="20" rx="4" fill="var(--ink-700)" stroke="var(--line-bright)"/>
-      <rect x="182" y="90" width="60" height="16" rx="4" fill="var(--ink-750)" stroke="var(--line)"/>
-      <path d="M160 34 L160 45 L95 45 L95 56 M160 45 L225 45 L225 56 M225 76 L225 90"
-            stroke="var(--line-bright)" stroke-width="1"/>
-      <rect x="118" y="24" width="60" height="3" rx="1.5" fill="${c}" opacity=".75"/>
-      <rect x="58" y="66" width="22" height="3" rx="1.5" fill="${c}" opacity=".4"/>
-      <rect x="188" y="66" width="48" height="3" rx="1.5" fill="${c}" opacity=".55"/>
-    </svg>`,
-  raft: (c) => `
-    <svg viewBox="0 0 320 118" fill="none">
-      ${[[160, 26], [216, 64], [195, 98], [125, 98], [104, 64]].map(([x, y], i) =>
-        `<circle cx="${x}" cy="${y}" r="13" fill="var(--ink-700)" stroke="${i === 0 ? c : 'var(--line-bright)'}" stroke-width="${i === 0 ? 1.6 : 1}"/>`).join('')}
-      <path d="M160 26 L216 64 M160 26 L104 64 M216 64 L195 98 M195 98 L125 98 M125 98 L104 64"
-            stroke="var(--line)" stroke-width="1"/>
-      <circle cx="188" cy="45" r="3" fill="${c}"/>
-      <circle cx="132" cy="45" r="3" fill="${c}"/>
-      <circle cx="160" cy="98" r="3" fill="var(--fg-mute)"/>
-      <path d="M262 16 L262 104" stroke="var(--bad)" stroke-width="1" stroke-dasharray="4 5" opacity=".8"/>
-      <circle cx="290" cy="60" r="13" fill="var(--ink-750)" stroke="var(--line)" stroke-width="1"/>
-    </svg>`,
-  trace: (c) => `
-    <svg viewBox="0 0 320 118" fill="none">
-      ${[[24, 20, 272], [40, 36, 200], [56, 52, 96], [56, 68, 60], [72, 84, 128], [88, 100, 44]]
-        .map(([x, y, w], i) =>
-          `<rect x="${x}" y="${y}" width="${w}" height="8" rx="3" fill="${c}" opacity="${i === 0 ? .95 : 0.28 + i * 0.1}"/>`).join('')}
-      <path d="M20 14 L20 112" stroke="var(--line)" stroke-width="1"/>
-      <rect x="40" y="36" width="200" height="8" rx="3" fill="none" stroke="var(--fg)" stroke-width="1" opacity=".55"/>
-    </svg>`,
-  diff: (c) => `
-    <svg viewBox="0 0 320 118" fill="none">
-      <rect x="18" y="14" width="130" height="90" rx="5" fill="var(--ink-750)" stroke="var(--line)"/>
-      <rect x="172" y="14" width="130" height="90" rx="5" fill="var(--ink-750)" stroke="var(--line)"/>
-      ${[0, 1, 2, 3, 4].map((i) => `
-        <rect x="28" y="${24 + i * 16}" width="${[92, 68, 104, 54, 80][i]}" height="6" rx="3"
-              fill="${i === 1 ? 'var(--bad)' : 'var(--line-bright)'}" opacity="${i === 1 ? .8 : .6}"/>
-        <rect x="182" y="${24 + i * 16}" width="${[92, 86, 104, 54, 80][i]}" height="6" rx="3"
-              fill="${i === 1 ? c : 'var(--line-bright)'}" opacity="${i === 1 ? .85 : .6}"/>`).join('')}
-      <path d="M155 59 L165 59" stroke="var(--fg-ghost)" stroke-width="1"/>
-    </svg>`,
-  color: (c) => `
-    <svg viewBox="0 0 320 118" fill="none">
-      ${[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => `
-        <rect x="${22 + i * 31}" y="26" width="26" height="30" rx="4"
-              fill="oklch(${0.95 - i * 0.085} ${0.02 + Math.sin(i / 8 * Math.PI) * 0.13} 262)"/>
-        <rect x="${22 + i * 31}" y="62" width="26" height="30" rx="4"
-              fill="oklch(${0.95 - i * 0.085} ${0.02 + Math.sin(i / 8 * Math.PI) * 0.14} 26)"/>`).join('')}
-    </svg>`,
-};
-
-const PROJECTS = [
+const TOYS = [
   {
-    slug: 'regex-lab', name: 'Regex Lab', one: 'pattern → automaton → trace', art: 'regex', accent: '#4dd6ff',
-    blurb: 'A regex engine built from scratch: parser, Thompson NFA, subset construction, and two matchers racing. Scrub the subject string and watch the live state set move. The backtracker’s step counter is the thing nobody ever sees — until it takes production down.',
-    tags: ['recursive descent', 'NFA / DFA', 'catastrophic backtracking', 'canvas graph layout'],
+    href: 'play/sandbox/index.html', tag: 'sandbox',
+    title: 'Sandbox',
+    blurb: 'Pour sand. Add water. Set it on fire and watch the smoke rise. Ten materials that all behave the way you would expect them to, which is the whole trick.',
+    preview: sandPreview,
   },
   {
-    slug: 'query-planner', name: 'Query Planner', one: 'EXPLAIN, with the reasoning attached', art: 'planner', accent: '#a78bfa',
-    blurb: 'A cost-based SQL optimiser — statistics, selectivity estimation, access paths, Selinger join enumeration — where every row estimate shows its arithmetic. Drag a table’s row count and watch the plan flip from hash join to index probe.',
-    tags: ['SQL parser', 'cost model', 'join enumeration', 'live re-planning'],
+    href: 'play/beats/index.html', tag: 'music',
+    title: 'Beat Lab',
+    blurb: 'A drum machine with no sound files in it — every kick and snare is generated from scratch. Press play, tap the squares, make something.',
+    preview: beatsPreview,
   },
   {
-    slug: 'raft-lab', name: 'Raft Lab', one: 'consensus you can break on purpose', art: 'raft', accent: '#4ade80',
-    blurb: 'Five nodes running real Raft on a deterministic clock. Partition the network, crash the leader, hand a write to a server that does not know it is isolated — and watch the four safety invariants from the paper hold anyway.',
-    tags: ['leader election', 'log replication', 'network partitions', 'live invariant checking'],
+    href: 'play/island/index.html', tag: 'generator',
+    title: 'Islandsmith',
+    blurb: 'Press the button, get a brand new world: coastline, mountains, forests, rivers and a name. Every island comes from a single random number.',
+    preview: islandPreview,
   },
   {
-    slug: 'trace-explorer', name: 'Trace Explorer', one: 'where the milliseconds actually went', art: 'trace', accent: '#fb7185',
-    blurb: 'Distributed tracing with the expertise built in. Critical-path analysis, a span waterfall, and findings in plain sentences — an N+1 loop, a retry after a timeout, time no span accounts for — each derived from span shape alone.',
-    tags: ['critical path', 'waterfall', 'latency percentiles', 'automated diagnosis'],
+    href: 'play/flow/index.html', tag: 'toy',
+    title: 'Flow',
+    blurb: 'Twenty thousand particles riding an invisible current. Push them around with your mouse and save the result as a picture.',
+    preview: flowPreview,
   },
   {
-    slug: 'diff-forge', name: 'Diff Forge', one: 'how git decides — and where it refuses to', art: 'diff', accent: '#fbbf24',
-    blurb: 'Myers diff, patience diff and a three-way merge, with the conflict rebuilt as a choice instead of a text format. Both intents side by side, the base quoted underneath, and the auto-merged regions shown rather than hidden.',
-    tags: ['Myers O(ND)', 'patience anchoring', 'diff3', 'word-level diff'],
+    href: 'play/orbit/index.html', tag: 'game',
+    title: 'Comet',
+    blurb: 'Move the mouse. Collect the gold. Do not touch the red. Takes three seconds to learn and a while to put down.',
+    preview: cometPreview,
   },
   {
-    slug: 'oklch-studio', name: 'OKLCH Studio', one: 'a colour system that survives a contrast checker', art: 'color', accent: '#f472b6',
-    blurb: 'Palette generation in a perceptual space, gamut-mapped into sRGB by sacrificing chroma rather than lying about hue, then every pair audited with APCA and WCAG side by side. The disagreement between them is the interesting part.',
-    tags: ['OKLab maths', 'gamut mapping', 'APCA + WCAG', 'token export'],
+    href: '#deep', tag: 'six more',
+    title: 'The serious ones',
+    blurb: 'Six tools that take something invisible — what a database is thinking, why servers disagree — and put it on screen. Heavier going, same idea.',
+    preview: machinePreview,
   },
 ];
 
-const grid = $('#grid');
-for (const p of PROJECTS) {
-  grid.append(h('a', { class: 'card', href: `projects/${p.slug}/index.html` },
-    h('div', { class: 'sig', html: sig[p.art](p.accent) }),
-    h('span', { class: 'go' }, 'open →'),
-    h('div', { class: 'body' },
-      h('h2', {}, p.name),
-      h('div', { class: 'one' }, p.one),
-      h('p', {}, p.blurb),
-      h('div', { class: 'tags' }, ...p.tags.map((t) => h('span', { class: 't' }, t))))));
+const DEEP = [
+  ['projects/regex-lab/index.html', '#4dd6ff', 'Regex Lab', 'Watch a search pattern actually run, one character at a time — including the kind that quietly takes a website down.'],
+  ['projects/query-planner/index.html', '#a78bfa', 'Query Planner', 'A database deciding how to answer a question, with its reasoning shown. Drag a table’s size and watch it change its mind.'],
+  ['projects/raft-lab/index.html', '#4ade80', 'Raft Lab', 'Five servers agreeing with each other. Cut the network in half and watch them cope.'],
+  ['projects/trace-explorer/index.html', '#fb7185', 'Trace Explorer', 'Where a slow web request really spent its time, explained in sentences instead of charts.'],
+  ['projects/diff-forge/index.html', '#fbbf24', 'Diff Forge', 'The merge conflict — software’s most hated screen — rebuilt as something you can actually read.'],
+  ['projects/oklch-studio/index.html', '#f472b6', 'OKLCH Studio', 'Building a colour palette that still works when someone checks it for accessibility.'],
+];
+
+/* ── card construction ──────────────────────────────────────────────────── */
+const grid = document.getElementById('grid');
+const running = new Set();
+
+for (const toy of TOYS) {
+  const a = document.createElement('a');
+  a.className = 'card';
+  a.href = toy.href;
+  a.innerHTML = `
+    <div class="stage"><canvas></canvas></div>
+    <span class="tag">${toy.tag}</span>
+    <span class="play">open →</span>
+    <div class="meta"><h2>${toy.title}</h2><p>${toy.blurb}</p></div>`;
+  grid.append(a);
+
+  const canvas = a.querySelector('canvas');
+  const api = { canvas, ctx: canvas.getContext('2d'), w: 0, h: 0, t: 0, alive: false };
+  const fit = () => {
+    const r = canvas.getBoundingClientRect();
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    canvas.width = Math.max(1, r.width * dpr);
+    canvas.height = Math.max(1, r.height * dpr);
+    api.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    api.w = r.width; api.h = r.height;
+    api.reset?.();
+  };
+  new ResizeObserver(fit).observe(canvas);
+  toy.preview(api);
+  fit();
+
+  new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      api.alive = e.isIntersecting;
+      if (e.isIntersecting) running.add(api); else running.delete(api);
+    }
+  }, { rootMargin: '120px' }).observe(canvas);
+}
+
+function tick() {
+  for (const api of running) { api.t += 1; api.frame(); }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+/* ── previews ───────────────────────────────────────────────────────────── */
+
+/** Falling sand, in miniature: the same rules as the real one, fewer grains. */
+function sandPreview(api) {
+  const C = 4;
+  const SAND = 1, WATER = 2, WALL = 3;
+  let gw, gh, g, col;
+
+  api.reset = () => {
+    gw = Math.max(4, Math.ceil(api.w / C));
+    gh = Math.max(4, Math.ceil(api.h / C));
+    g = new Uint8Array(gw * gh);
+    col = new Uint8Array(gw * gh);
+    for (let x = 0; x < gw; x++) for (let y = gh - 2; y < gh; y++) g[y * gw + x] = WALL;
+    // two shelves for the piles to build on
+    for (let x = (gw * 0.06) | 0; x < gw * 0.44; x++)
+      for (let k = 0; k < 2; k++) g[(((gh * 0.7) | 0) + k) * gw + x] = WALL;
+    for (let x = (gw * 0.56) | 0; x < gw * 0.94; x++)
+      for (let k = 0; k < 2; k++) g[(((gh * 0.56) | 0) + k) * gw + x] = WALL;
+  };
+
+  const put = (x, y, m) => {
+    if (x < 1 || x >= gw - 1 || y < 0 || y >= gh) return;
+    const i = y * gw + x;
+    if (!g[i]) { g[i] = m; col[i] = (Math.random() * 28) | 0; }
+  };
+
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    // the taps run at half speed and stop once the pile reaches them, so the
+    // card never fills up solid before the next wipe
+    if (api.t % 2 === 0) {
+      const sx = (gw * 0.24 + Math.sin(api.t * 0.011) * gw * 0.11) | 0;
+      const wx = (gw * 0.76 + Math.cos(api.t * 0.009) * gw * 0.11) | 0;
+      const clear = (x) => !g[6 * gw + x];
+      for (let k = -1; k <= 1; k++) {
+        if (clear(sx)) put(sx + k, 1, SAND);
+        if (clear(wx)) put(wx + k, 1, WATER);
+      }
+    }
+
+    const flip = (api.t & 1) === 0;
+    for (let y = gh - 2; y >= 0; y--) {
+      for (let n = 0; n < gw; n++) {
+        const x = flip ? n : gw - 1 - n;
+        const i = y * gw + x;
+        const m = g[i];
+        if (m === 0 || m === WALL) continue;
+        const below = i + gw;
+
+        if (g[below] === 0) { g[below] = m; col[below] = col[i]; g[i] = 0; continue; }
+        if (m === SAND && g[below] === WATER) {          // sand sinks through water
+          g[below] = SAND; g[i] = WATER; continue;
+        }
+        const d = Math.random() < 0.5 ? 1 : -1;
+        let moved = false;
+        for (const dx of [d, -d]) {
+          const nx = x + dx;
+          if (nx < 0 || nx >= gw) continue;
+          const j = below + dx;
+          if (g[j] === 0) { g[j] = m; col[j] = col[i]; g[i] = 0; moved = true; break; }
+        }
+        if (moved || m !== WATER) continue;
+        for (const dx of [d, -d]) {                       // water also spreads flat
+          const nx = x + dx;
+          if (nx < 0 || nx >= gw) continue;
+          const j = i + dx;
+          if (g[j] === 0) { g[j] = WATER; g[i] = 0; break; }
+        }
+      }
+    }
+
+    ctx.fillStyle = '#05060b';
+    ctx.fillRect(0, 0, w, h);
+    for (let i = 0; i < g.length; i++) {
+      const m = g[i];
+      if (!m) continue;
+      const t = col[i];
+      ctx.fillStyle = m === SAND ? `rgb(${214 + t},${168 + t},${80 + t})`
+        : m === WATER ? 'rgba(58,132,226,.95)' : '#222838';
+      ctx.fillRect((i % gw) * C, ((i / gw) | 0) * C, C, C);
+    }
+    if (api.t % 520 === 519) api.reset();                 // wipe it clean now and then
+  };
+}
+
+/** The step sequencer, playing itself. */
+function beatsPreview(api) {
+  const COLS = 16, ROWS = 6;
+  const colors = ['#ff4d8d', '#ffb020', '#4dd6ff', '#38e8b0', '#c084fc', '#a3e635'];
+  const pat = [
+    [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+    [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,1],
+    [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+    [0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0],
+    [0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0],
+    [1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0],
+  ];
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    ctx.fillStyle = '#0a0c14';
+    ctx.fillRect(0, 0, w, h);
+    const pad = 10;
+    const cw = (w - pad * 2) / COLS, ch = (h - pad * 2) / ROWS;
+    const head = ((api.t / 13) | 0) % COLS;
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const x = pad + c * cw + 1.5, y = pad + r * ch + 1.5;
+        const bw = cw - 3, bh = ch - 3;
+        const on = pat[r][c];
+        const hit = on && c === head;
+        ctx.globalAlpha = c === head ? 1 : 0.92;
+        ctx.fillStyle = on ? colors[r] : (c % 4 === 0 ? 'rgba(255,255,255,.09)' : 'rgba(255,255,255,.045)');
+        if (hit) {
+          ctx.shadowColor = colors[r];
+          ctx.shadowBlur = 16;
+        }
+        roundRect(ctx, x, y, bw, bh, Math.min(5, bh / 3));
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+    ctx.globalAlpha = 1;
+    // playhead
+    ctx.fillStyle = 'rgba(255,255,255,.14)';
+    ctx.fillRect(pad + head * cw, pad - 4, cw, h - pad * 2 + 8);
+  };
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+/** A tiny island, regenerated every few seconds. */
+function islandPreview(api) {
+  let img = null, next = 0, seed = Math.random() * 1000;
+  const noise = (x, y, s) => {
+    const h = Math.sin(x * 127.1 + y * 311.7 + s) * 43758.5453;
+    return h - Math.floor(h);
+  };
+  const smoothNoise = (x, y, s) => {
+    const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+    const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+    const a = noise(xi, yi, s), b = noise(xi + 1, yi, s);
+    const c = noise(xi, yi + 1, s), d = noise(xi + 1, yi + 1, s);
+    return (a + (b - a) * u) + ((c + (d - c) * u) - (a + (b - a) * u)) * v;
+  };
+  const build = () => {
+    const gw = Math.ceil(api.w / 3), gh = Math.ceil(api.h / 3);
+    if (gw < 2 || gh < 2) return;
+    const im = api.ctx.createImageData(gw, gh);
+    const d = im.data;
+    const f = 4.2 / Math.max(gw, gh);
+    for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
+      let e = 0, amp = 0.5, fr = 1;
+      for (let o = 0; o < 5; o++) { e += smoothNoise(x * f * fr, y * f * fr, seed) * amp; amp *= 0.5; fr *= 2; }
+      const dx = (x / gw - 0.5) * 2.1, dy = (y / gh - 0.5) * 2.3;
+      e = e * (1 - Math.min(1, Math.hypot(dx, dy)) ** 2.2) - 0.06;
+      const i = (y * gw + x) * 4;
+      let c;
+      if (e < 0.22) c = [20, 44, 76];
+      else if (e < 0.29) c = [46, 92, 138];
+      else if (e < 0.32) c = [214, 198, 152];
+      else if (e < 0.42) c = [104, 148, 92];
+      else if (e < 0.5) c = [62, 104, 72];
+      else if (e < 0.56) c = [126, 122, 116];
+      else c = [240, 244, 248];
+      d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; d[i + 3] = 255;
+    }
+    const off = document.createElement('canvas');
+    off.width = gw; off.height = gh;
+    off.getContext('2d').putImageData(im, 0, 0);
+    img = off;
+  };
+  api.reset = () => { build(); };
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    if (api.t > next) { seed = Math.random() * 1000; build(); next = api.t + 260; }
+    if (!img) return;
+    ctx.fillStyle = '#081018';
+    ctx.fillRect(0, 0, w, h);
+    ctx.imageSmoothingEnabled = true;
+    ctx.globalAlpha = Math.min(1, (next - api.t) / 40);   // gentle cross-fade out
+    ctx.drawImage(img, 0, 0, w, h);
+    ctx.globalAlpha = 1;
+  };
+}
+
+/** The flow field, at a tenth of the particle count. */
+function flowPreview(api) {
+  const N = 1400;
+  const px = new Float32Array(N), py = new Float32Array(N), pa = new Float32Array(N);
+  let seed = Math.random() * 100;
+  const hash = (x, y) => {
+    let h = x * 374761393 + y * 668265263 + seed * 1013904223;
+    h = (h ^ (h >> 13)) * 1274126177;
+    return ((h ^ (h >> 16)) & 0xffff) / 0xffff;
+  };
+  const sm = (t) => t * t * (3 - 2 * t);
+  const noise = (x, y) => {
+    const xi = Math.floor(x), yi = Math.floor(y);
+    const xf = sm(x - xi), yf = sm(y - yi);
+    const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1);
+    return (a + (b - a) * xf) + ((c + (d - c) * xf) - (a + (b - a) * xf)) * yf;
+  };
+  api.reset = () => {
+    for (let i = 0; i < N; i++) { px[i] = Math.random() * api.w; py[i] = Math.random() * api.h; pa[i] = Math.random() * 200; }
+    api.ctx.fillStyle = '#05060b';
+    api.ctx.fillRect(0, 0, api.w, api.h);
+  };
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = 'rgba(5,6,11,.055)';
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalCompositeOperation = 'lighter';
+    const t = api.t * 0.0022;
+    for (let i = 0; i < N; i++) {
+      const a = noise(px[i] * 0.009, py[i] * 0.009 + t) * Math.PI * 4;
+      const ox = px[i], oy = py[i];
+      px[i] += Math.cos(a) * 1.1;
+      py[i] += Math.sin(a) * 1.1;
+      const u = i / N;
+      const r = 34 + u * 210, g = 211 - u * 100, b = 238 - u * 56;
+      ctx.strokeStyle = `rgba(${r | 0},${g | 0},${b | 0},.2)`;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(px[i], py[i]); ctx.stroke();
+      if (--pa[i] < 0 || px[i] < 0 || px[i] > w || py[i] < 0 || py[i] > h) {
+        px[i] = Math.random() * w; py[i] = Math.random() * h; pa[i] = 120 + Math.random() * 180;
+      }
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  };
+}
+
+/** The game, played by a very simple robot. */
+function cometPreview(api) {
+  let ship, orbs, drones, sparks, target;
+  api.reset = () => {
+    ship = { x: api.w / 2, y: api.h / 2, vx: 0, vy: 0 };
+    orbs = Array.from({ length: 3 }, () => ({ x: Math.random() * api.w, y: Math.random() * api.h }));
+    drones = Array.from({ length: 3 }, () => ({ x: Math.random() * api.w, y: Math.random() * api.h, vx: 0, vy: 0 }));
+    sparks = [];
+    target = orbs[0];
+  };
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    ctx.fillStyle = '#05060b';
+    ctx.fillRect(0, 0, w, h);
+    if (!target) target = orbs[0];
+
+    // the robot flies at the nearest orb, and is not very good at dodging
+    ship.vx += (target.x - ship.x) * 0.012;
+    ship.vy += (target.y - ship.y) * 0.012;
+    ship.vx *= 0.9; ship.vy *= 0.9;
+    ship.x += ship.vx; ship.y += ship.vy;
+    if (Math.hypot(target.x - ship.x, target.y - ship.y) < 12) {
+      for (let i = 0; i < 12; i++) {
+        const a = Math.random() * 6.28, s = Math.random() * 2.4;
+        sparks.push({ x: target.x, y: target.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1 });
+      }
+      target.x = 24 + Math.random() * (w - 48);
+      target.y = 24 + Math.random() * (h - 48);
+      target = orbs[(Math.random() * orbs.length) | 0];
+    }
+
+    for (const d of drones) {
+      const dx = ship.x - d.x, dy = ship.y - d.y, len = Math.hypot(dx, dy) || 1;
+      d.vx += (dx / len) * 0.05; d.vy += (dy / len) * 0.05;
+      const s = Math.hypot(d.vx, d.vy);
+      if (s > 1.5) { d.vx = d.vx / s * 1.5; d.vy = d.vy / s * 1.5; }
+      d.x += d.vx; d.y += d.vy;
+      if (len < 14) { d.x = Math.random() * w; d.y = Math.random() * h; d.vx = d.vy = 0; }
+      ctx.fillStyle = '#ff4d6d';
+      const a = Math.atan2(d.vy, d.vx);
+      ctx.beginPath();
+      ctx.moveTo(d.x + Math.cos(a) * 9, d.y + Math.sin(a) * 9);
+      ctx.lineTo(d.x + Math.cos(a + 2.4) * 6, d.y + Math.sin(a + 2.4) * 6);
+      ctx.lineTo(d.x + Math.cos(a - 2.4) * 6, d.y + Math.sin(a - 2.4) * 6);
+      ctx.closePath(); ctx.fill();
+    }
+
+    for (const o of orbs) {
+      const g = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, 22);
+      g.addColorStop(0, 'rgba(255,209,102,.4)'); g.addColorStop(1, 'transparent');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(o.x, o.y, 22, 0, 6.283); ctx.fill();
+      ctx.fillStyle = '#ffd166';
+      ctx.beginPath(); ctx.arc(o.x, o.y, 6, 0, 6.283); ctx.fill();
+    }
+
+    for (const s of sparks) { s.x += s.vx; s.y += s.vy; s.vx *= 0.94; s.vy *= 0.94; s.life -= 0.03; }
+    sparks = sparks.filter((s) => s.life > 0);
+    for (const s of sparks) {
+      ctx.globalAlpha = s.life;
+      ctx.fillStyle = '#ffd166';
+      ctx.beginPath(); ctx.arc(s.x, s.y, 2, 0, 6.283); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    const g = ctx.createRadialGradient(ship.x, ship.y, 0, ship.x, ship.y, 26);
+    g.addColorStop(0, 'rgba(255,255,255,.3)'); g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(ship.x, ship.y, 26, 0, 6.283); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(ship.x, ship.y, 6, 0, 6.283); ctx.fill();
+  };
+}
+
+/** A little automaton eating a string — a nod to what is downstairs. */
+function machinePreview(api) {
+  const nodes = 5;
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    ctx.fillStyle = '#080a12';
+    ctx.fillRect(0, 0, w, h);
+    const cy = h * 0.42, r = Math.min(13, w / 26);
+    const gap = (w - r * 6) / (nodes - 1);
+    const active = ((api.t / 38) | 0) % nodes;
+    for (let i = 0; i < nodes - 1; i++) {
+      const x1 = r * 3 + i * gap, x2 = r * 3 + (i + 1) * gap;
+      ctx.strokeStyle = i < active ? 'rgba(77,214,255,.85)' : 'rgba(255,255,255,.14)';
+      ctx.lineWidth = i < active ? 2 : 1;
+      ctx.beginPath(); ctx.moveTo(x1 + r, cy); ctx.lineTo(x2 - r - 5, cy); ctx.stroke();
+      ctx.fillStyle = ctx.strokeStyle;
+      ctx.beginPath();
+      ctx.moveTo(x2 - r, cy); ctx.lineTo(x2 - r - 6, cy - 3.5); ctx.lineTo(x2 - r - 6, cy + 3.5);
+      ctx.fill();
+    }
+    for (let i = 0; i < nodes; i++) {
+      const x = r * 3 + i * gap;
+      const on = i <= active;
+      ctx.beginPath(); ctx.arc(x, cy, r, 0, 6.283);
+      ctx.fillStyle = on ? 'rgba(77,214,255,.9)' : '#161d29';
+      ctx.fill();
+      ctx.strokeStyle = on ? '#4dd6ff' : 'rgba(255,255,255,.18)';
+      ctx.lineWidth = 1.2; ctx.stroke();
+      if (i === nodes - 1) {
+        ctx.beginPath(); ctx.arc(x, cy, r + 3.5, 0, 6.283);
+        ctx.strokeStyle = on ? '#4ade80' : 'rgba(255,255,255,.18)';
+        ctx.stroke();
+      }
+    }
+    // the input tape underneath
+    const chars = ['a', 'a', 'b', 'a', 'b', 'b'];
+    const bw = Math.min(22, w / 16);
+    const startX = w / 2 - (chars.length * (bw + 4)) / 2;
+    for (let i = 0; i < chars.length; i++) {
+      const x = startX + i * (bw + 4), y = h * 0.76;
+      ctx.fillStyle = i < active ? 'rgba(77,214,255,.2)' : 'rgba(255,255,255,.05)';
+      roundRect(ctx, x, y, bw, bw, 4); ctx.fill();
+      ctx.fillStyle = i < active ? '#9fe8ff' : 'rgba(255,255,255,.35)';
+      ctx.font = `600 ${Math.round(bw * 0.5)}px ui-monospace, monospace`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(chars[i], x + bw / 2, y + bw / 2 + 1);
+    }
+  };
+}
+
+/* ── the serious list ───────────────────────────────────────────────────── */
+const deep = document.getElementById('deepList');
+for (const [href, color, title, desc] of DEEP) {
+  const a = document.createElement('a');
+  a.className = 'row';
+  a.href = href;
+  a.innerHTML = `
+    <span class="dot" style="background:${color}"></span>
+    <span><span class="t">${title}</span><div class="d">${desc}</div></span>
+    <span class="arrow">→</span>`;
+  deep.append(a);
 }
 </script>
+</body>
+</html>

@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Islandsmith — a brand new world, every click</title>
+<meta name="description" content="Press the button and a coastline, mountains, forests and rivers appear out of nothing. Every island is generated from a single number." />
+<style>
+  :root {
+    --panel: rgba(13, 16, 24, .82);
+    --line: rgba(255,255,255,.11);
+    --fg: #f1f5fa;
+    --dim: #97a3b8;
+    --gold: #e8c98b;
+    --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; overflow: hidden; background: #060810; color: var(--fg); font-family: var(--sans); }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  .top {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+    display: flex; align-items: center; gap: 10px; padding: 12px 14px; pointer-events: none;
+  }
+  .top * { pointer-events: auto; }
+  .pill {
+    background: var(--panel); backdrop-filter: blur(14px);
+    border: 1px solid var(--line); border-radius: 99px; padding: 7px 13px;
+    font-size: 13px; font-weight: 500; color: var(--dim); text-decoration: none;
+  }
+  .pill:hover { color: var(--fg); }
+  .spacer { flex: 1; }
+
+  .name {
+    position: fixed; top: 58px; left: 50%; transform: translateX(-50%); z-index: 9;
+    text-align: center; pointer-events: none;
+  }
+  .name h1 {
+    margin: 0; font-size: clamp(26px, 4.6vw, 44px); letter-spacing: -.03em;
+    text-shadow: 0 3px 34px rgba(0,0,0,.85);
+  }
+  .name p {
+    margin: 4px 0 0; font: 500 11.5px/1 var(--mono); letter-spacing: .16em;
+    text-transform: uppercase; color: var(--gold);
+    text-shadow: 0 2px 18px rgba(0,0,0,.9);
+  }
+
+  .dock {
+    position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 10;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: center;
+    background: var(--panel); backdrop-filter: blur(18px);
+    border: 1px solid var(--line); border-radius: 16px; padding: 11px 14px;
+    max-width: calc(100vw - 20px); box-shadow: 0 20px 50px -22px #000;
+  }
+  .roll {
+    font: 700 14px/1 var(--sans); color: #12100a; cursor: pointer;
+    background: var(--gold); border: 0; border-radius: 12px; padding: 13px 18px;
+    box-shadow: 0 10px 30px -12px rgba(232,201,139,.8);
+  }
+  .roll:hover { transform: translateY(-1px); }
+  .ctl { display: flex; flex-direction: column; gap: 4px; }
+  .ctl label { font: 600 9px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); display: flex; justify-content: space-between; gap: 10px; }
+  .ctl label b { color: var(--gold); }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 104px; height: 14px; background: transparent; cursor: ew-resize; }
+  input[type=range]::-webkit-slider-runnable-track { height: 3px; border-radius: 2px; background: rgba(255,255,255,.18); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; margin-top: -5px; border-radius: 50%; background: #fff; }
+  input[type=range]::-moz-range-track { height: 3px; border-radius: 2px; background: rgba(255,255,255,.18); }
+  input[type=range]::-moz-range-thumb { width: 13px; height: 13px; border-radius: 50%; background: #fff; border: 0; }
+  .btn {
+    font: 600 12.5px/1 var(--sans); color: var(--dim); cursor: pointer;
+    background: rgba(255,255,255,.06); border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px 12px;
+  }
+  .btn:hover { color: var(--fg); background: rgba(255,255,255,.12); }
+  .btn.on { color: #12100a; background: var(--gold); border-color: transparent; }
+  .styles { display: flex; gap: 6px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div class="top">
+  <a class="pill" href="../../index.html">← back</a>
+  <div class="spacer"></div>
+  <div class="pill" id="seedTag">—</div>
+</div>
+
+<div class="name">
+  <h1 id="islandName">—</h1>
+  <p id="islandSub">—</p>
+</div>
+
+<div class="dock">
+  <button class="roll" id="roll">⚓ New island</button>
+  <div class="ctl"><label>sea level <b id="seav">50</b></label><input id="sea" type="range" min="20" max="75" value="50" /></div>
+  <div class="ctl"><label>ruggedness <b id="rugv">55</b></label><input id="rug" type="range" min="10" max="100" value="55" /></div>
+  <div class="styles" id="styles"></div>
+  <button class="btn" id="save">↓ save map</button>
+</div>
+
+<script>
+/* ───────────────────────────────────────────────────────────────────────────
+   Every island here comes from one number. That number seeds a noise
+   function, the noise becomes height, the height becomes coastline,
+   mountains and snow, a second noise layer becomes rainfall, and rivers are
+   found by dropping water on the peaks and letting it walk downhill. Nothing
+   is stored and nothing is drawn by hand — change the number, get a new world.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H, cell = 2, gw, gh;
+let seed = (Math.random() * 1e6) | 0;
+let seaLevel = 0.5, rugged = 0.55, style = 'atlas';
+
+const STYLES = {
+  atlas: {
+    deep: [22, 46, 78], shallow: [46, 92, 138], shore: [214, 198, 152],
+    grass: [122, 152, 96], forest: [66, 104, 72], rock: [128, 124, 118], snow: [238, 242, 246],
+    river: [92, 150, 200],
+  },
+  emerald: {
+    deep: [8, 40, 52], shallow: [16, 92, 108], shore: [232, 214, 160],
+    grass: [92, 168, 92], forest: [30, 104, 68], rock: [110, 112, 104], snow: [244, 250, 248],
+    river: [70, 178, 190],
+  },
+  volcanic: {
+    deep: [18, 20, 34], shallow: [44, 44, 74], shore: [92, 78, 74],
+    grass: [86, 74, 62], forest: [54, 50, 44], rock: [78, 66, 62], snow: [226, 108, 58],
+    river: [232, 126, 60],
+  },
+  arctic: {
+    deep: [20, 40, 66], shallow: [58, 106, 148], shore: [214, 226, 238],
+    grass: [186, 204, 214], forest: [136, 162, 178], rock: [120, 132, 146], snow: [252, 253, 255],
+    river: [150, 200, 230],
+  },
+};
+
+/* ── names ──────────────────────────────────────────────────────────────── */
+const A = ['Cape', 'Isle of', 'Port', 'Saint', 'New', 'Old', 'Mount', 'Fort'];
+const B = ['Marrow', 'Thrane', 'Vesper', 'Quill', 'Harrow', 'Brine', 'Corvid', 'Ashen', 'Perrin',
+  'Loch', 'Mirren', 'Tarn', 'Gallow', 'Wexford', 'Dunmore', 'Selkie', 'Bramble', 'Kestrel'];
+const C = ['Reach', 'Hollow', 'Bay', 'Point', 'Sound', 'Spit', 'Head', 'Cove', 'Keep'];
+
+function nameFor(s) {
+  const r = mulberry(s + 999);
+  const pick = (arr) => arr[(r() * arr.length) | 0];
+  return r() < 0.45 ? `${pick(A)} ${pick(B)}` : `${pick(B)} ${pick(C)}`;
+}
+
+/* ── noise ──────────────────────────────────────────────────────────────── */
+function mulberry(a) {
+  return () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+let perm = new Uint8Array(512);
+function reseed(s) {
+  const r = mulberry(s);
+  const p = Uint8Array.from({ length: 256 }, (_, i) => i);
+  for (let i = 255; i > 0; i--) {
+    const j = (r() * (i + 1)) | 0;
+    [p[i], p[j]] = [p[j], p[i]];
+  }
+  for (let i = 0; i < 512; i++) perm[i] = p[i & 255];
+}
+
+const fade = (t) => t * t * t * (t * (t * 6 - 15) + 10);
+const lerp = (a, b, t) => a + (b - a) * t;
+const grad = (h, x, y) => ((h & 1) ? -x : x) + ((h & 2) ? -y : y);
+
+/** Classic 2D gradient noise — smooth, and free of the blocky grid artefacts
+    that value noise leaves behind on a coastline. */
+function noise2(x, y) {
+  const xi = Math.floor(x) & 255, yi = Math.floor(y) & 255;
+  const xf = x - Math.floor(x), yf = y - Math.floor(y);
+  const u = fade(xf), v = fade(yf);
+  const aa = perm[perm[xi] + yi], ab = perm[perm[xi] + yi + 1];
+  const ba = perm[perm[xi + 1] + yi], bb = perm[perm[xi + 1] + yi + 1];
+  return lerp(
+    lerp(grad(aa, xf, yf), grad(ba, xf - 1, yf), u),
+    lerp(grad(ab, xf, yf - 1), grad(bb, xf - 1, yf - 1), u),
+    v) * 0.7 + 0.5;
+}
+
+function fbm(x, y, octaves, gain) {
+  let sum = 0, amp = 0.5, freq = 1, norm = 0;
+  for (let i = 0; i < octaves; i++) {
+    sum += noise2(x * freq, y * freq) * amp;
+    norm += amp;
+    amp *= gain;
+    freq *= 2;
+  }
+  return sum / norm;
+}
+
+/* ── generation ─────────────────────────────────────────────────────────── */
+let height = null, moisture = null, river = null;
+
+function generate() {
+  reseed(seed);
+  gw = Math.ceil(W / cell);
+  gh = Math.ceil(H / cell);
+  height = new Float32Array(gw * gh);
+  moisture = new Float32Array(gw * gh);
+  river = new Uint8Array(gw * gh);
+
+  // about five noise cells across the map: fewer and the island is one
+  // smooth blob, many more and it turns to gravel
+  const f = 5.0 / Math.max(gw, gh);
+  const octaves = 6;
+  const gain = 0.42 + rugged * 0.22;
+
+  for (let y = 0; y < gh; y++) {
+    for (let x = 0; x < gw; x++) {
+      const nx = x * f, ny = y * f;
+      let h = fbm(nx, ny, octaves, gain);
+      // ridged detail on the high ground gives mountains a spine
+      h += (1 - Math.abs(fbm(nx * 2.1 + 40, ny * 2.1 + 40, 4, 0.5) * 2 - 1)) * 0.18 * rugged;
+
+      // pull the edges under water so the landmass is an island, not a blob
+      const dx = (x / gw - 0.5) * 2, dy = (y / gh - 0.5) * 2;
+      const d = Math.min(1, Math.hypot(dx * 1.08, dy * 1.25));
+      h = h * (1 - d ** 2.1) - d ** 3.2 * 0.22;
+
+      height[y * gw + x] = h;
+      moisture[y * gw + x] = fbm(nx * 0.8 + 120, ny * 0.8 + 120, 4, 0.5);
+    }
+  }
+  carveRivers();
+  draw();
+
+  document.getElementById('islandName').textContent = nameFor(seed);
+  const land = countLand();
+  document.getElementById('islandSub').textContent =
+    `${land.toLocaleString()} km² · seed ${seed}`;
+  document.getElementById('seedTag').textContent = 'seed ' + seed;
+}
+
+function countLand() {
+  let n = 0;
+  for (let i = 0; i < height.length; i++) if (height[i] > seaLevel) n++;
+  return Math.round(n * 0.42);
+}
+
+/** Drop water on the highest points and let it walk downhill to the sea. */
+function carveRivers() {
+  const r = mulberry(seed + 7);
+  const peaks = [];
+  for (let i = 0; i < 2200; i++) {
+    const x = 3 + ((r() * (gw - 6)) | 0), y = 3 + ((r() * (gh - 6)) | 0);
+    if (height[y * gw + x] > seaLevel + 0.17) peaks.push([x, y]);
+  }
+  peaks.sort((a, b) => height[b[1] * gw + b[0]] - height[a[1] * gw + a[0]]);
+
+  for (const [sx, sy] of peaks.slice(0, 16)) {
+    let x = sx, y = sy;
+    for (let step = 0; step < 3000; step++) {
+      river[y * gw + x] = 1;
+      let bx = x, by = y, bh = height[y * gw + x];
+      for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
+        const nx = x + ox, ny = y + oy;
+        if (nx < 0 || ny < 0 || nx >= gw || ny >= gh) continue;
+        const h = height[ny * gw + nx];
+        if (h < bh) { bh = h; bx = nx; by = ny; }
+      }
+      if (bx === x && by === y) break;          // stuck in a basin — a lake
+      x = bx; y = by;
+      if (height[y * gw + x] <= seaLevel) break;
+    }
+  }
+}
+
+/* ── drawing ────────────────────────────────────────────────────────────── */
+function biome(h, m, snowLine) {
+  const P = STYLES[style];
+  if (h < seaLevel - 0.08) return P.deep;
+  if (h < seaLevel) return P.shallow;
+  if (h < seaLevel + 0.018) return P.shore;
+  if (h > snowLine) return P.snow;
+  if (h > snowLine - 0.09) return P.rock;
+  return m > 0.52 ? P.forest : P.grass;
+}
+
+function draw() {
+  const img = ctx.createImageData(gw, gh);
+  const d = img.data;
+  const P = STYLES[style];
+  const snowLine = seaLevel + 0.30;
+
+  for (let y = 0; y < gh; y++) {
+    for (let x = 0; x < gw; x++) {
+      const i = y * gw + x;
+      const h = height[i];
+      let c = river[i] && h > seaLevel ? P.river : biome(h, moisture[i], snowLine);
+
+      let shade = 1;
+      if (h > seaLevel) {
+        // relief shading: light from the north-west, like every paper map
+        const hl = x > 0 ? height[i - 1] : h;
+        const hu = y > 0 ? height[i - gw] : h;
+        shade = 1 + ((h - hl) + (h - hu)) * 9;
+        shade = Math.max(0.55, Math.min(1.45, shade));
+      } else {
+        shade = 0.86 + (h - seaLevel) * 0.7;
+      }
+
+      const p = i * 4;
+      d[p] = Math.min(255, c[0] * shade);
+      d[p + 1] = Math.min(255, c[1] * shade);
+      d[p + 2] = Math.min(255, c[2] * shade);
+      d[p + 3] = 255;
+    }
+  }
+
+  // paint the small grid onto the big canvas
+  const off = document.createElement('canvas');
+  off.width = gw; off.height = gh;
+  off.getContext('2d').putImageData(img, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(off, 0, 0, W, H);
+
+  // a soft vignette, so the eye lands in the middle
+  const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.25, W / 2, H / 2, Math.max(W, H) * 0.75);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(1, 'rgba(0,0,0,0.45)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+}
+
+/* ── chrome ─────────────────────────────────────────────────────────────── */
+function resize() {
+  W = canvas.width = innerWidth;
+  H = canvas.height = innerHeight;
+  generate();
+}
+
+const stylesEl = document.getElementById('styles');
+for (const name of Object.keys(STYLES)) {
+  const b = document.createElement('button');
+  b.className = 'btn' + (name === style ? ' on' : '');
+  b.textContent = name;
+  b.onclick = () => {
+    style = name;
+    [...stylesEl.children].forEach((c) => c.classList.toggle('on', c === b));
+    draw();
+  };
+  stylesEl.append(b);
+}
+
+document.getElementById('roll').onclick = () => { seed = (Math.random() * 1e6) | 0; generate(); };
+document.getElementById('sea').oninput = (e) => {
+  seaLevel = +e.target.value / 100;
+  document.getElementById('seav').textContent = e.target.value;
+  river.fill(0); carveRivers(); draw();
+};
+document.getElementById('rug').oninput = (e) => {
+  rugged = +e.target.value / 100;
+  document.getElementById('rugv').textContent = e.target.value;
+  generate();
+};
+document.getElementById('save').onclick = () => {
+  const a = document.createElement('a');
+  a.download = `island-${seed}.png`;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+};
+addEventListener('keydown', (e) => { if (e.key === ' ') { e.preventDefault(); document.getElementById('roll').click(); } });
+
+let resizeTimer;
+addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(resize, 180); });
+resize();
+</script>
+</body>
+</html>
