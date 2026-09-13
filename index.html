@@ -3,10 +3,22 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="favicon.svg" />
+<meta name="theme-color" content="#06070d" />
 <title>Playground — things you can click</title>
 <meta name="description" content="A sandbox you can set on fire, a drum machine, twenty thousand particles, a tiny arcade game and an island generator. All built in the browser." />
 <meta property="og:title" content="Playground — things you can click" />
 <meta property="og:description" content="Five toys you can play with in about three seconds each, and six serious tools underneath." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://mohamedsucule-debug.github.io/Projects/" />
+<meta property="og:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Playground — things you can click" />
+<meta name="twitter:description" content="A sandbox you can set on fire, a drum machine with no sound files in it, and an island generator. All running in the browser." />
+<meta name="twitter:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
+<link rel="canonical" href="https://mohamedsucule-debug.github.io/Projects/" />
 <style>
   :root {
     --bg: #06070d;
@@ -45,7 +57,14 @@
   nav a.ghost:hover { color: var(--fg); }
 
   /* ── hero ──────────────────────────────────────────────── */
-  .hero { padding: 64px 0 46px; position: relative; }
+  .hero { padding: 52px 0 46px; position: relative; }
+  .eyebrow {
+    font-size: 14px; font-weight: 500; color: var(--dim);
+    margin: 0 0 20px; letter-spacing: .01em;
+    display: inline-flex; align-items: center; gap: 8px;
+    border: 1px solid var(--line); border-radius: 99px; padding: 8px 15px;
+  }
+  .eyebrow b { color: var(--fg); font-weight: 650; }
   .hero h1 {
     font-size: clamp(38px, 7.4vw, 78px);
     line-height: 1.02; letter-spacing: -.045em; font-weight: 700;
@@ -143,12 +162,29 @@
   a.row .d { font-size: 13px; color: var(--dim); margin-top: 3px; line-height: 1.5; }
   a.row .arrow { margin-left: auto; color: var(--mute); font-size: 18px; }
 
-  footer {
-    margin-top: 78px; padding-top: 24px; border-top: 1px solid var(--line);
-    display: flex; gap: 14px; flex-wrap: wrap; align-items: center;
-    color: var(--mute); font-size: 13.5px;
+  footer { margin-top: 84px; padding-top: 30px; border-top: 1px solid var(--line); }
+  .card-me {
+    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 18px; padding: 22px 24px;
   }
-  footer a { color: var(--dim); }
+  .card-me .id { display: flex; align-items: center; gap: 15px; flex: 1; min-width: 260px; }
+  .card-me .avatar {
+    width: 46px; height: 46px; border-radius: 14px; flex: none;
+    display: grid; place-items: center;
+    font: 700 15px/1 var(--sans); color: #100c02; letter-spacing: .02em;
+    background: conic-gradient(from 140deg, #ffd166, #ff4d8d, #7dd3fc, #a3e635, #ffd166);
+  }
+  .card-me .nm { font-size: 17px; font-weight: 700; letter-spacing: -.015em; }
+  .card-me .rl { font-size: 14px; color: var(--dim); margin-top: 3px; line-height: 1.5; }
+  .card-me .links { display: flex; gap: 9px; flex-wrap: wrap; }
+  .lk {
+    text-decoration: none; font-size: 14px; font-weight: 600;
+    border: 1px solid var(--line2); border-radius: 11px; padding: 11px 16px;
+    transition: background .14s, transform .14s;
+  }
+  .lk:hover { background: rgba(255,255,255,.07); transform: translateY(-1px); }
+  .colophon { margin: 20px 2px 0; color: var(--mute); font-size: 13px; line-height: 1.6; max-width: 70ch; }
 
   @media (max-width: 560px) {
     nav { font-size: 12.5px; gap: 8px; }
@@ -171,6 +207,8 @@
   </nav>
 
   <header class="hero">
+    <!-- ↓↓ YOUR NAME AND TITLE — edit these two lines ↓↓ -->
+    <p class="eyebrow"><b>Mohamed Sucule</b> &middot; design engineer</p>
     <h1>Eleven things I built. <em>All of them run right here.</em></h1>
     <p>
       No videos, no screenshots, no “request a demo”. Click any of them and it starts
@@ -237,10 +275,25 @@
   <div class="deep" id="deepList"></div>
 
   <footer>
-    <span>Built with Claude Code.</span>
-    <!-- ↓ put your name and links here ↓ -->
-    <span class="spacer" style="flex:1"></span>
-    <a href="https://github.com/mohamedsucule-debug/Projects">Source on GitHub</a>
+    <div class="card-me">
+      <!-- ↓↓ YOUR DETAILS — edit the name, line and links ↓↓ -->
+      <div class="id">
+        <span class="avatar">MS</span>
+        <div>
+          <div class="nm">Mohamed Sucule</div>
+          <div class="rl">Design engineer. I work out what a thing should feel like, then build it.</div>
+        </div>
+      </div>
+      <div class="links">
+        <a class="lk" href="mailto:mohamedsucule@gmail.com">✉ Email me</a>
+        <a class="lk" href="https://github.com/mohamedsucule-debug/Projects">↗ Source on GitHub</a>
+      </div>
+    </div>
+    <p class="colophon">
+      Built with Claude Code. No frameworks, no build step, no dependencies —
+      every page here is plain HTML, CSS and JavaScript, and the whole thing is
+      about 9,500 lines.
+    </p>
   </footer>
 </div>
 

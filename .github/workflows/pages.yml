@@ -9,7 +9,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main, claude/design-engineer-portfolio-pb70m4]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
