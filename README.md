@@ -64,33 +64,39 @@ npx http-server        # the serious ones use ES modules, so they need a server
 node tests/run.mjs     # run the tests
 ```
 
-## Built with Claude Code
+## How I work
 
-All eleven were built with [Claude Code](https://claude.ai/code) — an AI that
-writes and runs code — across a handful of sessions. The interesting part isn't
-that AI wrote the code. It's which half of the job it couldn't do.
+**I build fast and I'm hard to satisfy.** With modern tooling a working version exists in
+minutes, so the job stops being typing and becomes judgement: what's worth building, what's
+wrong with it, and what it should say. That's where the time goes.
 
-**What it's brilliant at:** typing. A working falling-sand simulation, a Raft
-implementation, a Myers diff — from a description, in minutes, with no typos and
-no forgotten edge cases.
+**Looking at it beats testing it.** Every screen here was rendered and inspected after each
+change, which is how these got caught:
 
-**What it can't do:** know that the result is boring. Every screen here was
-rendered and *looked at* after each change, and that's where the real work was:
+- the hourglass leaked sand out of its sides — it had been drawn as an X rather than a funnel
+- the forest fire burned one tree and went out, because the match was lit on an isolated
+  tree at the edge of the map
+- the island generator produced a perfectly smooth green ellipse, because the noise
+  frequency was so low the entire map sat inside a single noise cell
+- the six "serious" links rendered in shouty uppercase, because a heading and a list both
+  claimed the same HTML `id`
 
-- the hourglass leaked sand out of the sides, because it was drawn as an X
-  rather than a funnel
-- the forest fire burned one tree and went out, because the match was lit on an
-  isolated tree at the edge
-- the island came out as a perfectly smooth green ellipse, because the noise
-  frequency was so low the whole map sat inside a single noise cell
-- the six "serious" links rendered in shouty uppercase, because a heading and a
-  list both claimed the same HTML id
+Every one of those was *technically working code*, and no test would have flagged a single
+one of them.
 
-Every one of those was *technically working code*. No test would have caught a
-single one of them. Two of the tests I wrote were themselves wrong, and two more
-found genuine bugs in the engines — telling those apart is the judgement that
-doesn't get handed over.
+**But tests catch what looking can't.** The suite here asserts properties rather than
+pixels — the NFA agrees with the platform's own `RegExp`; both diff algorithms' edit scripts
+reconstruct both inputs across 800 randomised pairs; Raft's safety invariants hold at every
+tick of a scripted chaos run. Two of those tests failed because *the test* was wrong, and
+two failed because the *engine* was wrong — including a query planner that keyed its scans
+by table name while keying its estimates by alias, so every filter silently fell back to a
+default selectivity and produced plans that looked entirely plausible. Telling those two
+cases apart is the job.
 
-The other half is the writing. "Pour sand. Add water. Then set it on fire"
-teaches the sandbox faster than a tutorial would. Deciding what a thing says,
-and what it refuses to say, is design work.
+**The words are half of it.** "Pour sand. Add water. Then set it on fire" teaches the
+sandbox faster than a tutorial would. Deciding what a thing says, and what it refuses to
+say, is part of building it.
+
+---
+
+Written with [Claude Code](https://claude.ai/code); the commit history is the full record.

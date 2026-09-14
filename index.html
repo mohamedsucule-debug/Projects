@@ -144,8 +144,8 @@
   .how h4 { margin: 0 0 8px; font-size: 15.5px; letter-spacing: -.01em; }
   .how p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--dim); }
   .how .n {
-    font: 700 11px/1 var(--mono); color: #ffd166; letter-spacing: .1em;
-    display: block; margin-bottom: 10px;
+    font: 700 10px/1 var(--mono); color: #ffd166; letter-spacing: .14em;
+    text-transform: uppercase; display: block; margin-bottom: 10px;
   }
 
   /* ── deep cuts ─────────────────────────────────────────── */
@@ -202,7 +202,7 @@
     <span class="logo"></span>
     <b>Playground</b>
     <span class="spacer"></span>
-    <a class="ghost" href="#how">how it was made</a>
+    <a class="ghost" href="#how">how I work</a>
     <a class="ghost" href="#deep">the serious stuff</a>
   </nav>
 
@@ -221,31 +221,32 @@
     </p>
     <div class="cta">
       <a class="btn primary" href="#toys">Play with something →</a>
-      <a class="btn ghost" href="#how">How I made these</a>
+      <a class="btn ghost" href="#how">How I work</a>
     </div>
   </header>
 
   <h3 class="section" id="toys">Pick one. They all start instantly.</h3>
   <div class="grid" id="grid"></div>
 
-  <h3 class="section" id="how">How these were made</h3>
+  <h3 class="section" id="how">How I work</h3>
   <p class="lead">
-    All eleven were built with <b>Claude Code</b>, an AI that writes and runs code, in a
-    handful of sessions. That is not the interesting part — the interesting part is that
-    AI turns out to be very good at the typing and completely useless at the taste.
+    I build fast and I am hard to satisfy. With modern tooling a working version exists in
+    minutes, so the job stops being typing and starts being judgement — <b>what is worth
+    building, what is wrong with it, and what it should say.</b> That is where my time goes,
+    and it is the part that never gets easier.
   </p>
   <div class="how">
     <div>
-      <span class="n">01</span>
-      <h4>I describe it, it builds it, I judge it</h4>
+      <span class="n">build</span>
+      <h4>Something running beats something planned</h4>
       <p>
-        The loop is: say what the thing should feel like, get a working version in minutes,
-        then look at it with fresh eyes and say what is wrong. Most of my time goes on that
-        last part, because it is the only part a machine cannot do for me.
+        I would rather have a thing I can click that is wrong than a document that is right.
+        Getting to a working version fast is the quickest way to find out what I actually
+        wanted — which is reliably not what I wrote down at the start.
       </p>
     </div>
     <div>
-      <span class="n">02</span>
+      <span class="n">review</span>
       <h4>Looking at it beats testing it</h4>
       <p>
         Every screen here was rendered and inspected after each change. That is how the
@@ -255,12 +256,12 @@
       </p>
     </div>
     <div>
-      <span class="n">03</span>
+      <span class="n">write</span>
       <h4>The words are half the product</h4>
       <p>
         “Pour sand. Add water. Then set it on fire” teaches the sandbox faster than any
-        tutorial could. Deciding what a thing says, and what it refuses to say, is design
-        work — and it is the work I keep for myself.
+        tutorial could. Deciding what a thing says — and what it refuses to say — is part of
+        building it, not a coat of paint applied at the end.
       </p>
     </div>
   </div>
@@ -290,9 +291,9 @@
       </div>
     </div>
     <p class="colophon">
-      Built with Claude Code. No frameworks, no build step, no dependencies —
-      every page here is plain HTML, CSS and JavaScript, and the whole thing is
-      about 9,500 lines.
+      No frameworks, no build step, no dependencies — every page here is plain HTML, CSS and
+      JavaScript, about 9,500 lines of it, with the engine behind each of the six tools
+      unit-tested. Written with Claude Code; the commit history is the full record.
     </p>
   </footer>
 </div>
