@@ -290,3 +290,84 @@ table.data td.r, table.data th.r { text-align: right; font-variant-numeric: tabu
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ── the "what is this?" panel ──────────────────────────────────────────────
+   Deliberately typographic rather than clever: a column of readable prose at a
+   comfortable measure. Whatever is behind it is the interesting part, so this
+   gets out of the way quickly and stays out. */
+
+.xp-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: color-mix(in oklab, var(--accent) 13%, transparent);
+  border-color: color-mix(in oklab, var(--accent) 34%, transparent);
+  color: var(--accent);
+  font-size: 11px; letter-spacing: .02em;
+}
+.xp-btn:hover { background: color-mix(in oklab, var(--accent) 22%, transparent); color: var(--accent); }
+.xp-btn > span { color: var(--fg-dim); }
+.xp-btn:hover > span { color: var(--fg); }
+
+.xp-wrap {
+  position: fixed; inset: 0; z-index: 90;
+  display: grid; place-items: center;
+  padding: 20px;
+  background: color-mix(in oklab, var(--ink-900) 72%, transparent);
+  backdrop-filter: blur(7px);
+  opacity: 0; transition: opacity .16s ease;
+}
+.xp-wrap.in { opacity: 1; }
+.xp-wrap[hidden] { display: none; }
+
+.xp-card {
+  width: min(660px, 100%);
+  max-height: min(86vh, 780px);
+  display: flex; flex-direction: column;
+  background: var(--ink-800);
+  border: 1px solid var(--line-bright);
+  border-radius: var(--r-lg);
+  box-shadow: 0 40px 90px -30px rgba(0,0,0,.92);
+  transform: translateY(8px) scale(.985);
+  transition: transform .18s cubic-bezier(.2,.7,.3,1);
+}
+.xp-wrap.in .xp-card { transform: none; }
+
+.xp-head {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 20px 20px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.xp-head h2 { margin: 0; font-size: 19px; font-weight: 650; letter-spacing: -.02em; }
+.xp-tag { margin: 5px 0 0; font: 400 13px/1.5 var(--sans); color: var(--fg-dim); }
+.xp-x { margin-left: auto; flex: none; font-size: 13px; padding: 5px 9px; }
+
+.xp-body { padding: 4px 20px 18px; overflow: auto; }
+.xp-body section { padding-top: 17px; }
+.xp-body h3 {
+  margin: 0 0 7px;
+  font: 700 10.5px/1 var(--mono);
+  letter-spacing: .15em; text-transform: uppercase; color: var(--accent);
+}
+.xp-body p { margin: 0 0 9px; font-size: 14.5px; line-height: 1.66; color: var(--fg-dim); }
+.xp-body p:last-child { margin-bottom: 0; }
+.xp-body b, .xp-body strong { color: var(--fg); font-weight: 600; }
+.xp-body code {
+  font: 400 12.5px/1 var(--mono);
+  background: var(--ink-700); border: 1px solid var(--line);
+  border-radius: var(--r-sm); padding: 2px 5px; color: var(--fg);
+}
+
+.xp-foot {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 20px; border-top: 1px solid var(--line);
+}
+.xp-foot .spacer { flex: 1; }
+.xp-go {
+  background: var(--accent); color: var(--ink-900);
+  border-color: transparent; font-weight: 650; font-size: 13px; padding: 9px 15px;
+}
+.xp-go:hover { background: var(--accent); filter: brightness(1.1); color: var(--ink-900); }
+
+@media (max-width: 560px) {
+  .xp-btn > span { display: none; }
+  .xp-body p { font-size: 14px; }
+}

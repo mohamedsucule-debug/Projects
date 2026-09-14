@@ -101,3 +101,71 @@ export function rng(seed = 1) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+
+/* ───────────────────────────────────────────────────────────────────────────
+   explainer — the "what am I looking at?" panel.
+
+   Every tool in this repo shows something that is genuinely hard to picture,
+   and a clever visualisation of a thing you have never heard of is just a
+   prettier kind of confusing. So each one carries a plain-English briefing:
+   what it is, why anyone cares, how it works, and something to go and try.
+
+   It opens by itself the first time you arrive and never again after that —
+   the flag lives in localStorage, and if that throws (private windows, a
+   locked-down browser) the panel simply behaves as if you had never been.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+export function explainer({ key, title, tagline, sections, mount = document.body, openFirstVisit = true }) {
+  const seenKey = `lab.seen.${key}`;
+  const wrap = h('div', { class: 'xp-wrap', hidden: true, role: 'dialog', 'aria-modal': 'true', 'aria-label': `About ${title}` });
+
+  const card = h('div', { class: 'xp-card' },
+    h('div', { class: 'xp-head' },
+      h('div', {},
+        h('h2', {}, title),
+        tagline && h('p', { class: 'xp-tag' }, tagline)),
+      h('button', { class: 'xp-x ghost', 'aria-label': 'Close', onClick: () => close() }, '✕')),
+    h('div', { class: 'xp-body' },
+      sections.map((s) => h('section', {},
+        h('h3', {}, s.h),
+        ...[].concat(s.p).map((para) => h('p', { html: para }))))),
+    h('div', { class: 'xp-foot' },
+      h('span', { class: 'hint' }, 'Press ', h('span', { class: 'kbd' }, 'Esc'), ' or click outside to close'),
+      h('span', { class: 'spacer' }),
+      h('button', { class: 'xp-go', onClick: () => close() }, 'Got it — let me play')));
+
+  wrap.append(card);
+  mount.append(wrap);
+
+  let lastFocus = null;
+  const open = () => {
+    lastFocus = document.activeElement;
+    wrap.hidden = false;
+    requestAnimationFrame(() => wrap.classList.add('in'));
+    card.querySelector('.xp-go').focus();
+  };
+  const close = () => {
+    wrap.classList.remove('in');
+    setTimeout(() => { wrap.hidden = true; }, 160);
+    try { localStorage.setItem(seenKey, '1'); } catch {}
+    lastFocus?.focus?.();
+  };
+
+  wrap.addEventListener('mousedown', (e) => { if (e.target === wrap) close(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !wrap.hidden) { e.preventDefault(); close(); }
+    // "?" anywhere opens it, which is the shortcut people try first
+    else if (e.key === '?' && wrap.hidden && !/^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName)) open();
+  });
+
+  let seen = true;
+  try { seen = !!localStorage.getItem(seenKey); } catch {}
+  if (openFirstVisit && !seen) open();
+
+  return { open, close, get isOpen() { return !wrap.hidden; } };
+}
+
+/** The header button that reopens the explainer. */
+export function explainButton(panel, label = 'what is this?') {
+  return h('button', { class: 'xp-btn mono', onClick: () => panel.open(), title: 'What am I looking at? (?)' }, '?', h('span', {}, label));
+}
