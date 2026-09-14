@@ -107,7 +107,14 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const dist2 = (a, b) => (a.x - b.x) ** 2 + (a.y - b.y) ** 2;
 
 let state = 'menu';
-let score = 0, best = +(localStorage.getItem('comet.best') || 0);
+let score = 0, best = 0;
+// localStorage throws in a private window or a sandboxed frame, and a high
+// score is never worth taking the whole game down for
+const store = {
+  get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+best = +store.get('comet.best', 0);
 let time = 0, shake = 0, slowmo = 1, combo = 1, comboTimer = 0;
 let mouse = { x: innerWidth / 2, y: innerHeight / 2 };
 
@@ -234,7 +241,7 @@ function die() {
   spark(ship.x, ship.y, '#ff4d6d', 60, 9);
   spark(ship.x, ship.y, '#ffd166', 30, 6);
   best = Math.max(best, score);
-  localStorage.setItem('comet.best', best);
+  store.set('comet.best', best);
   document.getElementById('finalScore').textContent = score;
   document.getElementById('finalNote').textContent =
     score >= best && score > 0 ? 'NEW BEST' : `best ${best}`;
