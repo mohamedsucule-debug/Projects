@@ -108,6 +108,7 @@
     <span class="sub">how git decides &mdash; and where it refuses to</span>
     <span class="spacer"></span>
     <span class="hint" style="margin-right:8px">edit any pane; everything recomputes</span>
+    <span id="explainSlot"></span>
     <button id="theme" class="mono ghost">&#9681; dark</button>
   </header>
 
@@ -155,7 +156,8 @@
 </div>
 
 <script type="module">
-import { h, $, themeToggle, fmt } from '../../shared/lab.js';
+import { h, $, themeToggle, fmt, explainer, explainButton } from '../../shared/lab.js';
+import { BRIEFINGS } from '../../shared/briefings.js';
 import { myers, patience, lines, merge3, resolve, hunks, stats, words, SCENARIOS } from './engine.js';
 
 themeToggle($('#theme'));
@@ -403,4 +405,8 @@ $('#base').value = SCENARIOS[0].base;
 $('#ours').value = SCENARIOS[0].ours;
 $('#theirs').value = SCENARIOS[0].theirs;
 recompute();
+
+/* the plain-English briefing — opens itself once on a first visit */
+$('#explainSlot').append(explainButton(explainer(BRIEFINGS['diff-forge'])));
+
 </script>

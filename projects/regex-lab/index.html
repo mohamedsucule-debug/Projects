@@ -132,6 +132,7 @@
     <span class="hint" style="margin-right:6px">
       <span class="kbd">&larr;</span> <span class="kbd">&rarr;</span> step &nbsp; <span class="kbd">space</span> play
     </span>
+    <span id="explainSlot"></span>
     <button id="theme" class="mono ghost">&#9681; dark</button>
   </header>
 
@@ -201,7 +202,8 @@
 </div>
 
 <script type="module">
-import { h, $, themeToggle, hidpi, css, fmt, clamp } from '../../shared/lab.js';
+import { h, $, themeToggle, hidpi, css, fmt, clamp, explainer, explainButton } from '../../shared/lab.js';
+import { BRIEFINGS } from '../../shared/briefings.js';
 import { build, ParseError, pretty } from './engine.js';
 
 themeToggle($('#theme'));
@@ -649,4 +651,8 @@ addEventListener('keydown', (e) => {
 
 recompute();
 addEventListener('resize', () => fit());
+
+/* the plain-English briefing — opens itself once on a first visit */
+$('#explainSlot').append(explainButton(explainer(BRIEFINGS['regex-lab'])));
+
 </script>

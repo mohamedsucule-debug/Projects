@@ -92,6 +92,7 @@
     <span class="sub">EXPLAIN, with the reasoning still attached</span>
     <span class="spacer"></span>
     <span class="hint" style="margin-right:8px">drag a row count &mdash; the plan re-plans</span>
+    <span id="explainSlot"></span>
     <button id="theme" class="mono ghost">&#9681; dark</button>
   </header>
 
@@ -126,7 +127,8 @@
 </div>
 
 <script type="module">
-import { h, $, themeToggle, fmt, clamp } from '../../shared/lab.js';
+import { h, $, themeToggle, fmt, clamp, explainer, explainButton } from '../../shared/lab.js';
+import { BRIEFINGS } from '../../shared/briefings.js';
 import { plan, SqlError, DEMO_CATALOG, COST, fmtPred } from './engine.js';
 
 themeToggle($('#theme'));
@@ -364,4 +366,8 @@ $('#reset').onclick = () => { catalog = structuredClone(DEMO_CATALOG); renderCat
 
 renderCatalog();
 recompute();
+
+/* the plain-English briefing — opens itself once on a first visit */
+$('#explainSlot').append(explainButton(explainer(BRIEFINGS['query-planner'])));
+
 </script>

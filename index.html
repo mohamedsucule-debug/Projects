@@ -5,18 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" href="favicon.svg" />
 <meta name="theme-color" content="#06070d" />
-<title>Playground — things you can click</title>
-<meta name="description" content="A sandbox you can set on fire, a drum machine, twenty thousand particles, a tiny arcade game and an island generator. All built in the browser." />
-<meta property="og:title" content="Playground — things you can click" />
-<meta property="og:description" content="Five toys you can play with in about three seconds each, and six serious tools underneath." />
+<title>Playground — twelve things you can click</title>
+<meta name="description" content="Loom, a node-based image studio you can wire together in the browser — plus a sandbox you can set on fire, a drum machine with no sound files, an island generator, and six tools that make invisible software visible." />
+<meta property="og:title" content="Playground — twelve things you can click" />
+<meta property="og:description" content="A node-based image studio, five toys you can play with in three seconds each, and six serious tools underneath — each with a plain-English explanation." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://mohamedsucule-debug.github.io/Projects/" />
 <meta property="og:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Playground — things you can click" />
-<meta name="twitter:description" content="A sandbox you can set on fire, a drum machine with no sound files in it, and an island generator. All running in the browser." />
+<meta name="twitter:title" content="Playground — twelve things you can click" />
+<meta name="twitter:description" content="A node-based image studio, a sandbox you can set on fire, a drum machine with no sound files in it, and an island generator. All running in the browser." />
 <meta name="twitter:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <link rel="canonical" href="https://mohamedsucule-debug.github.io/Projects/" />
 <style>
@@ -148,8 +148,86 @@
     text-transform: uppercase; display: block; margin-bottom: 10px;
   }
 
+  /* ── the feature ───────────────────────────────────────── */
+  a.feature {
+    display: grid; grid-template-columns: 1.05fr 1fr; gap: 0;
+    text-decoration: none; color: inherit; overflow: hidden;
+    background: var(--card); border: 1px solid var(--line2);
+    border-radius: 24px; position: relative;
+    transition: transform .2s cubic-bezier(.2,.7,.3,1), border-color .2s, box-shadow .2s;
+  }
+  a.feature:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 34px 80px -34px rgba(0,0,0,.98);
+    border-color: rgba(255,255,255,.28);
+  }
+  a.feature .fstage {
+    position: relative; aspect-ratio: 1 / 1; background: #04050a; overflow: hidden;
+  }
+  a.feature .fstage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  a.feature .fstage .cap {
+    position: absolute; left: 14px; bottom: 13px; z-index: 2;
+    background: rgba(6,8,13,.74); backdrop-filter: blur(10px);
+    border: 1px solid var(--line); border-radius: 99px;
+    padding: 7px 13px; font: 500 11.5px/1 var(--mono); color: var(--dim);
+    letter-spacing: .03em;
+  }
+  a.feature .fmeta { padding: 34px 34px 32px; display: flex; flex-direction: column; }
+  a.feature .pill {
+    align-self: flex-start;
+    border: 1px solid var(--line2); border-radius: 99px;
+    padding: 6px 12px; font: 600 11px/1 var(--mono);
+    letter-spacing: .06em; text-transform: uppercase; color: var(--dim);
+  }
+  a.feature .fmeta h2 {
+    margin: 12px 0 12px; font-size: clamp(27px, 3.3vw, 38px);
+    letter-spacing: -.035em; line-height: 1.04;
+  }
+  a.feature .fmeta > p { margin: 0 0 16px; font-size: 15.5px; line-height: 1.62; color: var(--dim); }
+  a.feature .fmeta > p b { color: var(--fg); font-weight: 650; }
+  a.feature ul { margin: 0 0 22px; padding: 0; list-style: none; }
+  a.feature li {
+    position: relative; padding-left: 20px; margin-bottom: 7px;
+    font-size: 13.8px; line-height: 1.55; color: var(--dim);
+  }
+  a.feature li::before {
+    content: ''; position: absolute; left: 3px; top: .58em;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: linear-gradient(120deg, #ffd166, #ff4d8d);
+  }
+  a.feature .go {
+    margin-top: auto; align-self: flex-start;
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #ffd166; color: #140f02; font-size: 14.5px; font-weight: 650;
+    padding: 13px 21px; border-radius: 12px;
+    box-shadow: 0 14px 40px -16px rgba(255,209,102,.85);
+  }
+  @media (max-width: 800px) {
+    a.feature { grid-template-columns: 1fr; }
+    a.feature .fmeta { padding: 24px 22px 26px; }
+  }
+
   /* ── deep cuts ─────────────────────────────────────────── */
-  .deep { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+  .deep { display: grid; gap: 13px; grid-template-columns: repeat(auto-fill, minmax(345px, 1fr)); }
+  a.dcard {
+    display: flex; flex-direction: column; text-decoration: none;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 17px; padding: 20px 21px 21px;
+    transition: border-color .16s, transform .16s, box-shadow .16s;
+  }
+  a.dcard:hover {
+    border-color: var(--line2); transform: translateY(-3px);
+    box-shadow: 0 22px 48px -28px rgba(0,0,0,.9);
+  }
+  a.dcard .dhead { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+  a.dcard .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  a.dcard h4 { margin: 0; font-size: 17px; letter-spacing: -.022em; font-weight: 700; }
+  a.dcard .arrow { margin-left: auto; color: var(--mute); font-size: 17px; transition: transform .16s, color .16s; }
+  a.dcard:hover .arrow { color: var(--fg); transform: translateX(3px); }
+  a.dcard .dtag { margin: 0 0 10px; font-size: 14px; line-height: 1.5; color: var(--fg); font-weight: 500; }
+  a.dcard .dplain { margin: 0; font-size: 13.6px; line-height: 1.66; color: var(--dim); }
+  a.dcard .dplain i { color: var(--dim); }
+  a.dcard .dplain b { color: var(--fg); font-weight: 600; }
   a.row {
     display: flex; align-items: center; gap: 14px; text-decoration: none;
     background: var(--card); border: 1px solid var(--line);
@@ -209,7 +287,7 @@
   <header class="hero">
     <!-- ↓↓ YOUR NAME AND TITLE — edit these two lines ↓↓ -->
     <p class="eyebrow"><b>Mohamed Sucule</b> &middot; software engineer</p>
-    <h1>Eleven things I built. <em>All of them run right here.</em></h1>
+    <h1>Twelve things I built. <em>All of them run right here.</em></h1>
     <p>
       No videos, no screenshots, no “request a demo”. Click any of them and it starts
       immediately — in your browser, on your phone, with nothing to install.
@@ -220,12 +298,36 @@
       you press the button.
     </p>
     <div class="cta">
-      <a class="btn primary" href="#toys">Play with something →</a>
-      <a class="btn ghost" href="#how">How I work</a>
+      <a class="btn primary" href="play/loom/index.html">Open Loom →</a>
+      <a class="btn ghost" href="#toys">Or something smaller</a>
     </div>
   </header>
 
-  <h3 class="section" id="toys">Pick one. They all start instantly.</h3>
+  <h3 class="section" id="loom">The big one</h3>
+  <a class="feature" href="play/loom/index.html">
+    <div class="fstage">
+      <canvas id="loomCanvas"></canvas>
+      <span class="cap" id="loomCap">rendering…</span>
+    </div>
+    <div class="fmeta">
+      <span class="pill">node editor</span>
+      <h2>Loom</h2>
+      <p>
+        A studio for making pictures by <b>wiring boxes together</b>. One box makes a cloud of
+        random fog, another bends whatever it is given, another swaps grey for colour. Plug them
+        into each other and the last box is the picture.
+      </p>
+      <ul>
+        <li>Every box shows a live thumbnail, so you watch the picture being assembled one step at a time</li>
+        <li>Six finished examples to pull apart, or press Shuffle and see what falls out</li>
+        <li>Save the result as a PNG, or copy a link that carries the whole recipe inside it</li>
+        <li>Drag a slider and only the boxes after it recalculate — which is why it feels instant</li>
+      </ul>
+      <span class="go">Open Loom →</span>
+    </div>
+  </a>
+
+  <h3 class="section" id="toys">Or something smaller. They all start instantly.</h3>
   <div class="grid" id="grid"></div>
 
   <h3 class="section" id="how">How I work</h3>
@@ -270,8 +372,9 @@
   <p class="lead">
     Same approach, harder subjects. Each one takes something normally invisible — what a
     database is thinking, why servers disagree, where a slow web page actually spends its
-    time — and puts it on screen so you can poke it. <b>Fair warning: these ones assume you
-    write software.</b>
+    time — and puts it on screen so you can poke it. <b>You do not need to know the subject:
+    every one of them opens with a plain-English explanation of what you are looking at and
+    why anyone cares.</b>
   </p>
   <div class="deep" id="deepList"></div>
 
@@ -292,8 +395,9 @@
     </div>
     <p class="colophon">
       No frameworks, no build step, no dependencies — every page here is plain HTML, CSS and
-      JavaScript, about 9,500 lines of it, with the engine behind each of the six tools
-      unit-tested. Written with Claude Code; the commit history is the full record.
+      JavaScript, about 12,500 lines of it, with the engine behind Loom and each of the six
+      tools unit-tested: 106 tests, run in CI before anything is published.
+      Written with Claude Code; the commit history is the full record.
     </p>
   </footer>
 </div>
@@ -304,6 +408,19 @@
    drawn on a small canvas. They only animate while they are on screen, so the
    page stays cheap on a phone.
    ─────────────────────────────────────────────────────────────────────────── */
+
+/* The card previews below are written inline and need nothing external, so
+   they keep working no matter what. The two pieces that DO need other files —
+   the explanations of the six serious tools, and the live render on the Loom
+   card — are pulled in with dynamic imports instead of static ones. A browser
+   refuses to load ES modules over a file:// URL, and with static imports at
+   the top of this script that refusal would take the entire page down rather
+   than the two parts that actually depend on it. */
+const loadModules = Promise.all([
+  import('./shared/briefings.js'),
+  import('./play/loom/engine.js'),
+  import('./play/loom/presets.js'),
+]);
 
 const TOYS = [
   {
@@ -344,14 +461,9 @@ const TOYS = [
   },
 ];
 
-const DEEP = [
-  ['projects/regex-lab/index.html', '#4dd6ff', 'Regex Lab', 'Watch a search pattern actually run, one character at a time — including the kind that quietly takes a website down.'],
-  ['projects/query-planner/index.html', '#a78bfa', 'Query Planner', 'A database deciding how to answer a question, with its reasoning shown. Drag a table’s size and watch it change its mind.'],
-  ['projects/raft-lab/index.html', '#4ade80', 'Raft Lab', 'Five servers agreeing with each other. Cut the network in half and watch them cope.'],
-  ['projects/trace-explorer/index.html', '#fb7185', 'Trace Explorer', 'Where a slow web request really spent its time, explained in sentences instead of charts.'],
-  ['projects/diff-forge/index.html', '#fbbf24', 'Diff Forge', 'The merge conflict — software’s most hated screen — rebuilt as something you can actually read.'],
-  ['projects/oklch-studio/index.html', '#f472b6', 'OKLCH Studio', 'Building a colour palette that still works when someone checks it for accessibility.'],
-];
+/* The six serious ones are described in shared/briefings.js, which is also
+   what each of those pages shows in its own "what is this?" panel. One copy of
+   an explanation cannot drift out of step with another copy of it. */
 
 /* ── card construction ──────────────────────────────────────────────────── */
 const grid = document.getElementById('grid');
@@ -764,16 +876,113 @@ function machinePreview(api) {
 
 /* ── the serious list ───────────────────────────────────────────────────── */
 const deep = document.getElementById('deepList');
-for (const [href, color, title, desc] of DEEP) {
-  const a = document.createElement('a');
-  a.className = 'row';
-  a.href = href;
-  a.innerHTML = `
-    <span class="dot" style="background:${color}"></span>
-    <span><span class="t">${title}</span><div class="d">${desc}</div></span>
-    <span class="arrow">→</span>`;
-  deep.append(a);
-}
+
+loadModules.then(([{ BRIEFINGS, BRIEFING_ORDER }]) => {
+  for (const key of BRIEFING_ORDER) {
+    const b = BRIEFINGS[key];
+    const a = document.createElement('a');
+    a.className = 'dcard';
+    a.href = b.href;
+    a.innerHTML = `
+      <div class="dhead">
+        <span class="dot" style="background:${b.colour}"></span>
+        <h4>${b.title}</h4>
+        <span class="arrow">→</span>
+      </div>
+      <p class="dtag">${b.tagline}</p>
+      <p class="dplain">${b.plain}</p>`;
+    deep.append(a);
+  }
+}).catch(() => {
+  deep.innerHTML = `<p class="lead" style="margin:0">
+    This page reads its content from ES modules, which browsers refuse to load from a
+    <code>file://</code> address. Run <b>npx http-server</b> in the repo and open it over
+    localhost, or use the published site.</p>`;
+});
+
+/* ── the feature card ───────────────────────────────────────────────────────
+   This runs the real Loom engine rather than showing screenshots of it. Each
+   example is rendered once, on an idle frame, and only after the card has
+   actually scrolled into view — then they cross-fade. Rendering all six up
+   front would cost most of a second on a phone for something nobody had
+   looked at yet. */
+loadModules.then(([, { evaluate, deserialize, toRGBA }, { PRESETS }]) => {
+  const canvas = document.getElementById('loomCanvas');
+  const cap = document.getElementById('loomCap');
+  const ctx = canvas.getContext('2d', { alpha: false });
+  const RES = 384;
+  canvas.width = canvas.height = RES;
+
+  const frames = [];
+  let queue = -1, cur = 0, fade = 1, hold = 0, visible = false;
+
+  const renderNext = () => {
+    queue++;
+    if (queue >= PRESETS.length) return;
+    const preset = PRESETS[queue];
+    try {
+      const g = deserialize(structuredClone(preset.graph));
+      const out = g.nodes.find((n) => n.type === 'output');
+      const { image } = evaluate(g, out.id, RES, RES);
+      const off = document.createElement('canvas');
+      off.width = off.height = RES;
+      off.getContext('2d').putImageData(new ImageData(toRGBA(image), RES, RES), 0, 0);
+      frames.push({ canvas: off, name: preset.name });
+      if (frames.length === 1) { cap.textContent = preset.name; paint(); }
+    } catch { /* one bad preset must not take the whole card down */ }
+    // one per idle slice, so the page stays responsive while they arrive
+    (window.requestIdleCallback || ((f) => setTimeout(f, 60)))(renderNext);
+  };
+
+  function paint() {
+    if (!frames.length) return;
+    const a = frames[cur % frames.length];
+    const b = frames[(cur + 1) % frames.length];
+    ctx.globalAlpha = 1;
+    ctx.drawImage(a.canvas, 0, 0, RES, RES);
+    if (fade < 1 && frames.length > 1) {
+      ctx.globalAlpha = 1 - fade;
+      ctx.drawImage(b.canvas, 0, 0, RES, RES);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  let last = performance.now();
+  function step(now) {
+    const dt = Math.min(64, now - last); last = now;
+    if (visible && frames.length > 1) {
+      if (fade >= 1) {
+        hold += dt;
+        if (hold > 2600) { hold = 0; fade = 0; }
+      } else {
+        fade = Math.min(1, fade + dt / 700);
+        if (fade >= 1) {
+          cur = (cur + 1) % frames.length;
+          cap.textContent = frames[cur].name;
+        }
+      }
+      paint();
+    }
+    requestAnimationFrame(step);
+  }
+
+  new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      visible = e.isIntersecting;
+      if (e.isIntersecting && queue === -1) {
+        queue = -1;
+        (window.requestIdleCallback || ((f) => setTimeout(f, 0)))(renderNext);
+      }
+    }
+  }, { rootMargin: '150px' }).observe(canvas);
+
+  requestAnimationFrame(step);
+}).catch(() => {
+  // without the engine the card is still a link; just say so rather than
+  // leaving a black square that looks broken
+  const cap = document.getElementById('loomCap');
+  if (cap) cap.textContent = 'open over http to see this render live';
+});
 </script>
 </body>
 </html>

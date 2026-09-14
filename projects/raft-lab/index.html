@@ -83,6 +83,7 @@
     <span class="sub">consensus you can break on purpose</span>
     <span class="spacer"></span>
     <span class="hint" style="margin-right:8px"><span class="kbd">space</span> run/pause &nbsp; <span class="kbd">w</span> write &nbsp; <span class="kbd">1-9</span> crash a server</span>
+    <span id="explainSlot"></span>
     <button id="theme" class="mono ghost">&#9681; dark</button>
   </header>
 
@@ -147,7 +148,8 @@
 </div>
 
 <script type="module">
-import { h, $, themeToggle, hidpi, css, ticker, clamp } from '../../shared/lab.js';
+import { h, $, themeToggle, hidpi, css, ticker, clamp, explainer, explainButton } from '../../shared/lab.js';
+import { BRIEFINGS } from '../../shared/briefings.js';
 import { Cluster, CFG } from './engine.js';
 
 themeToggle($('#theme'));
@@ -502,4 +504,8 @@ addEventListener('keydown', (e) => {
 
 renderServers(); renderMatrix(); renderInvariants(); renderEvents(); renderStatus();
 loop.start();
+
+/* the plain-English briefing — opens itself once on a first visit */
+$('#explainSlot').append(explainButton(explainer(BRIEFINGS['raft-lab'])));
+
 </script>

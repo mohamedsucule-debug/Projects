@@ -371,3 +371,37 @@ table.data td.r, table.data th.r { text-align: right; font-variant-numeric: tabu
   .xp-btn > span { display: none; }
   .xp-body p { font-size: 14px; }
 }
+
+/* ── the header bar on a narrow screen ──────────────────────────────────────
+   The bar is a single non-wrapping flex row, so every item added to it comes
+   straight out of the width budget. Adding the "what is this?" button pushed
+   these headers 13-41px past a 390px viewport. The tagline and the keyboard
+   hint are the two things a phone does not need. */
+
+@media (max-width: 760px) {
+  header.bar { gap: 8px; padding: 0 9px; }
+  .bar .sub, .bar .hint { display: none; }
+  .bar h1 { font-size: 12.5px; }
+  .bar .home { padding: 5px 6px; letter-spacing: .05em; }
+}
+
+/* ── dense panels on a narrow screen ────────────────────────────────────────
+   Every panel header is a flex row of "title ... meta", and flex items refuse
+   to shrink below their content by default. On a phone the meta text pushed
+   each panel past the viewport and the whole page slid sideways.
+
+   Panel bodies already scroll on their own, so anything genuinely wider than a
+   phone — a trace waterfall, a log table — stays reachable inside its own
+   region instead of dragging the page with it. */
+
+@media (max-width: 760px) {
+  .panel, .panel > .head, .panel > .body { min-width: 0; }
+  .panel > .head > * { min-width: 0; }
+  .panel > .head > .num,
+  .panel > .head > .mute,
+  .panel > .head > span:not(.spacer) {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .shell { overflow-x: hidden; }
+  main { max-width: 100%; }
+}

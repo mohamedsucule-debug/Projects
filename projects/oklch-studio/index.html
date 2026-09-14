@@ -85,6 +85,7 @@
     <span class="sub">a colour system that survives contact with a contrast checker</span>
     <span class="spacer"></span>
     <span class="hint" style="margin-right:8px">click a swatch &mdash; every pair is audited</span>
+    <span id="explainSlot"></span>
     <button id="theme" class="mono ghost">&#9681; dark</button>
   </header>
 
@@ -128,7 +129,8 @@
 </div>
 
 <script type="module">
-import { h, $, themeToggle, clamp } from '../../shared/lab.js';
+import { h, $, themeToggle, clamp, explainer, explainButton } from '../../shared/lab.js';
+import { BRIEFINGS } from '../../shared/briefings.js';
 import { palette, PRESET, DEFAULT_SCALE, apca, apcaUse, wcagRatio, fromHex, toCss, toJson, audit } from './engine.js';
 
 themeToggle($('#theme'));
@@ -396,4 +398,8 @@ $('#metric').addEventListener('click', (e) => {
 });
 
 render();
+
+/* the plain-English briefing — opens itself once on a first visit */
+$('#explainSlot').append(explainButton(explainer(BRIEFINGS['oklch-studio'])));
+
 </script>

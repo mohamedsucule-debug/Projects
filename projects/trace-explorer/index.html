@@ -91,6 +91,7 @@
     <span class="sub">where the milliseconds actually went</span>
     <span class="spacer"></span>
     <span class="hint" style="margin-right:8px"><span class="kbd">j</span>/<span class="kbd">k</span> next trace &nbsp; drag the histogram to filter</span>
+    <span id="explainSlot"></span>
     <button id="theme" class="mono ghost">&#9681; dark</button>
   </header>
 
@@ -133,7 +134,8 @@
 </div>
 
 <script type="module">
-import { h, $, themeToggle, hidpi, css, fmt, clamp } from '../../shared/lab.js';
+import { h, $, themeToggle, hidpi, css, fmt, clamp, explainer, explainButton } from '../../shared/lab.js';
+import { BRIEFINGS } from '../../shared/briefings.js';
 import { generate, summarize, findings, criticalPath, criticalSpans, absolutize, selfTime, serviceColor, SERVICES, rankOf, percentile } from './engine.js';
 
 themeToggle($('#theme'));
@@ -464,4 +466,8 @@ function pickInteresting() {
 
 renderFleet(); renderChips(); renderList();
 select(pickInteresting());
+
+/* the plain-English briefing — opens itself once on a first visit */
+$('#explainSlot').append(explainButton(explainer(BRIEFINGS['trace-explorer'])));
+
 </script>

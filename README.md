@@ -1,10 +1,33 @@
 # Playground
 
-Eleven things I built. All of them run in a browser — no install, no signup,
+Twelve things I built. All of them run in a browser — no install, no signup,
 no video of someone else using it.
 
 **→ [Open the playground](https://mohamedsucule-debug.github.io/Projects/)**
-*(or clone it and open `index.html`)*
+
+---
+
+## The big one
+
+### [Loom](play/loom/) — build a picture by wiring boxes together
+
+Every box produces an image. One makes a cloud of random fog, one bends
+whatever it is given, one swaps grey for colour. Connect them up and the last
+box is the picture. Six worked examples come in the box; anything you make
+saves as a PNG or copies as a link that carries the whole recipe inside it.
+
+The one decision everything else follows from: **every box produces the same
+thing — an RGB image.** Never a number, never a colour, never a handle. Because
+they all speak one language, any output plugs into any input and the result is
+always defined. No type system, no compatibility matrix, no "you cannot connect
+those".
+
+Each result is cached against a fingerprint of everything that could change it
+— its settings, its size, and recursively its inputs' fingerprints — so
+dragging a slider recomputes only what follows it. Measured on the Marble
+example: 5 boxes of 7 redrawn in 30ms, against 165ms for the whole graph cold.
+
+[Full write-up, including what it deliberately does not do](play/loom/README.md).
 
 ---
 
@@ -23,7 +46,14 @@ Click any of these and they start immediately.
 ## The serious ones
 
 Same approach, harder subjects — each one takes something normally invisible and
-puts it on screen. These assume you write software.
+puts it on screen.
+
+**You do not need to know the subject.** Every one of these opens with a
+plain-English briefing: what it is, what is on screen, why anyone cares, and
+how it works underneath. Those briefings live in one file,
+[`shared/briefings.js`](shared/briefings.js), which is also what the front page
+reads — two copies of an explanation drift apart within a month, one copy
+cannot.
 
 | | |
 |---|---|
@@ -45,18 +75,28 @@ and — deliberately — what it does **not** do.
 HTML, CSS and JavaScript. The five toys are each a single self-contained file
 you can open by double-clicking it. Clone this in five years and it still runs.
 
+The front page, Loom and the six serious tools load ES modules, which browsers
+refuse to serve from a `file://` address — run `npx http-server` for those. The
+front page says so itself if you open it the wrong way, rather than rendering
+a blank section.
+
 **The serious ones split in two:** a pure `engine.js` (the algorithm — no
 screen code, testable from a terminal) and an `index.html` (the interface). The
 engine has to be *correct*; the interface has to be *understood*. Different jobs.
 
 ```
 index.html              the front page, with a live preview on every card
+shared/briefings.js     the plain-English explanation of each serious tool
 play/<name>/index.html  a toy — one file, no imports
+play/loom/
+  engine.js             node types and the evaluator, pure and DOM-free
+  presets.js            the six examples, and the auto-layout that places them
+  index.html            the editor
 projects/<name>/
   engine.js             the algorithm, pure and DOM-free
   index.html            the interface
   README.md             the design problem, and the limits
-tests/run.mjs           77 tests, no framework, no install
+tests/run.mjs           106 tests, no framework, no install
 ```
 
 ```bash
@@ -80,6 +120,9 @@ change, which is how these got caught:
   frequency was so low the entire map sat inside a single noise cell
 - the six "serious" links rendered in shouty uppercase, because a heading and a list both
   claimed the same HTML `id`
+- Loom's knob labelled "Contrast" was applying a gamma curve, so turning it up brightened
+  the image (mean 0.501 → 0.587) instead of spreading it — doing exactly the opposite of
+  what its own label promised
 
 Every one of those was *technically working code*, and no test would have flagged a single
 one of them.
