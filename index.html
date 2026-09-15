@@ -5,18 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" href="favicon.svg" />
 <meta name="theme-color" content="#06070d" />
-<title>Playground — fourteen things you can click</title>
-<meta name="description" content="Seven layouts and every tile springs between them. Drop in a photo and watch it rebuilt out of six thousand dots. Wire boxes together into a picture. Fourteen things that all run in your browser, with nothing to install." />
-<meta property="og:title" content="Playground — fourteen things you can click" />
-<meta property="og:description" content="A gallery that morphs between seven layouts on springs. A photo rebuilt out of six thousand dots. A node-based image studio. Five toys and six serious tools, each with a plain-English explanation." />
+<title>Playground — fifteen things you can click</title>
+<meta name="description" content="A paper-plane arcade game you understand in one second. A photo rebuilt out of six thousand dots. A gallery that morphs between seven layouts on springs. Fifteen things that all run in your browser, with nothing to install." />
+<meta property="og:title" content="Playground — fifteen things you can click" />
+<meta property="og:description" content="Tap to fly a paper plane through a canyon. Then: a photo rebuilt out of six thousand dots, a gallery that morphs on springs, a node-based image studio, and six serious tools with plain-English explanations." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://mohamedsucule-debug.github.io/Projects/" />
 <meta property="og:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Playground — fourteen things you can click" />
-<meta name="twitter:description" content="A gallery that morphs between seven layouts on springs, a photo rebuilt out of six thousand dots, a node-based image studio, and a drum machine with no sound files in it." />
+<meta name="twitter:title" content="Playground — fifteen things you can click" />
+<meta name="twitter:description" content="Tap to fly a paper plane through a canyon, rebuild your photo out of six thousand dots, or wire boxes together into a picture. All running in the browser." />
 <meta name="twitter:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <link rel="canonical" href="https://mohamedsucule-debug.github.io/Projects/" />
 <style>
@@ -287,7 +287,7 @@
   <header class="hero">
     <!-- ↓↓ YOUR NAME AND TITLE — edit these two lines ↓↓ -->
     <p class="eyebrow"><b>Mohamed Sucule</b> &middot; software engineer</p>
-    <h1>Fourteen things I built. <em>All of them run right here.</em></h1>
+    <h1>Fifteen things I built. <em>All of them run right here.</em></h1>
     <p>
       No videos, no screenshots, no “request a demo”. Click any of them and it starts
       immediately — in your browser, on your phone, with nothing to install.
@@ -298,7 +298,7 @@
       you press the button.
     </p>
     <div class="cta">
-      <a class="btn primary" href="play/portrait/index.html">Rebuild your photo →</a>
+      <a class="btn primary" href="play/ace/index.html">Play the game →</a>
       <a class="btn ghost" href="#toys">Or something smaller</a>
     </div>
   </header>
@@ -443,8 +443,8 @@
     </div>
     <p class="colophon">
       No frameworks, no build step, no dependencies — every page here is plain HTML, CSS and
-      JavaScript, about 15,500 lines of it, with the engine behind Morph, Portrait, Loom and
-      each of the six tools unit-tested: 159 tests, run in CI before anything is published.
+      JavaScript, about 17,000 lines of it, with the engine behind Ace, Morph, Portrait, Loom
+      and each of the six tools unit-tested: 186 tests, run in CI before anything is published.
       Written with Claude Code; the commit history is the full record.
     </p>
   </footer>
@@ -473,6 +473,12 @@ const loadModules = Promise.all([
 ]);
 
 const TOYS = [
+  {
+    href: 'play/ace/index.html', tag: 'game',
+    title: 'Ace',
+    blurb: 'Tap to fly a paper plane through a canyon. Do not hit the rocks. That is the whole game, and you will understand it before you have finished reading this.',
+    preview: acePreview,
+  },
   {
     href: 'play/sandbox/index.html', tag: 'sandbox',
     title: 'Sandbox',
@@ -560,6 +566,73 @@ function tick() {
 requestAnimationFrame(tick);
 
 /* ── previews ───────────────────────────────────────────────────────────── */
+
+/** Ace, playing itself: the real engine, flown by a bot that aims at the gaps. */
+function acePreview(api) {
+  let game = null, bot = 0;
+  const mod = import('./play/ace/engine.js').catch(() => null);
+  let E = null;
+  mod.then((m) => { E = m; });
+
+  api.reset = () => { game = null; };
+
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    ctx.fillStyle = '#12182e';
+    ctx.fillRect(0, 0, w, h);
+    if (!E) return;
+    if (!game || game.width !== w * 1.9) {
+      // the card is a wide strip, so the world is scaled to match its shape
+      game = new E.Game({ width: w * 1.9, height: h * 1.9, seed: (Math.random() * 1e6) | 0 });
+      game.flap();
+    }
+
+    // a bot good enough to look like someone playing, bad enough to crash
+    const ahead = game.rocks
+      .filter((r) => r.x + E.RULES.rockW > game.plane.x - 10)
+      .sort((a, b) => a.x - b.x)[0];
+    const aim = ahead ? ahead.gapY - 12 : game.height / 2;
+    if (game.plane.y > aim && game.plane.vy > -80) game.flap();
+    game.step(1 / 60);
+    if (game.state === 'dead' && game.deadFor > 1.1) { game.reset(); game.flap(); }
+
+    const k = w / game.width;
+    ctx.save();
+    ctx.scale(k, k);
+    const sky = ctx.createLinearGradient(0, 0, 0, game.height);
+    sky.addColorStop(0, '#1b2340'); sky.addColorStop(0.7, '#b2596a'); sky.addColorStop(1, '#ffd6a0');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, game.width, game.height);
+    ctx.fillStyle = '#2a1830';
+    for (const rock of game.rocks) {
+      for (const b of game.bars(rock)) ctx.fillRect(b.x, b.y, b.w, b.h);
+      if (rock.star && !rock.starTaken) {
+        ctx.fillStyle = '#ffd766';
+        ctx.beginPath();
+        ctx.arc(rock.x + E.RULES.rockW / 2, rock.gapY, 9, 0, 6.2832);
+        ctx.fill();
+        ctx.fillStyle = '#2a1830';
+      }
+    }
+    const p = game.plane;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.beginPath();
+    ctx.moveTo(24, 0); ctx.lineTo(-19, -14); ctx.lineTo(-9, 0); ctx.closePath();
+    ctx.fillStyle = '#fdfdfb'; ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(24, 0); ctx.lineTo(-19, 14); ctx.lineTo(-9, 0); ctx.closePath();
+    ctx.fillStyle = '#c7cee0'; ctx.fill();
+    ctx.restore();
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(255,255,255,.92)';
+    ctx.font = '700 20px "Inter", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(String(game.score), w / 2, 26);
+  };
+}
 
 /** Falling sand, in miniature: the same rules as the real one, fewer grains. */
 function sandPreview(api) {

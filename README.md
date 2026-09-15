@@ -1,6 +1,6 @@
 # Playground
 
-Fourteen things I built. All of them run in a browser — no install, no signup,
+Fifteen things I built. All of them run in a browser — no install, no signup,
 no video of someone else using it.
 
 **→ [Open the playground](https://mohamedsucule-debug.github.io/Projects/)**
@@ -80,6 +80,32 @@ example: 5 boxes of 7 redrawn in 30ms, against 165ms for the whole graph cold.
 
 ---
 
+## The game
+
+### [Ace](play/ace/) — tap to fly a paper plane through a canyon
+
+Don't hit the rocks. That's the whole game, and there is no menu, no difficulty
+select, no settings panel and no tutorial, because a game that has to be
+explained has already failed.
+
+The rules live in a DOM-free engine, which is what makes a game testable: a
+script can play a whole run and assert on the score. The world advances in
+fixed 1/120s slices however long the frame took — advancing by whatever `dt`
+arrived makes the game measurably easier on a 144Hz monitor, and a test plays an
+identical scripted run at 30, 60 and 144fps and asserts they match to six
+decimal places.
+
+That test failed twice before it passed, and **both times the test was wrong,
+not the engine** — once because the taps didn't land on a whole frame at all
+three rates, once because it checked the plane had fallen 0.5s after a flap when
+the arc doesn't come back down until 0.537s.
+
+The difficulty curve is tested by playing it: a bot that aims for the next
+opening scores 22–25 before dying at ~27 seconds, right about where the openings
+stop narrowing.
+
+[Full write-up](play/ace/README.md).
+
 ## The toys
 
 Click any of these and they start immediately.
@@ -124,7 +150,7 @@ and — deliberately — what it does **not** do.
 HTML, CSS and JavaScript. The five toys are each a single self-contained file
 you can open by double-clicking it. Clone this in five years and it still runs.
 
-The front page, Morph, Portrait, Loom and the six serious tools load ES
+The front page, Ace, Morph, Portrait, Loom and the six serious tools load ES
 modules, which browsers refuse to serve from a `file://` address — run
 `npx http-server` for those. The
 front page says so itself if you open it the wrong way, rather than rendering
@@ -138,6 +164,9 @@ engine has to be *correct*; the interface has to be *understood*. Different jobs
 index.html              the front page, with a live preview on every card
 shared/briefings.js     the plain-English explanation of each serious tool
 play/<name>/index.html  a toy — one file, no imports
+play/ace/
+  engine.js             the rules: gravity, rocks, collision, scoring — DOM-free
+  index.html            canvas, parallax, particles, synthesised sound
 play/morph/
   engine.js             seven layout algorithms + a spring integrator, DOM-free
   index.html            the interface
@@ -152,7 +181,7 @@ projects/<name>/
   engine.js             the algorithm, pure and DOM-free
   index.html            the interface
   README.md             the design problem, and the limits
-tests/run.mjs           159 tests, no framework, no install
+tests/run.mjs           186 tests, no framework, no install
 ```
 
 ```bash
