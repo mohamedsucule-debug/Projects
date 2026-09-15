@@ -1,14 +1,44 @@
 # Topple
 
-A perfectly ordinary web page. Then you knock it over.
+A perfectly ordinary web page — until you swipe across it.
 
-**→ [Knock it down](https://mohamedsucule-debug.github.io/Projects/apps/topple/)**
+**→ [Break it](https://mohamedsucule-debug.github.io/Projects/apps/topple/)**
 
-Every heading, button, card and individual word falls, bounces off the others,
-tumbles, and piles up at the bottom of the screen. Pick a word up and throw it.
-Then put the page back exactly as it was.
+Everything your finger passes through comes loose and falls. Cut the support out
+from under a paragraph and what was standing on it collapses on top. Pick a
+fallen word up and throw it at a button. Then hit rebuild and watch the page put
+itself back together, one row at a time, exactly as it was.
+
+**Swipe to break, drag to throw, rebuild to fix.** Which one you get depends on
+what is under your finger — something still standing breaks, something already
+fallen gets picked up — so there is nothing to explain and no mode to switch.
 
 ---
+
+## The loop is the point
+
+The first version of this was one button that flattened everything, and then a
+button to undo it. It was a two-second trick with nowhere to go, and the way
+back was a small pill sitting in the middle of the wreckage, the same size and
+shape as the debris around it. You had to hunt for it.
+
+Two changes fixed that.
+
+**You do the demolishing.** Every element becomes a physics body the moment the
+page loads, but held in place — it collides and it holds things up, and it does
+not move until something releases it. So a swipe is a cut: whatever the line
+passes through comes loose, and whatever was resting on it comes down. You can
+take out one nav link, or slash a diagonal through the headline, or take the
+floor out from under the cards. It is different every time because you chose
+where to cut.
+
+**The rebuild is the better half.** It is staggered from the top of the page
+downwards, so the page visibly assembles rather than snapping back in a single
+frame, with a note of a pentatonic scale per row as it lands. That is the bit
+worth watching twice.
+
+And the button lives at the **top** of the screen now. Everything falls
+downwards, so the bottom is where the debris always is.
 
 ## They are real elements the whole time
 
@@ -128,8 +158,19 @@ page that falls down.
 
 ## Details
 
-- The higher up the page something is, the harder it's shoved. A building does
-  not fall from the ground floor.
+- Elements start as **scenery**: real bodies with real mass, but with the
+  inverse zeroed so nothing can move them. Storing a mass of zero instead looks
+  equivalent and is not — release such a body later and it has nothing to be
+  pushed by, so it accelerates under gravity and drops straight through the
+  floor. There is a test for exactly that.
+- A swipe samples **along the line** since the last pointer event, not just
+  where the pointer is now. A quick flick jumps sixty pixels between events and
+  would otherwise cut a dotted line through the page.
+- A swipe begins wherever your finger goes down, hit or miss. Requiring the
+  first touch to land on something means a stroke that starts in the margin —
+  which most of them do — cuts nothing at all.
+- The higher up the page something is, the harder it's shoved by the
+  knock-it-all-down button. A building does not fall from the ground floor.
 - Mass comes from area, so a headline is heavy and a footer link is light —
   which is what makes the heap look like a collapsed page rather than a box of
   identical bricks.
@@ -144,7 +185,7 @@ page that falls down.
 
 ## Tests
 
-`node tests/run.mjs topple` — 28 of them, covering the collision detection, the
+`node tests/run.mjs topple` — 31 of them, covering the collision detection, the
 solver, stacking, sleeping and the restore:
 
 - two boxes with daylight between them are not touching, and two that overlap
@@ -165,6 +206,8 @@ solver, stacking, sleeping and the restore:
 - the same run at 30 and 120 frames a second ends in the same place
 - a body you're holding isn't dragged around by the pile, and doesn't fly home
   out from under your finger
+- scenery can be turned into something that falls, and what was resting on it
+  comes down with it — and a body built as scenery still knows what it weighs
 
 Three of those failed first time and **all three were the test's fault**: the
 separating-axis test correctly finds the *shallowest* way out, so two wide flat

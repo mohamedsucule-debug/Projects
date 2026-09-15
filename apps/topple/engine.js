@@ -70,13 +70,17 @@ export class Body {
     this.touching = false;
     this.grabbed = false;
 
-    const m = fixed ? 0 : (mass ?? (w * h) / 6000);
+    /* The real mass is worked out whatever the body is doing, and only the
+       INVERSE is zeroed to pin it in place. Storing a mass of zero for
+       scenery looks equivalent and is not: release it later and it has
+       nothing to be pushed by, so it accelerates under gravity and drops
+       straight through the floor. */
+    const m = mass ?? (w * h) / 6000;
     this.mass = m;
-    this.invMass = m > 0 ? 1 / m : 0;
     // a rectangle's moment of inertia about its centre
-    const I = m > 0 ? (m * (w * w + h * h)) / 12 : 0;
-    this.inertia = I;
-    this.invInertia = I > 0 ? 1 / I : 0;
+    this.inertia = (m * (w * w + h * h)) / 12;
+    this.invMass = fixed || m <= 0 ? 0 : 1 / m;
+    this.invInertia = fixed || this.inertia <= 0 ? 0 : 1 / this.inertia;
   }
 
   /** The four corners, in world space. */
@@ -93,6 +97,25 @@ export class Body {
   }
 
   wake() { this.asleep = false; this.still = 0; }
+
+  /**
+   * Turn a body between being part of the scenery and being something that
+   * falls. A fixed body has no mass the solver can move, so switching means
+   * recomputing what it weighs — and things already resting on it have to be
+   * woken, or they hang in the air where it used to hold them up.
+   */
+  setFixed(flag) {
+    this.fixed = !!flag;
+    if (this.fixed) {
+      this.invMass = 0; this.invInertia = 0;
+      this.vel = { x: 0, y: 0 }; this.spin = 0;
+    } else {
+      this.invMass = this.mass > 0 ? 1 / this.mass : 0;
+      this.invInertia = this.inertia > 0 ? 1 / this.inertia : 0;
+      this.wake();
+    }
+    return this;
+  }
 
   /* What the solver should think this body weighs. A sleeping body has to look
      exactly like a wall: if it keeps a real mass, it absorbs a share of every

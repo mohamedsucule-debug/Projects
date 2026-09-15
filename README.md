@@ -82,9 +82,14 @@ example: 5 boxes of 7 redrawn in 30ms, against 165ms for the whole graph cold.
 
 ### [Topple](apps/topple/) — a web page with weight
 
-A perfectly ordinary web page. Then you knock it over, and every heading, button
-and individual word falls, bounces off the others and piles up at the bottom of
-the screen. Pick a word up and throw it. Then put the page back.
+A perfectly ordinary web page — until you swipe across it, and everything your
+finger passes through comes loose and falls. Cut the support out from under a
+paragraph and what was standing on it collapses on top. Then hit rebuild and
+watch the page assemble itself, one row at a time.
+
+Every element becomes a physics body the moment the page loads, but held in
+place: it collides and it holds things up until something releases it. That is
+what makes a swipe a cut rather than a button.
 
 **They stay real elements the whole time.** Nothing is drawn on a canvas and
 nothing is a picture — each element is moved with a transform, which changes
@@ -267,7 +272,7 @@ projects/<name>/
   engine.js             the algorithm, pure and DOM-free
   index.html            the interface
   README.md             the design problem, and the limits
-tests/run.mjs           414 tests, no framework, no install
+tests/run.mjs           417 tests, no framework, no install
 ```
 
 ```bash

@@ -322,6 +322,49 @@ test('a box knows where its corners are', () => {
   assert.close(Math.max(...turned.map((c) => Math.abs(c.x))), 10, 1e-6, 'turning it did not swap its sides');
 });
 
+test('scenery can be turned into something that falls', () => {
+  /* The page stands up as fixed bodies that still collide, so a paragraph can
+     be cut loose and whatever was resting on it comes down. */
+  const w = new World({ width: 900, height: 600 });
+  const shelf = w.add(box({ x: 450, y: 400, w: 300, h: 30, fixed: true }));
+  const on = w.add(box({ x: 450, y: 360, w: 120, h: 40 }));
+  run(w, 200);
+  assert.close(shelf.p.y, 400, 1e-9, 'the shelf moved while it was scenery');
+  assert.ok(on.p.y < 380, 'the box did not come to rest on the shelf');
+
+  shelf.setFixed(false);
+  on.wake();
+  run(w, 260);
+  assert.ok(shelf.p.y > 560, `the shelf did not fall — it is at ${shelf.p.y.toFixed(0)}`);
+  assert.ok(shelf.p.y < 620, `the shelf fell THROUGH the floor to ${shelf.p.y.toFixed(0)}`);
+  assert.ok(on.p.y < shelf.p.y, 'the box should still be on top of the shelf');
+});
+
+test('a body built as scenery still knows what it weighs', () => {
+  /* Storing a mass of zero for scenery looks equivalent to zeroing the inverse
+     and is not: release it later and it has nothing to be pushed by, so it
+     accelerates under gravity and drops straight through the world. */
+  const b = new Body({ x: 0, y: 0, w: 100, h: 40, fixed: true });
+  assert.ok(b.mass > 0, 'a fixed body was given no mass at all');
+  assert.ok(b.inertia > 0);
+  assert.equal(b.invMass, 0, 'and it must still be immovable while it is fixed');
+  b.setFixed(false);
+  assert.ok(b.invMass > 0, 'releasing it left it massless');
+  assert.close(b.invMass, 1 / b.mass, 1e-12);
+  assert.close(b.invInertia, 1 / b.inertia, 1e-12);
+});
+
+test('turning a body back into scenery stops it dead', () => {
+  const b = new Body({ x: 0, y: 0, w: 100, h: 40 });
+  b.vel = { x: 500, y: -200 };
+  b.spin = 3;
+  b.setFixed(true);
+  assert.equal(b.vel.x, 0);
+  assert.equal(b.vel.y, 0);
+  assert.equal(b.spin, 0);
+  assert.equal(b.im, 0);
+});
+
 test('clamp does what it says', () => {
   assert.equal(clamp(5, 0, 1), 1);
   assert.equal(clamp(-5, 0, 1), 0);
