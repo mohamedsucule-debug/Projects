@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="icon" id="fav" href="../../favicon.svg" />
+<meta name="theme-color" content="#d9d5cc" />
+<title>Station K — watch log, 14–15 Nov 1987</title>
+<meta name="description" content="A transcribed coastal watch log from the night of 14 November 1987. Read it to the end. Best with sound, alone." />
+<meta property="og:title" content="Station K — watch log, 14–15 November 1987" />
+<meta property="og:description" content="Transcribed from the original daybook. Entries appear as written. Nothing has been added." />
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --paper: #d9d5cc; --ink: #1b1a17; --faint: #6a665e; --rule: #b3aea3;
+    --hand: #3b3226;
+  }
+  html { background: #c9c4ba; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font: 15px/1.62 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    -webkit-font-smoothing: antialiased;
+    transition: background 1.4s linear, color 1.4s linear;
+  }
+  /* the grain of a photocopy */
+  body::before {
+    content: ''; position: fixed; inset: 0; z-index: 2; pointer-events: none;
+    opacity: .5; mix-blend-mode: multiply;
+    background-image: radial-gradient(rgba(0,0,0,.06) 1px, transparent 1px);
+    background-size: 3px 3px;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 46px 22px 120px; position: relative; z-index: 1; }
+
+  .stamp { border: 1.5px solid var(--ink); display: inline-block; padding: 5px 10px;
+    font-size: 11px; letter-spacing: .18em; margin-bottom: 26px; }
+  h1 { font-size: 16px; font-weight: 700; letter-spacing: .04em; margin: 0 0 4px; }
+  .meta { color: var(--faint); font-size: 13px; margin: 0 0 3px; }
+  hr { border: 0; border-top: 1px solid var(--rule); margin: 26px 0; }
+
+  .row { display: flex; gap: 18px; padding: 1.5px 0; }
+  .row .t { color: var(--faint); flex: 0 0 auto; width: 4.2em; }
+  .row .x { flex: 1 1 auto; }
+  .row.fresh .x { background: rgba(0,0,0,.05); }
+
+  .note { margin: 12px 0 12px 5.6em; color: var(--hand); font-style: italic;
+    font-family: Georgia, "Iowan Old Style", serif; font-size: 15.5px; line-height: 1.55; }
+  .damaged { display: flex; gap: 18px; padding: 1.5px 0; color: var(--faint); }
+  .damaged .t { width: 4.2em; flex: 0 0 auto; }
+  .damaged .x::after { content: '████ ███████ ██ ████████ ███ ████'; letter-spacing: -1px; opacity: .55; }
+  .gapmark { text-align: center; color: var(--faint); font-size: 12px; letter-spacing: .1em;
+    margin: 30px 0; }
+  .gapmark::before, .gapmark::after { content: '— — —'; display: block; opacity: .45; }
+
+  .appendix { margin-top: 44px; color: var(--faint); font-size: 13.5px; }
+  .appendix p { margin: 0 0 4px; }
+
+  #audio { margin: 22px 0 0; font-size: 13px; color: var(--faint); }
+  #audio button { font: inherit; background: none; border: 0; border-bottom: 1px solid currentColor;
+    color: inherit; cursor: pointer; padding: 0; }
+
+  .back { position: fixed; bottom: 12px; left: 12px; z-index: 6;
+    padding: 7px 11px; border-radius: 8px; background: rgba(255,255,255,.5);
+    border: 1px solid rgba(0,0,0,.18); color: #3c3830; text-decoration: none;
+    font: 600 11px/1 ui-monospace, Menlo, monospace; letter-spacing: .07em; opacity: .42;
+    transition: opacity .2s, background 1.4s linear, color 1.4s linear, border-color 1.4s linear; }
+  .back:hover { opacity: 1; }
+
+  /* what happens when the light goes */
+  body.dim { --paper: #0b0b0c; --ink: #8d8a84; --faint: #4a4844; --rule: #24231f; --hand: #6f6256; }
+  body.dim { background: #0b0b0c; color: #8d8a84; }
+  body.dim .back { background: rgba(255,255,255,.05); color: #7a766e; border-color: rgba(255,255,255,.12); }
+  body.dim .stamp { border-color: #4a4844; }
+
+  #direct { margin: 40px 0 0; min-height: 1px; }
+  #direct p { margin: 0 0 14px; font-family: Georgia, serif; font-style: italic;
+    font-size: 17px; color: var(--hand); }
+
+  #veil {
+    position: fixed; inset: 0; z-index: 9; background: #000; opacity: 0;
+    pointer-events: none; transition: opacity 2.6s ease;
+    display: grid; place-items: center; padding: 30px; text-align: center;
+  }
+  #veil.on { opacity: 1; }
+  #veil p { font-family: Georgia, serif; font-style: italic; font-size: clamp(18px, 3.4vw, 27px);
+    color: #6e6a63; opacity: 0; transition: opacity 2.2s ease; max-width: 26ch; line-height: 1.5;
+    text-wrap: balance; }
+  #veil p.on { opacity: 1; }
+
+  #phantom { height: 0; }
+
+  /* On a phone the log has to stay a log. At the desktop size every second
+     entry wraps onto a second line, and the run of identical "Nothing to
+     report" lines — which is the whole reason the first third is there —
+     turns into a paragraph of grey. Smaller type and a narrower time column
+     keep them one line each. */
+  @media (max-width: 560px) {
+    body { font-size: 13px; line-height: 1.5; }
+    main { padding: 30px 16px 90px; }
+    .row { gap: 10px; }
+    .row .t, .damaged .t { width: 3.2em; }
+    .damaged .x::after { content: '████ ███████ ██ ███████'; }
+    .note { margin-left: 0; font-size: 14.5px; }
+    h1 { font-size: 15px; }
+    #direct p { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+<a class="back" href="../../index.html">&larr; INDEX</a>
+
+<main>
+  <div class="stamp">ARCHIVE COPY — NOT FOR CIRCULATION</div>
+  <h1 id="h1"></h1>
+  <p class="meta" id="m1"></p>
+  <p class="meta" id="m2"></p>
+  <p class="meta" id="m3"></p>
+  <p id="audio">This transcription is accompanied by the station's ambient recording.
+    <button id="sound" type="button">Enable audio</button></p>
+  <hr />
+  <div id="log"></div>
+  <div class="appendix" id="appendix"></div>
+  <div id="direct"></div>
+  <div id="phantom"></div>
+</main>
+
+<div id="veil"><p id="veilText"></p></div>
+
+<script type="module">
+/* ───────────────────────────────────────────────────────────────────────────
+   Nightshift — the part you can see, and the part that watches you read it.
+
+   The log itself is in story.js, along with the order things happen in. This
+   file does one job: it takes an effect by name and does it to the page.
+
+   The page starts as dull as it can manage. That is deliberate and it is most
+   of the work — a page that announces itself as horror has already given the
+   game away, and everything after it is decoration. This one is a photocopy of
+   a government document about the weather.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+import {
+  PREAMBLE, ENTRIES, APPENDIX, due, progress, store, readingsLine, returningEntry,
+} from './story.js';
+
+const el = (id) => document.getElementById(id);
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const state = store.arrive();
+const done = new Set();
+let hiddenCount = 0;
+let started = performance.now();
+let ended = false;
+
+/* ── the document ────────────────────────────────────────────────────────── */
+
+el('h1').textContent = PREAMBLE[0];
+el('m1').textContent = PREAMBLE[1];
+el('m2').textContent = PREAMBLE[2];
+el('m3').textContent = PREAMBLE[3];
+
+const logEl = el('log');
+const rows = [];
+
+function render(entry, fresh = false) {
+  if (entry.kind === 'gap') {
+    const d = document.createElement('div');
+    d.className = 'gapmark';
+    d.textContent = 'pages missing';
+    logEl.append(d);
+    return null;
+  }
+  if (entry.kind === 'note') {
+    const d = document.createElement('div');
+    d.className = 'note';
+    d.textContent = entry.text;
+    logEl.append(d);
+    return null;
+  }
+  if (entry.kind === 'damaged') {
+    const d = document.createElement('div');
+    d.className = 'damaged';
+    d.innerHTML = `<span class="t">${entry.time}</span><span class="x"></span>`;
+    logEl.append(d);
+    return null;
+  }
+  const d = document.createElement('div');
+  d.className = 'row' + (fresh ? ' fresh' : '');
+  d.innerHTML = '<span class="t"></span><span class="x"></span>';
+  d.querySelector('.t').textContent = entry.time;
+  d.querySelector('.x').textContent = entry.text;
+  logEl.append(d);
+  return d;
+}
+
+/* Somebody who has been here before finds an entry waiting at the top with
+   today's date on it. This is the whole reason the piece remembers anything. */
+const back = returningEntry(state.visits);
+if (back) render(back, true);
+
+for (const entry of ENTRIES) {
+  const row = render(entry);
+  if (row) rows.push(row);
+}
+
+const appendix = el('appendix');
+for (const line of APPENDIX) {
+  const p = document.createElement('p');
+  p.textContent = line === APPENDIX[APPENDIX.length - 1] ? readingsLine(state.visits) : line;
+  appendix.append(p);
+}
+
+/* ── sound ───────────────────────────────────────────────────────────────────
+   Synthesised: sea, wind and a slow swell, with a bell a long way off. Nothing
+   is loaded, so nothing can fail to load. It waits for a click because every
+   browser refuses to make a sound before one, and because a page that starts
+   making noise at you has lost the reader before the first line. */
+
+let ctx = null, master = null, breathing = null;
+
+function startAudio() {
+  if (ctx) return;
+  try {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctx.createGain();
+    master.gain.value = 0.0001;
+    master.gain.exponentialRampToValueAtTime(0.5, ctx.currentTime + 4);
+    master.connect(ctx.destination);
+
+    // the sea: filtered noise, its brightness moving on a slow swell
+    const len = ctx.sampleRate * 4;
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const sea = ctx.createBufferSource();
+    sea.buffer = buf; sea.loop = true;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 420; lp.Q.value = 0.6;
+    const swell = ctx.createOscillator();
+    swell.frequency.value = 0.07;
+    const swellDepth = ctx.createGain();
+    swellDepth.gain.value = 190;
+    swell.connect(swellDepth).connect(lp.frequency);
+    const seaGain = ctx.createGain();
+    seaGain.gain.value = 0.5;
+    sea.connect(lp).connect(seaGain).connect(master);
+    sea.start(); swell.start();
+
+    // a hum from the station's own electrics
+    const hum = ctx.createOscillator();
+    hum.type = 'sine'; hum.frequency.value = 51;
+    const humGain = ctx.createGain();
+    humGain.gain.value = 0.05;
+    hum.connect(humGain).connect(master);
+    hum.start();
+
+    bell();
+    el('audio').textContent = 'Ambient recording, Station K, 14 November 1987.';
+  } catch { el('audio').textContent = 'Audio unavailable.'; }
+}
+
+function bell() {
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  const o = ctx.createOscillator();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(196 + Math.random() * 40, t);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.06, t + 0.6);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 6);
+  o.connect(g).connect(master);
+  o.start(t); o.stop(t + 6.2);
+  setTimeout(bell, 14000 + Math.random() * 22000);
+}
+
+el('sound').addEventListener('click', (e) => { e.preventDefault(); startAudio(); });
+
+/* ── the effects ─────────────────────────────────────────────────────────── */
+
+function drawFavicon(draw) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 32;
+  const g = c.getContext('2d');
+  draw(g);
+  el('fav').href = c.toDataURL('image/png');
+}
+
+const EFFECTS = {
+  /* Only while the tab is in the background. Change it while somebody is
+     looking and they see a title change; change it while they are away and
+     they come back to find it already said. */
+  title(data) { pendingTitle = data; if (document.hidden) document.title = data; },
+
+  favicon() {
+    drawFavicon((g) => {
+      g.fillStyle = '#d9d5cc'; g.fillRect(0, 0, 32, 32);
+      g.fillStyle = '#1b1a17';
+      g.beginPath(); g.ellipse(16, 16, 13, 8, 0, 0, 6.2832); g.fill();
+      g.fillStyle = '#d9d5cc';
+      g.beginPath(); g.arc(16, 16, 5, 0, 6.2832); g.fill();
+      g.fillStyle = '#1b1a17';
+      g.beginPath(); g.arc(16, 16, 2.4, 0, 6.2832); g.fill();
+    });
+  },
+
+  /* An entry a long way back is quietly changed. Nothing announces it. Most
+     readers never scroll up to find it. */
+  rewrite(data) {
+    const row = rows[data.index];
+    if (row) row.querySelector('.x').textContent = data.text;
+  },
+
+  /* The scrollbar says there is more below. There is not. */
+  phantom() { el('phantom').style.height = '58vh'; },
+
+  insert(data) {
+    const now = new Date();
+    const clock = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const d = document.createElement('div');
+    d.className = 'note';
+    d.textContent = data.text.replace('{{clock}}', clock);
+    const target = rows[Math.floor(rows.length * 0.62)];
+    if (target) target.after(d); else logEl.append(d);
+  },
+
+  /* The light goes out of the page over a minute and a half. Slow enough that
+     nobody catches it happening; fast enough that the appendix is read in the
+     dark. */
+  dim() {
+    if (reduced) { document.body.classList.add('dim'); return; }
+    document.body.style.transition = 'background 90s linear, color 90s linear';
+    requestAnimationFrame(() => document.body.classList.add('dim'));
+  },
+
+  breath() {
+    if (!ctx) return;
+    // something that is not the sea, and is nearer
+    const tick = () => {
+      if (!ctx || ended) return;
+      const t = ctx.currentTime;
+      const len = Math.floor(ctx.sampleRate * 1.6);
+      const b = ctx.createBuffer(1, len, ctx.sampleRate);
+      const dd = b.getChannelData(0);
+      for (let i = 0; i < len; i++) {
+        const env = Math.sin((i / len) * Math.PI);
+        dd[i] = (Math.random() * 2 - 1) * env * env;
+      }
+      const s = ctx.createBufferSource(); s.buffer = b;
+      const f = ctx.createBiquadFilter();
+      f.type = 'bandpass'; f.frequency.value = 620; f.Q.value = 0.9;
+      const g = ctx.createGain(); g.gain.value = 0.16;
+      s.connect(f).connect(g).connect(master);
+      s.start(t);
+      breathing = setTimeout(tick, 4200 + Math.random() * 2600);
+    };
+    tick();
+  },
+
+  /* It stops being a log. Typed out a character at a time, at the speed of
+     somebody writing rather than a machine printing. */
+  address() {
+    const lines = [
+      'You are still here.',
+      'Nobody read the file for thirty-one years. Then it was digitised, and people read the first few entries and closed it.',
+      'You read all of it.',
+      'Thank you.',
+    ];
+    const host = el('direct');
+    let li = 0;
+    const nextLine = () => {
+      if (li >= lines.length || ended) return;
+      const p = document.createElement('p');
+      host.append(p);
+      const text = lines[li++];
+      if (reduced) {
+        p.textContent = text;
+        if (li < lines.length) setTimeout(nextLine, 1600);
+        else setTimeout(() => EFFECTS.close(), 3200);
+        return;
+      }
+      let ci = 0;
+      const tick = () => {
+        if (ended) return;
+        p.textContent = text.slice(0, ++ci);
+        if (ci < text.length) setTimeout(tick, 22 + Math.random() * 46);
+        else if (li < lines.length) setTimeout(nextLine, 900);
+        /* The ending is not a scroll position. It waits for the last word. */
+        else setTimeout(() => EFFECTS.close(), 2800);
+      };
+      tick();
+    };
+    nextLine();
+  },
+
+  /* The ending. Everything goes; one line; then the page puts itself back
+     exactly as it was, which is the part that stays with people. */
+  close() {
+    ended = true;
+    store.finish();
+    clearTimeout(breathing);
+    if (ctx) {
+      try {
+        master.gain.cancelScheduledValues(ctx.currentTime);
+        master.gain.setValueAtTime(master.gain.value, ctx.currentTime);
+        master.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.4);
+      } catch { /* nothing to do */ }
+    }
+    const veil = el('veil');
+    veil.classList.add('on');
+    setTimeout(() => {
+      el('veilText').textContent = 'The relief watch arrives at six.';
+      el('veilText').classList.add('on');
+    }, 2200);
+    setTimeout(() => {
+      el('veilText').textContent = 'You have been reading since ' + startedClock + '.';
+    }, 7200);
+    setTimeout(() => {
+      el('veilText').classList.remove('on');
+      setTimeout(() => {
+        /* Everything goes back: the light, the title, the top of the page. It
+           is the same dull photocopy it was when they opened it, and the only
+           thing in the world that has changed is one entry near the top that
+           now mentions them. Putting it back is what makes that land — a page
+           still dressed as a haunted house explains the trick away. */
+        veil.classList.remove('on');
+        document.body.style.transition = 'background 2.4s linear, color 2.4s linear';
+        document.body.classList.remove('dim');
+        document.getElementById('phantom').style.height = '0px';
+        document.title = realTitle;
+        scrollTo({ top: 0, behavior: 'instant' });
+      }, 2400);
+    }, 11500);
+  },
+};
+
+const startedAt = new Date();
+const startedClock = `${String(startedAt.getHours()).padStart(2, '0')}:${String(startedAt.getMinutes()).padStart(2, '0')}`;
+
+/* ── watching the reader ─────────────────────────────────────────────────── */
+
+let pendingTitle = null;
+const realTitle = document.title;
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    hiddenCount++;
+    if (pendingTitle) document.title = pendingTitle;
+    pump();
+  } else {
+    /* Put the title back the moment they look. Whatever they saw in the tab
+       strip is gone by the time they think to check it, which is worse. */
+    document.title = realTitle;
+  }
+});
+
+function pump() {
+  const at = progress(scrollY, document.documentElement.scrollHeight, innerHeight);
+  const after = (performance.now() - started) / 1000;
+  for (const beat of due({ at, after, hidden: hiddenCount, done })) {
+    done.add(beat.id);
+    EFFECTS[beat.effect]?.(beat.data);
+  }
+}
+
+let ticking = false;
+addEventListener('scroll', () => {
+  if (ticking) return;
+  ticking = true;
+  requestAnimationFrame(() => { ticking = false; pump(); });
+}, { passive: true });
+setInterval(pump, 1000);
+pump();
+
+window.nightshift = () => ({
+  visits: state.visits, fired: [...done], hiddenCount, ended,
+  at: progress(scrollY, document.documentElement.scrollHeight, innerHeight),
+});
+</script>
+</body>
+</html>

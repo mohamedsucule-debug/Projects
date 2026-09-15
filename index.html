@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" href="favicon.svg" />
 <meta name="theme-color" content="#06070d" />
-<title>Playground — twenty-two things you can click</title>
-<meta name="description" content="A paper-plane arcade game you understand in one second. A photo rebuilt out of six thousand dots. A gallery that morphs between seven layouts on springs. Twenty-two things that all run in your browser, with nothing to install." />
-<meta property="og:title" content="Playground — twenty-two things you can click" />
+<title>Playground — twenty-three things you can click</title>
+<meta name="description" content="A ghost story that uses your browser as its stage. A paper-plane arcade game you understand in one second. A photo rebuilt out of six thousand dots. Twenty-three things that all run in your browser, with nothing to install." />
+<meta property="og:title" content="Playground — twenty-three things you can click" />
 <meta property="og:description" content="Tap to fly a paper plane through a canyon. Then: a photo rebuilt out of six thousand dots, a gallery that morphs on springs, a node-based image studio, and six serious tools with plain-English explanations." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://mohamedsucule-debug.github.io/Projects/" />
@@ -15,7 +15,7 @@
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Playground — twenty-two things you can click" />
+<meta name="twitter:title" content="Playground — twenty-three things you can click" />
 <meta name="twitter:description" content="Tap to fly a paper plane through a canyon, rebuild your photo out of six thousand dots, or wire boxes together into a picture. All running in the browser." />
 <meta name="twitter:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <link rel="canonical" href="https://mohamedsucule-debug.github.io/Projects/" />
@@ -209,15 +209,16 @@
   <header class="hero">
     <!-- ↓↓ YOUR NAME AND TITLE — edit these two lines ↓↓ -->
     <p class="eyebrow"><b>Mohamed Sucule</b> &middot; software engineer</p>
-    <h1>Twenty-two things I built. <em>All of them run right here.</em></h1>
+    <h1>Twenty-three things I built. <em>All of them run right here.</em></h1>
     <p>
       No videos, no screenshots, no “request a demo”. Click any of them and it starts
       immediately — in your browser, on your phone, with nothing to install.
     </p>
     <p>
-      Start with the toys. There is a sandbox you can set on fire, a drum machine with
-      no sound files in it, and an island generator that invents a new world every time
-      you press the button.
+      Start at the top. The first one is a ghost story that uses your browser as its
+      stage — read that one alone. After it there is a page you can knock over with your
+      finger, a sandbox you can set on fire, and an island generator that invents a new
+      world every time you press the button.
     </p>
     <div class="cta">
       <a class="btn primary" href="#toys">Play with something →</a>
@@ -293,8 +294,8 @@
     </div>
     <p class="colophon">
       No frameworks, no build step, no dependencies — every page here is plain HTML, CSS and
-      JavaScript, about 17,000 lines of it, with the engine behind Ace, Morph, Portrait, Loom
-      and each of the six tools unit-tested: 417 tests, run in CI before anything is published.
+      JavaScript, about 18,000 lines of it, with the engine behind Ace, Morph, Portrait, Loom,
+      Nightshift and each of the tools unit-tested: 438 tests, run in CI before anything is published.
       Written with Claude Code; the commit history is the full record.
     </p>
   </footer>
@@ -322,23 +323,19 @@ const loadModules = Promise.all([
   import('./play/morph/engine.js'),
 ]);
 
-/* Games and Flow first: they are the ones that need no explanation and
-   reward a click immediately. The tools come after them. */
-/* Not six games in a row. They are good but they are the same kind of good,
-   and a grid that opens with six of them says this is a person who makes
-   arcade games. Two games, then something that is plainly not one, then keep
-   alternating — no more than two of a kind before the subject changes. */
-/* Not six games in a row. They are good but they are the same kind of good,
-   and a grid that opens with six of them says this is a person who makes
-   arcade games. Mercury first because it is the one that stops somebody
-   scrolling; then two games, then something that is plainly not one, then
-   keep alternating — no more than two of a kind before the subject changes. */
-/* Topple first: it is the one that makes somebody who does not write software
-   stop and say "that is a web page?". After that, never more than two of a
-   kind in a row — six games together are good but they are the same kind of
-   good, and a grid that opens with six of them says this is a person who
+/* Nightshift first. Everything else here is something you play with; that one
+   is something that happens to you, and it is the only card where somebody who
+   does not write software calls a friend over. After it, never more than two
+   of a kind in a row — six games together are good, but they are the same kind
+   of good, and a grid that opens with six of them says this is a person who
    makes arcade games. */
 const TOYS = [
+  {
+    href: 'apps/nightshift/index.html', tag: 'read it alone',
+    title: 'Nightshift',
+    blurb: 'A coastal watch log from one night in 1987, transcribed from the original daybook. It opens with the weather and the shipping and it does not stay there. Read it to the end — it is reading you back.',
+    preview: nightshiftPreview,
+  },
   {
     href: 'apps/topple/index.html', tag: 'knock it over', gl: false,
     title: 'Topple',
@@ -1124,6 +1121,87 @@ function mercuryPreview(api) {
 /** Topple, in miniature: the real physics engine, knocking over a tiny page.
     The shapes are drawn rather than being DOM, but every position and angle
     comes from the same solver the real one uses. */
+/* The card is the page in miniature: a dull log typing itself out, three
+   entries of weather, and then one line that is not about the weather. Every
+   other card on this grid sells itself by moving; this one sells itself by
+   what it says, so the only motion is a cursor. */
+function nightshiftPreview(api) {
+  const SCRIPT = [
+    ['2200', 'Watch commenced. Wind SW 4.'],
+    ['2215', 'Nothing to report.'],
+    ['2230', 'MV LOCHMOR passed E-bound.'],
+    ['2245', 'Nothing to report.'],
+    ['0030', 'Contact bearing 041. No lights.'],
+    ['0145', 'It does not close while I watch.'],
+    ['0530', 'It is in the log.'],
+    ['0615', 'You have been reading for'],
+    ['', 'some time now.'],
+  ];
+  const CPS = 26;          // characters a second, about a slow typist
+  const HOLD = 1.1;        // a beat between entries
+  const REST = 3.4;        // how long the finished page sits there
+  let t = 0;
+
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    t += 1 / 60;
+
+    const total = SCRIPT.reduce((a, [, x]) => a + x.length / CPS + HOLD, 0);
+    const loop = total + REST;
+    const now = t % loop;
+
+    ctx.fillStyle = '#d9d5cc';
+    ctx.fillRect(0, 0, w, h);
+
+    /* the grain of the photocopy, same trick as the page itself */
+    ctx.fillStyle = 'rgba(0,0,0,.05)';
+    for (let y = 2; y < h; y += 3) for (let x = 2; x < w; x += 3) ctx.fillRect(x, y, 1, 1);
+
+    /* Right-aligned and below the rule: the card's tag chip sits over the
+       top-left corner and would otherwise print straight through the header
+       and the first two entries. */
+    ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(27,26,23,.5)';
+    ctx.font = '600 8.5px ui-monospace, "SF Mono", Menlo, monospace';
+    ctx.fillText('STATION K — WATCH LOG, 14 NOV 1987', w - 13, 21);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(27,26,23,.22)';
+    ctx.fillRect(13, 42, w - 26, 1);
+
+    const top = 60;
+    const lh = Math.min(17, (h - top - 12) / SCRIPT.length);
+    let clock = 0;
+    let caret = null;
+
+    SCRIPT.forEach(([time, text], i) => {
+      const span = text.length / CPS;
+      const shown = now <= clock ? 0
+        : now >= clock + span ? text.length
+        : Math.floor((now - clock) / span * text.length);
+      clock += span + HOLD;
+      if (shown === 0) return;
+
+      const y = top + i * lh;
+      const body = text.slice(0, shown);
+      /* The turn: once the log stops being about the weather it stops being
+         grey, and by the last two lines it is addressing whoever is reading. */
+      const heat = i >= 6 ? 1 : i >= 4 ? 0.55 : 0;
+      ctx.font = '500 10px ui-monospace, "SF Mono", Menlo, monospace';
+      ctx.fillStyle = 'rgba(27,26,23,.42)';
+      if (time) ctx.fillText(time, 13, y);
+      ctx.fillStyle = heat ? `rgba(${90 + heat * 20}, ${26 - heat * 8}, ${20}, ${0.72 + heat * 0.28})`
+                           : 'rgba(27,26,23,.82)';
+      ctx.fillText(body, 45, y);
+      if (shown < text.length) caret = { x: 45 + ctx.measureText(body).width + 1, y };
+    });
+
+    if (caret && Math.floor(t * 2.2) % 2 === 0) {
+      ctx.fillStyle = 'rgba(27,26,23,.7)';
+      ctx.fillRect(caret.x, caret.y - 7.5, 5, 9);
+    }
+  };
+}
+
 function topplePreview(api) {
   let E = null, world = null, parts = [], phase = 0, at = 0;
   import('./apps/topple/engine.js').then((m) => { E = m; }).catch(() => null);

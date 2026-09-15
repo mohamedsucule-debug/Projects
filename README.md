@@ -1,6 +1,6 @@
 # Playground
 
-Twenty-two things I built. All of them run in a browser — no install, no signup,
+Twenty-three things I built. All of them run in a browser — no install, no signup,
 no video of someone else using it.
 
 **→ [Open the playground](https://mohamedsucule-debug.github.io/Projects/)**
@@ -8,6 +8,41 @@ no video of someone else using it.
 ---
 
 ## The big ones
+
+### [Nightshift](apps/nightshift/) — a horror story that reads you back
+
+A coastal watch log from one night in 1987. Wind speed, visibility, one ship
+passing on schedule, and six entries that say *Nothing to report.* It does not
+stay there.
+
+**The page is deliberately boring, and that is most of the work.** The reflex
+with a horror piece is to announce it — dark page, flickering serif, a heartbeat
+under the text — which tells the reader what they are looking at in the first
+half second. This one is a photocopy of a government document about the weather.
+There is a test whose only job is to keep it that way: it finds the first entry
+that is not weather and fails if anything before it is interesting.
+
+The haunting is **twelve beats in a list**, each a trigger and the name of an
+effect. Triggers are how far you have read, how long you have been here, and how
+many times you have switched tabs and come back. So the order of a haunting is
+a pure function, and it is tested: nothing fires twice, nothing fires early, and
+somebody who flings the scrollbar to the bottom still gets the build.
+
+None of it is a canvas. **The tab title changes, but only while you are looking
+somewhere else** — and it is back to normal before you can turn round. The
+favicon becomes an eye, drawn at runtime. An entry you read ten minutes ago has
+changed behind you. The scrollbar grows. The page tells you the time in the room
+you are sitting in.
+
+Then it puts everything back exactly as you found it, except for one line.
+
+The bug worth reading about: the ending used to be a beat at 98% scrolled, so
+anybody who threw the scrollbar to the bottom got the closing address and the
+fade to black in the same frame — the payload of the whole piece managed one
+character before the veil covered it. Driving it headlessly and printing the
+text is what caught it. The ending has no trigger at all now.
+
+[Full write-up](apps/nightshift/README.md) — after you have read it.
 
 ### [Morph](play/morph/) — seven layouts, no transitions anywhere
 
@@ -268,11 +303,14 @@ play/loom/
   engine.js             node types and the evaluator, pure and DOM-free
   presets.js            the six examples, and the auto-layout that places them
   index.html            the editor
+apps/nightshift/
+  story.js              the log, the beats, and the pure functions that time them
+  index.html            the document, and the map from effect name to what it does
 projects/<name>/
   engine.js             the algorithm, pure and DOM-free
   index.html            the interface
   README.md             the design problem, and the limits
-tests/run.mjs           417 tests, no framework, no install
+tests/run.mjs           438 tests, no framework, no install
 ```
 
 ```bash
