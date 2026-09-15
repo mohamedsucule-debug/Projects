@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" href="favicon.svg" />
 <meta name="theme-color" content="#06070d" />
-<title>Playground — seventeen things you can click</title>
-<meta name="description" content="A paper-plane arcade game you understand in one second. A photo rebuilt out of six thousand dots. A gallery that morphs between seven layouts on springs. Seventeen things that all run in your browser, with nothing to install." />
-<meta property="og:title" content="Playground — seventeen things you can click" />
+<title>Playground — eighteen things you can click</title>
+<meta name="description" content="A paper-plane arcade game you understand in one second. A photo rebuilt out of six thousand dots. A gallery that morphs between seven layouts on springs. Eighteen things that all run in your browser, with nothing to install." />
+<meta property="og:title" content="Playground — eighteen things you can click" />
 <meta property="og:description" content="Tap to fly a paper plane through a canyon. Then: a photo rebuilt out of six thousand dots, a gallery that morphs on springs, a node-based image studio, and six serious tools with plain-English explanations." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://mohamedsucule-debug.github.io/Projects/" />
@@ -15,7 +15,7 @@
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Playground — seventeen things you can click" />
+<meta name="twitter:title" content="Playground — eighteen things you can click" />
 <meta name="twitter:description" content="Tap to fly a paper plane through a canyon, rebuild your photo out of six thousand dots, or wire boxes together into a picture. All running in the browser." />
 <meta name="twitter:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <link rel="canonical" href="https://mohamedsucule-debug.github.io/Projects/" />
@@ -209,7 +209,7 @@
   <header class="hero">
     <!-- ↓↓ YOUR NAME AND TITLE — edit these two lines ↓↓ -->
     <p class="eyebrow"><b>Mohamed Sucule</b> &middot; software engineer</p>
-    <h1>Seventeen things I built. <em>All of them run right here.</em></h1>
+    <h1>Eighteen things I built. <em>All of them run right here.</em></h1>
     <p>
       No videos, no screenshots, no “request a demo”. Click any of them and it starts
       immediately — in your browser, on your phone, with nothing to install.
@@ -294,7 +294,7 @@
     <p class="colophon">
       No frameworks, no build step, no dependencies — every page here is plain HTML, CSS and
       JavaScript, about 17,000 lines of it, with the engine behind Ace, Morph, Portrait, Loom
-      and each of the six tools unit-tested: 254 tests, run in CI before anything is published.
+      and each of the six tools unit-tested: 281 tests, run in CI before anything is published.
       Written with Claude Code; the commit history is the full record.
     </p>
   </footer>
@@ -348,6 +348,12 @@ const TOYS = [
     title: 'Tether',
     blurb: 'You swing round a planet on a tether. Tap and you let go, flying off exactly the way you were already pointing. If the line passes close enough to another planet, it catches you. One decision: when.',
     preview: tetherPreview,
+  },
+  {
+    href: 'play/tangle/index.html', tag: 'daily puzzle',
+    title: 'Tangle',
+    blurb: 'Tap a tile to turn it. The board is solved when no connector is left dangling. Everybody in the world gets the same board each day, and finishing gives you a line you can paste into a group chat.',
+    preview: tanglePreview,
   },
   {
     href: 'play/flow/index.html', tag: 'toy',
@@ -707,6 +713,85 @@ function tetherPreview(api) {
     ctx.font = '700 20px "Inter", system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(String(game.score), w / 2, 26);
+  };
+}
+
+/** Tangle, solving itself: the real generator, untangled one tile at a time. */
+function tanglePreview(api) {
+  let P = null, puzzle = null, order = [], at = 0, hold = 0, spin = null, done = 0;
+  import('./play/tangle/engine.js').then((m) => { P = m; }).catch(() => null);
+
+  api.reset = () => { puzzle = null; };
+
+  const fresh = () => {
+    puzzle = new P.Puzzle({ cols: 5, rows: 5, seed: (Math.random() * 1e6) | 0 });
+    spin = new Float32Array(puzzle.tiles.length);
+    order = [...puzzle.tiles.keys()].sort(() => Math.random() - 0.5);
+    at = 0; hold = 0; done = 0;
+  };
+
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    ctx.fillStyle = '#0a0e1a';
+    ctx.fillRect(0, 0, w, h);
+    if (!P) return;
+    if (!puzzle) fresh();
+
+    // untangle one tile at a time, pausing on each, so the card reads as solving
+    hold -= 1;
+    if (hold <= 0 && at < order.length) {
+      const i = order[at];
+      if (puzzle.tiles[i] !== puzzle.solution[i]) {
+        puzzle.turn(i);
+        spin[i] = Math.PI / 2;
+        hold = 7;
+      } else { at++; hold = 0; }
+    } else if (at >= order.length && ++done > 150) fresh();
+
+    const cell = Math.min(w, h) / 5.6;
+    const bw = cell * 5, bh = cell * 5;
+    const ox = (w - bw) / 2, oy = (h - bh) / 2;
+
+    for (let i = 0; i < spin.length; i++) if (spin[i] > 0) spin[i] = Math.max(0, spin[i] - 0.18);
+
+    const { cols, rows, tiles } = puzzle;
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const i = y * cols + x, m = tiles[i];
+        let lit = m !== 0;
+        for (const d of P.DIRS) {
+          if (!(m & d.bit)) continue;
+          const nx = x + d.dx, ny = y + d.dy;
+          if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) { lit = false; break; }
+          if (!(tiles[ny * cols + nx] & d.opp)) { lit = false; break; }
+        }
+        ctx.save();
+        ctx.translate(ox + x * cell + cell / 2, oy + y * cell + cell / 2);
+        ctx.rotate(-spin[i]);
+        const arm = cell * 0.49;
+        ctx.lineCap = 'round';
+        ctx.lineWidth = Math.max(2.5, cell * 0.15);
+        ctx.strokeStyle = lit ? '#5fb8ff' : '#3d4560';
+        const ends = [];
+        if (m & 1) ends.push([0, -arm]);
+        if (m & 2) ends.push([arm, 0]);
+        if (m & 4) ends.push([0, arm]);
+        if (m & 8) ends.push([-arm, 0]);
+        for (const [ex, ey] of ends) {
+          ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(ex, ey); ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.arc(0, 0, ctx.lineWidth * (ends.length === 1 ? 0.8 : 0.5), 0, 6.2832);
+        ctx.fillStyle = lit ? '#5fb8ff' : '#3d4560';
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    ctx.fillStyle = 'rgba(255,255,255,.9)';
+    ctx.font = '700 15px ui-monospace, "SF Mono", Menlo, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(puzzle.solved ? 'UNTANGLED' : `${puzzle.loose} LOOSE`, w / 2, 24);
   };
 }
 
