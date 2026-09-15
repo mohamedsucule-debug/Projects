@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="icon" href="../../favicon.svg" />
+<meta name="theme-color" content="#0d1424" />
+<title>Stack — how high can you get?</title>
+<meta name="description" content="A block slides. You tap. Whatever hangs over the edge is sliced off. Land it dead centre and you lose nothing. A small arcade game that runs in your browser." />
+<meta property="og:title" content="Stack — how high can you get?" />
+<meta property="og:description" content="Tap to drop. Miss and the tower gets narrower. That is the whole game." />
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: #070b16;
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  }
+  #wrap { position: fixed; inset: 0; display: grid; place-items: center; }
+  canvas {
+    display: block; touch-action: none; cursor: pointer;
+    box-shadow: 0 30px 90px -30px rgba(0,0,0,.95), 0 0 0 1px rgba(255,255,255,.06);
+  }
+  .back {
+    position: fixed; top: 12px; left: 12px; z-index: 10;
+    padding: 8px 12px; border-radius: 10px;
+    background: rgba(9,13,26,.5); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.14);
+    color: rgba(255,255,255,.72); text-decoration: none;
+    font: 600 11.5px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .07em;
+    opacity: .5; transition: opacity .15s;
+  }
+  .back:hover { opacity: 1; }
+  .sound {
+    position: fixed; top: 12px; right: 12px; z-index: 10;
+    width: 38px; height: 38px; border-radius: 10px;
+    background: rgba(9,13,26,.5); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.14);
+    color: rgba(255,255,255,.72); cursor: pointer; font-size: 15px; line-height: 1;
+    opacity: .5; transition: opacity .15s;
+  }
+  .sound:hover { opacity: 1; }
+</style>
+</head>
+<body>
+<a class="back" href="../../index.html">&larr; INDEX</a>
+<button class="sound" id="sound" type="button" aria-label="Mute">&#128266;</button>
+<div id="wrap"><canvas id="c"></canvas></div>
+
+<script type="module">
+/* ───────────────────────────────────────────────────────────────────────────
+   Stack — the part you can see.
+
+   The rules are in engine.js. Here: a camera that follows the tower up, blocks
+   whose colour climbs through the spectrum as you build, offcuts that tumble
+   away under their own gravity, and a note that rises in pitch with every
+   perfect drop in a row.
+
+   That last one is the whole reward loop. A streak you can *hear* going up is
+   worth more than any number on a screen, and it costs four lines.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+import { Tower, STATE, RULES, store } from './engine.js';
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d', { alpha: false });
+
+const WORLD_W = 420, WORLD_H = 660;
+let scale = 1;
+const game = new Tower({ width: WORLD_W, height: WORLD_H });
+let best = store.best();
+
+function fit() {
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  scale = Math.min(innerWidth / WORLD_W, innerHeight / WORLD_H);
+  canvas.style.width = `${Math.round(WORLD_W * scale)}px`;
+  canvas.style.height = `${Math.round(WORLD_H * scale)}px`;
+  canvas.width = Math.round(WORLD_W * scale * dpr);
+  canvas.height = Math.round(WORLD_H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', fit);
+
+/* ── sound ───────────────────────────────────────────────────────────────── */
+
+let audio = null, muted = false;
+try { muted = localStorage.getItem('stack.muted') === '1'; } catch {}
+const soundBtn = document.getElementById('sound');
+const paintSound = () => { soundBtn.innerHTML = muted ? '&#128263;' : '&#128266;'; };
+paintSound();
+soundBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  muted = !muted;
+  paintSound();
+  try { localStorage.setItem('stack.muted', muted ? '1' : '0'); } catch {}
+});
+
+function tone({ freq, to = freq, dur = 0.12, type = 'sine', gain = 0.14, noise = false }) {
+  if (muted) return;
+  try {
+    audio ||= new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === 'suspended') audio.resume();
+    const t = audio.currentTime;
+    const g = audio.createGain();
+    g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    g.connect(audio.destination);
+    let src;
+    if (noise) {
+      const buf = audio.createBuffer(1, audio.sampleRate * dur, audio.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+      src = audio.createBufferSource(); src.buffer = buf;
+    } else {
+      src = audio.createOscillator();
+      src.type = type;
+      src.frequency.setValueAtTime(freq, t);
+      src.frequency.exponentialRampToValueAtTime(Math.max(1, to), t + dur);
+    }
+    src.connect(g); src.start(t); src.stop(t + dur + 0.02);
+  } catch { /* silence is survivable */ }
+}
+
+/* A pentatonic scale, so a streak can never land on a sour note however long
+   it gets. It walks up the scale and then up an octave. */
+const SCALE = [0, 2, 4, 7, 9];
+const perfectNote = (n) => {
+  const step = SCALE[n % SCALE.length] + 12 * Math.floor(n / SCALE.length);
+  return 392 * Math.pow(2, Math.min(step, 31) / 12);
+};
+
+/* ── presentation state ──────────────────────────────────────────────────── */
+
+let camera = 0, cameraTarget = 0;
+let flash = 0, shakeX = 0;
+const debris = [];       // sliced offcuts, falling
+const pops = [];         // "PERFECT" text
+let restartAt = 0;
+
+const hue = (row) => (198 + row * 5.2) % 360;
+const blockFill = (row, perfect) => {
+  const h = hue(row);
+  return `hsl(${h} ${perfect ? 78 : 62}% ${perfect ? 64 : 56}%)`;
+};
+
+function tap() {
+  if (game.state === STATE.DEAD) {
+    if (performance.now() < restartAt) return;
+    game.reset();
+    debris.length = 0; pops.length = 0;
+    camera = cameraTarget = 0;
+    return;
+  }
+  const r = game.drop();
+
+  if (r.dead) {
+    tone({ freq: 190, to: 40, dur: 0.45, type: 'sawtooth', gain: 0.16 });
+    tone({ dur: 0.3, gain: 0.18, noise: true });
+    shakeX = 1;
+    const fresh = store.record(game.score, game.bestCombo);
+    best = store.best();
+    restartAt = performance.now() + 620;
+    if (r.slice) debris.push({ ...r.slice, vy: -40, vx: 0, rot: 0, spin: 0.04, life: 1 });
+    return;
+  }
+
+  if (r.perfect) {
+    tone({ freq: perfectNote(game.combo - 1), dur: 0.22, type: 'triangle', gain: 0.13 });
+    flash = 1;
+    pops.push({ text: game.combo > 1 ? `PERFECT ×${game.combo}` : 'PERFECT', row: game.top.row, life: 1 });
+  } else {
+    tone({ freq: 240, to: 170, dur: 0.1, type: 'square', gain: 0.07 });
+    const dir = r.slice.x < game.top.x ? -1 : 1;
+    debris.push({ ...r.slice, vx: dir * 40, vy: -30, rot: 0, spin: dir * 0.06, life: 1 });
+  }
+  cameraTarget = Math.max(0, (game.blocks.length - 7) * RULES.blockH);
+}
+
+canvas.addEventListener('pointerdown', (e) => { e.preventDefault(); tap(); });
+addEventListener('keydown', (e) => {
+  if (e.code === 'Space' || e.code === 'Enter' || e.code === 'ArrowDown') { e.preventDefault(); tap(); }
+});
+
+/* ── drawing ─────────────────────────────────────────────────────────────── */
+
+/** World y for a row: row 0 sits on the floor and the tower grows upward. */
+const rowY = (row) => WORLD_H - 90 - row * RULES.blockH;
+
+function roundRect(x, y, w, h, r) {
+  const rr = Math.max(0, Math.min(r, Math.abs(w) / 2, h / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
+
+function drawBlock(b, y, alpha = 1) {
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = blockFill(b.row, b.perfect);
+  roundRect(b.x, y, b.w, RULES.blockH - 2, 4);
+  ctx.fill();
+  // a lit top edge and a shaded face, so a flat rectangle reads as a solid
+  ctx.fillStyle = 'rgba(255,255,255,.22)';
+  roundRect(b.x, y, b.w, 5, 3);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,.18)';
+  ctx.fillRect(b.x, y + RULES.blockH - 8, b.w, 6);
+  ctx.globalAlpha = 1;
+}
+
+function draw(now, dt) {
+  ctx.save();
+  if (shakeX > 0.01) ctx.translate((Math.random() - 0.5) * shakeX * 14, 0);
+
+  // the sky darkens as you climb, so height is something you can feel
+  const climb = Math.min(1, game.blocks.length / 60);
+  const sky = ctx.createLinearGradient(0, 0, 0, WORLD_H);
+  sky.addColorStop(0, `hsl(${222 + climb * 40} ${34 + climb * 22}% ${7 + climb * 5}%)`);
+  sky.addColorStop(1, `hsl(${208 + climb * 30} ${30 + climb * 20}% ${14 + climb * 8}%)`);
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+
+  // stars, fading in as the sky darkens
+  ctx.globalAlpha = 0.25 + climb * 0.5;
+  ctx.fillStyle = '#cfe0ff';
+  for (let i = 0; i < 46; i++) {
+    const sx = ((i * 137.5) % WORLD_W);
+    const sy = ((i * 91.7) % (WORLD_H - 120)) + (camera * 0.12) % 90 - 40;
+    ctx.fillRect(sx, ((sy % WORLD_H) + WORLD_H) % WORLD_H, 1.6, 1.6);
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.save();
+  ctx.translate(0, camera);
+
+  // only the rows near the camera are worth drawing
+  const firstVisible = Math.max(0, Math.floor((WORLD_H - 90 + camera - WORLD_H) / RULES.blockH) - 2);
+  for (let i = firstVisible; i < game.blocks.length; i++) {
+    const b = game.blocks[i];
+    const y = rowY(b.row);
+    if (y + camera > WORLD_H + 40 || y + camera < -60) continue;
+    drawBlock(b, y);
+  }
+
+  for (const d of debris) {
+    ctx.save();
+    const y = rowY(d.row) + d.fall;
+    ctx.translate(d.x + d.w / 2, y + RULES.blockH / 2);
+    ctx.rotate(d.rot);
+    ctx.globalAlpha = Math.max(0, d.life);
+    ctx.fillStyle = blockFill(d.row, false);
+    roundRect(-d.w / 2, -RULES.blockH / 2, d.w, RULES.blockH - 2, 4);
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+
+  if (game.state !== STATE.DEAD && game.current) {
+    drawBlock({ ...game.current, perfect: false }, rowY(game.current.row));
+  }
+
+  for (const p of pops) {
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillStyle = '#fff';
+    ctx.font = '800 17px "Inter", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    // clear of the incoming block, which occupies the row above
+    ctx.fillText(p.text, WORLD_W / 2, rowY(p.row) + 22 - (1 - p.life) * 26);
+    ctx.globalAlpha = 1;
+  }
+
+  ctx.restore();
+
+  /* ── the numbers ── */
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,255,255,.95)';
+  ctx.font = '800 56px "Inter", system-ui, sans-serif';
+  ctx.fillText(String(game.score), WORLD_W / 2, 84);
+
+  // the margin bar: the width you have left, which is the whole game
+  const m = game.margin;
+  const bw = 150, bx = (WORLD_W - bw) / 2;
+  ctx.fillStyle = 'rgba(255,255,255,.14)';
+  roundRect(bx, 104, bw, 5, 3); ctx.fill();
+  ctx.fillStyle = m > 0.35 ? '#7dd3fc' : m > 0.18 ? '#ffd166' : '#ff6b81';
+  roundRect(bx, 104, Math.max(3, bw * m), 5, 3); ctx.fill();
+
+  if (game.state === STATE.READY) {
+    ctx.fillStyle = 'rgba(255,255,255,.92)';
+    ctx.font = '800 40px "Inter", system-ui, sans-serif';
+    ctx.fillText('Stack', WORLD_W / 2, WORLD_H * 0.32);
+    ctx.font = '600 16px "Inter", system-ui, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,.8)';
+    ctx.fillText('tap to drop the block', WORLD_W / 2, WORLD_H * 0.32 + 34);
+    ctx.font = '500 13.5px "Inter", system-ui, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,.52)';
+    ctx.fillText('land it dead centre and you lose nothing', WORLD_W / 2, WORLD_H * 0.32 + 58);
+    if (best.score > 0) {
+      ctx.font = '600 13px "Inter", system-ui, sans-serif';
+      ctx.fillText(`best ${best.score}  ·  streak ${best.combo}`, WORLD_W / 2, WORLD_H - 34);
+    }
+  }
+
+  if (game.state === STATE.DEAD) {
+    ctx.fillStyle = 'rgba(7,11,22,.7)';
+    ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+    const isBest = game.score >= best.score && game.score > 0;
+    ctx.fillStyle = isBest ? '#ffd166' : '#fff';
+    ctx.font = '800 26px "Inter", system-ui, sans-serif';
+    ctx.fillText(isBest ? 'best yet' : 'it fell over', WORLD_W / 2, WORLD_H * 0.34);
+    ctx.fillStyle = '#fff';
+    ctx.font = '800 62px "Inter", system-ui, sans-serif';
+    ctx.fillText(String(game.score), WORLD_W / 2, WORLD_H * 0.34 + 62);
+    ctx.font = '600 14px "Inter", system-ui, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,.62)';
+    ctx.fillText(`${game.perfects} perfect  ·  best streak ${game.bestCombo}`, WORLD_W / 2, WORLD_H * 0.34 + 96);
+    ctx.fillText(`best ${best.score}`, WORLD_W / 2, WORLD_H * 0.34 + 118);
+    if (performance.now() >= restartAt) {
+      ctx.globalAlpha = 0.6 + Math.sin(now / 380) * 0.28;
+      ctx.fillStyle = '#fff';
+      ctx.font = '700 15px "Inter", system-ui, sans-serif';
+      ctx.fillText('tap to go again', WORLD_W / 2, WORLD_H * 0.34 + 158);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  ctx.restore();
+
+  if (flash > 0.01) {
+    ctx.fillStyle = `rgba(255,255,255,${flash * 0.16})`;
+    ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+  }
+}
+
+/* ── loop ────────────────────────────────────────────────────────────────── */
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.1, (now - last) / 1000);
+  last = now;
+
+  if (game.state === STATE.PLAYING || game.state === STATE.READY) game.step(dt);
+
+  camera += (cameraTarget - camera) * Math.min(1, dt * 7);
+  flash = Math.max(0, flash - dt * 3.5);
+  shakeX = Math.max(0, shakeX - dt * 2.6);
+
+  for (let i = debris.length - 1; i >= 0; i--) {
+    const d = debris[i];
+    d.fall = (d.fall || 0) + (d.vy += 1400 * dt) * dt;
+    d.x += d.vx * dt;
+    d.rot += d.spin;
+    d.life -= dt * 0.55;
+    if (d.life <= 0) debris.splice(i, 1);
+  }
+  for (let i = pops.length - 1; i >= 0; i--) {
+    pops[i].life -= dt * 1.5;
+    if (pops[i].life <= 0) pops.splice(i, 1);
+  }
+
+  draw(now, dt);
+  requestAnimationFrame(frame);
+}
+
+fit();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

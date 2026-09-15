@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" href="favicon.svg" />
 <meta name="theme-color" content="#06070d" />
-<title>Playground — fifteen things you can click</title>
-<meta name="description" content="A paper-plane arcade game you understand in one second. A photo rebuilt out of six thousand dots. A gallery that morphs between seven layouts on springs. Fifteen things that all run in your browser, with nothing to install." />
-<meta property="og:title" content="Playground — fifteen things you can click" />
+<title>Playground — sixteen things you can click</title>
+<meta name="description" content="A paper-plane arcade game you understand in one second. A photo rebuilt out of six thousand dots. A gallery that morphs between seven layouts on springs. Sixteen things that all run in your browser, with nothing to install." />
+<meta property="og:title" content="Playground — sixteen things you can click" />
 <meta property="og:description" content="Tap to fly a paper plane through a canyon. Then: a photo rebuilt out of six thousand dots, a gallery that morphs on springs, a node-based image studio, and six serious tools with plain-English explanations." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://mohamedsucule-debug.github.io/Projects/" />
@@ -15,7 +15,7 @@
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Playground — fifteen things you can click" />
+<meta name="twitter:title" content="Playground — sixteen things you can click" />
 <meta name="twitter:description" content="Tap to fly a paper plane through a canyon, rebuild your photo out of six thousand dots, or wire boxes together into a picture. All running in the browser." />
 <meta name="twitter:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <link rel="canonical" href="https://mohamedsucule-debug.github.io/Projects/" />
@@ -209,7 +209,7 @@
   <header class="hero">
     <!-- ↓↓ YOUR NAME AND TITLE — edit these two lines ↓↓ -->
     <p class="eyebrow"><b>Mohamed Sucule</b> &middot; software engineer</p>
-    <h1>Fifteen things I built. <em>All of them run right here.</em></h1>
+    <h1>Sixteen things I built. <em>All of them run right here.</em></h1>
     <p>
       No videos, no screenshots, no “request a demo”. Click any of them and it starts
       immediately — in your browser, on your phone, with nothing to install.
@@ -294,7 +294,7 @@
     <p class="colophon">
       No frameworks, no build step, no dependencies — every page here is plain HTML, CSS and
       JavaScript, about 17,000 lines of it, with the engine behind Ace, Morph, Portrait, Loom
-      and each of the six tools unit-tested: 200 tests, run in CI before anything is published.
+      and each of the six tools unit-tested: 225 tests, run in CI before anything is published.
       Written with Claude Code; the commit history is the full record.
     </p>
   </footer>
@@ -336,6 +336,12 @@ const TOYS = [
     title: 'Comet',
     blurb: 'Move the mouse. Collect the gold. Do not touch the red. Fill the bar to clear a level, then do it again with mines and a spinning bar in the way. The levels never run out.',
     preview: cometPreview,
+  },
+  {
+    href: 'play/stack/index.html', tag: 'game',
+    title: 'Stack',
+    blurb: 'A block slides past. Tap. Whatever hangs over the edge is sliced off and falls away, so every sloppy drop makes the next one harder. Land it dead centre and you lose nothing.',
+    preview: stackPreview,
   },
   {
     href: 'play/flow/index.html', tag: 'toy',
@@ -495,6 +501,108 @@ function acePreview(api) {
     ctx.moveTo(24, 0); ctx.lineTo(-19, 14); ctx.lineTo(-9, 0); ctx.closePath();
     ctx.fillStyle = '#c7cee0'; ctx.fill();
     ctx.restore();
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(255,255,255,.92)';
+    ctx.font = '700 20px "Inter", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(String(game.score), w / 2, 26);
+  };
+}
+
+/** Stack, playing itself: the real Tower, dropped by a bot with human reactions. */
+function stackPreview(api) {
+  let game = null, wait = -1, prev = Infinity, dead = 0, flash = 0, cam = 0;
+  let E = null;
+  import('./play/stack/engine.js').then((m) => { E = m; }).catch(() => null);
+  const offcuts = [];
+
+  api.reset = () => { game = null; };
+
+  const fresh = () => {
+    game = new E.Tower({ width: 462, height: 260, seed: (Math.random() * 1e6) | 0 });
+    offcuts.length = 0; wait = -1; prev = Infinity; dead = 0; flash = 0; cam = 0;
+  };
+
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    if (!E) { ctx.fillStyle = '#05060b'; ctx.fillRect(0, 0, w, h); return; }
+    if (!game) fresh();
+
+    /* The bot notices the block start to move away from flush — its closest
+       approach — and then acts a frame or two later, which is what a reaction
+       time is. Half the time it acts immediately and the drop is perfect;
+       otherwise it is a frame or two late and pays for it. Playing it perfectly
+       is possible in this game, which is the point of it, and would mean the
+       card never changed. Measured over sixty runs: a median of 28 blocks. */
+    const c = game.current;
+    if (game.state !== 'dead' && c) {
+      const near = Math.abs(c.x - game.top.x);
+      if (wait < 0 && near > prev) wait = Math.random() < 0.5 ? 0 : 1 + ((Math.random() * 2) | 0);
+      prev = near;
+      if (wait === 0) {
+        const wasRight = c.x > game.top.x;
+        const r = game.drop();
+        if (r.slice) offcuts.push({ ...r.slice, vy: -20, vx: wasRight ? 60 : -60, rot: 0, spin: wasRight ? 3 : -3 });
+        if (r.perfect) flash = 1;
+        wait = -1; prev = Infinity;
+      } else {
+        if (wait > 0) wait--;
+        game.step(1 / 60);
+      }
+    }
+    if (game.state === 'dead' && ++dead > 80) fresh();
+
+    const R = E.RULES;
+    const k = w / game.width;
+    // the camera keeps the working row a third of the way up the strip
+    const target = Math.max(0, game.blocks.length * R.blockH - game.height * 0.66);
+    cam += (target - cam) * 0.12;
+    const floor = game.height + cam;
+
+    const dark = Math.min(0.72, game.score / 90);
+    const sky = ctx.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, `rgb(${(10 - dark * 8) | 0},${(16 - dark * 12) | 0},${(34 - dark * 26) | 0})`);
+    sky.addColorStop(1, `rgb(${(28 - dark * 22) | 0},${(34 - dark * 26) | 0},${(58 - dark * 46) | 0})`);
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.save();
+    ctx.scale(k, k);
+    const yOf = (row) => floor - (row + 1) * R.blockH;
+
+    const paint = (b, row, alpha = 1) => {
+      const hue = (198 + row * 5.2) % 360;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = `hsl(${hue} 62% 58%)`;
+      ctx.fillRect(b.x, yOf(row), b.w, R.blockH);
+      ctx.fillStyle = `hsl(${hue} 62% 70%)`;
+      ctx.fillRect(b.x, yOf(row), b.w, 3);
+      ctx.globalAlpha = 1;
+    };
+
+    for (const b of game.blocks) if (yOf(b.row) < game.height + 40) paint(b, b.row);
+    for (let i = offcuts.length - 1; i >= 0; i--) {
+      const o = offcuts[i];
+      o.vy += 26 / 60; o.y = (o.y ?? yOf(o.row)) + o.vy; o.x += o.vx / 60; o.rot += o.spin / 60;
+      if (o.y > game.height + 120) { offcuts.splice(i, 1); continue; }
+      ctx.save();
+      ctx.translate(o.x + o.w / 2, o.y + R.blockH / 2);
+      ctx.rotate(o.rot);
+      ctx.globalAlpha = 0.75;
+      ctx.fillStyle = `hsl(${(198 + o.row * 5.2) % 360} 50% 46%)`;
+      ctx.fillRect(-o.w / 2, -R.blockH / 2, o.w, R.blockH);
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+    if (game.current && game.state !== 'dead') paint(game.current, game.current.row);
+    if (flash > 0) {
+      ctx.globalAlpha = flash;
+      ctx.fillStyle = '#eaf6ff';
+      ctx.fillRect(game.top.x, yOf(game.top.row), game.top.w, 3);
+      ctx.globalAlpha = 1;
+      flash -= 0.05;
+    }
     ctx.restore();
 
     ctx.fillStyle = 'rgba(255,255,255,.92)';
