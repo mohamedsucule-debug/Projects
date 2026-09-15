@@ -116,7 +116,7 @@ Click any of these and they start immediately.
 | **[Beat Lab](play/beats/)** | A drum machine with no sound files in it. Every kick, snare and hat is generated from scratch by the browser. Tap squares, press play, make something. |
 | **[Islandsmith](play/island/)** | Press the button and a new world appears: coastline, mountains, forests, rivers, snow and a name. Every island comes from a single random number. |
 | **[Flow](play/flow/)** | Twenty thousand particles riding an invisible current. Push them around with your mouse, then save the result as a picture. |
-| **[Comet](play/orbit/)** | Move the mouse. Collect the gold. Don't touch the red. Three seconds to learn. |
+| **[Comet](play/orbit/)** | Move the mouse. Collect the gold. Don't touch the red. Fill the bar to clear a level, then again with mines and a spinning bar in the way. The levels never run out — the curve is authored by hand for the first eight and extrapolated after that, approaching a ceiling rather than climbing for ever. |
 
 ## The serious ones
 
@@ -167,6 +167,9 @@ play/<name>/index.html  a toy — one file, no imports
 play/ace/
   engine.js             the rules: gravity, rocks, collision, scoring — DOM-free
   index.html            canvas, parallax, particles, synthesised sound
+play/orbit/
+  levels.js             the difficulty curve, on its own and tested
+  index.html            the game
 play/morph/
   engine.js             seven layout algorithms + a spring integrator, DOM-free
   index.html            the interface
@@ -181,7 +184,7 @@ projects/<name>/
   engine.js             the algorithm, pure and DOM-free
   index.html            the interface
   README.md             the design problem, and the limits
-tests/run.mjs           186 tests, no framework, no install
+tests/run.mjs           200 tests, no framework, no install
 ```
 
 ```bash

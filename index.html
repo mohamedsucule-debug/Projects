@@ -294,7 +294,7 @@
     <p class="colophon">
       No frameworks, no build step, no dependencies — every page here is plain HTML, CSS and
       JavaScript, about 17,000 lines of it, with the engine behind Ace, Morph, Portrait, Loom
-      and each of the six tools unit-tested: 186 tests, run in CI before anything is published.
+      and each of the six tools unit-tested: 200 tests, run in CI before anything is published.
       Written with Claude Code; the commit history is the full record.
     </p>
   </footer>
@@ -322,6 +322,8 @@ const loadModules = Promise.all([
   import('./play/morph/engine.js'),
 ]);
 
+/* Games and Flow first: they are the ones that need no explanation and
+   reward a click immediately. The tools come after them. */
 const TOYS = [
   {
     href: 'play/ace/index.html', tag: 'game',
@@ -330,22 +332,16 @@ const TOYS = [
     preview: acePreview,
   },
   {
-    href: 'play/portrait/index.html', tag: 'your photo',
-    title: 'Portrait',
-    blurb: 'Drop in a photo of your face and watch six thousand dots crawl out of random noise until it is unmistakably you. It never leaves your device.',
-    preview: portraitPreview,
+    href: 'play/orbit/index.html', tag: 'game',
+    title: 'Comet',
+    blurb: 'Move the mouse. Collect the gold. Do not touch the red. Fill the bar to clear a level, then do it again with mines and a spinning bar in the way. The levels never run out.',
+    preview: cometPreview,
   },
   {
-    href: 'play/morph/index.html', tag: 'interface',
-    title: 'Morph',
-    blurb: 'One gallery, seven layouts, and not one CSS transition. Switch again before the tiles land and they bend into the new arrangement mid-flight.',
-    preview: morphPreview,
-  },
-  {
-    href: 'play/loom/index.html', tag: 'node editor',
-    title: 'Loom',
-    blurb: 'Make a picture by wiring boxes together. One makes fog, one bends whatever it is given, one swaps grey for colour. The last box is the picture.',
-    preview: loomPreview,
+    href: 'play/flow/index.html', tag: 'toy',
+    title: 'Flow',
+    blurb: 'Twenty thousand particles riding an invisible current. Push them around with your mouse and save the result as a picture.',
+    preview: flowPreview,
   },
   {
     href: 'play/sandbox/index.html', tag: 'sandbox',
@@ -366,16 +362,22 @@ const TOYS = [
     preview: islandPreview,
   },
   {
-    href: 'play/flow/index.html', tag: 'toy',
-    title: 'Flow',
-    blurb: 'Twenty thousand particles riding an invisible current. Push them around with your mouse and save the result as a picture.',
-    preview: flowPreview,
+    href: 'play/portrait/index.html', tag: 'your photo',
+    title: 'Portrait',
+    blurb: 'Drop in a photo of your face and watch six thousand dots crawl out of random noise until it is unmistakably you. It never leaves your device.',
+    preview: portraitPreview,
   },
   {
-    href: 'play/orbit/index.html', tag: 'game',
-    title: 'Comet',
-    blurb: 'Move the mouse. Collect the gold. Do not touch the red. Takes three seconds to learn and a while to put down.',
-    preview: cometPreview,
+    href: 'play/morph/index.html', tag: 'interface',
+    title: 'Morph',
+    blurb: 'One gallery, seven layouts, and not one CSS transition. Switch again before the tiles land and they bend into the new arrangement mid-flight.',
+    preview: morphPreview,
+  },
+  {
+    href: 'play/loom/index.html', tag: 'node editor',
+    title: 'Loom',
+    blurb: 'Make a picture by wiring boxes together. One makes fog, one bends whatever it is given, one swaps grey for colour. The last box is the picture.',
+    preview: loomPreview,
   },
   {
     href: '#deep', tag: 'six more',

@@ -32,6 +32,13 @@
   .hud { font: 700 13px/1 var(--mono); color: #fff; letter-spacing: .02em; }
   .hud b { color: #ffd166; }
   .hud .best { color: var(--dim); font-weight: 500; margin-left: 10px; }
+  .hud { display: flex; align-items: center; gap: 9px; }
+  .hud .lv { color: #7dd3fc; }
+  .hud .bar {
+    display: inline-block; width: 54px; height: 4px; border-radius: 3px;
+    background: rgba(255,255,255,.14); overflow: hidden; margin-left: 2px;
+  }
+  .hud .bar i { display: block; height: 100%; background: #ffd166; transition: width .18s; }
 
   .screen {
     position: fixed; inset: 0; display: grid; place-items: center; z-index: 20;
@@ -66,7 +73,8 @@
 <div class="screen" id="start">
   <div>
     <h1>Comet</h1>
-    <p>Move your mouse to fly.<br>Collect the <em style="color:#ffd166;font-style:normal">gold</em>. Don't touch the <em style="color:#ff4d6d;font-style:normal">red</em>.</p>
+    <p>Move your mouse to fly.<br>Collect the <em style="color:#ffd166;font-style:normal">gold</em>. Don't touch the <em style="color:#ff4d6d;font-style:normal">red</em>.<br>
+    <span style="font-size:14px;opacity:.8">Fill the bar to clear a level. They keep coming.</span></p>
     <button class="go" id="go">Start</button>
     <div class="keys"><kbd>click</kbd> dash through danger &middot; <kbd>P</kbd> pause</div>
   </div>
@@ -81,7 +89,9 @@
   </div>
 </div>
 
-<script>
+<script type="module">
+import { levelFor, clearBonus, progress, store } from './levels.js';
+
 /* ───────────────────────────────────────────────────────────────────────────
    A very small arcade game. The rules fit in one line, so everything else
    here is feel: the ship lags behind the cursor instead of snapping to it,
@@ -107,27 +117,67 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const dist2 = (a, b) => (a.x - b.x) ** 2 + (a.y - b.y) ** 2;
 
 let state = 'menu';
-let score = 0, best = 0;
-// localStorage throws in a private window or a sandboxed frame, and a high
-// score is never worth taking the whole game down for
-const store = {
-  get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
-  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
-};
-best = +store.get('comet.best', 0);
+let score = 0;
+let { score: best, level: bestLevel } = store.best();
 let time = 0, shake = 0, slowmo = 1, combo = 1, comboTimer = 0;
+
+/* ── levels ──────────────────────────────────────────────────────────────────
+   The curve itself lives in levels.js and is tested there. This only has to
+   count orbs and move on when the quota is met. */
+let level = 1, cfg = levelFor(1), collected = 0;
+let banner = 0, bannerText = '';
 let mouse = { x: innerWidth / 2, y: innerHeight / 2 };
 
 const ship = { x: W / 2, y: H / 2, vx: 0, vy: 0, r: 9, dash: 0, cooldown: 0 };
-let orbs = [], drones = [], sparks = [], stars = [];
+let orbs = [], drones = [], mines = [], spinners = [], sparks = [], stars = [];
 
 function reset() {
   score = 0; time = 0; combo = 1; comboTimer = 0; shake = 0; slowmo = 1;
   ship.x = W / 2; ship.y = H / 2; ship.vx = ship.vy = 0; ship.dash = 0; ship.cooldown = 0;
-  orbs = []; drones = []; sparks = [];
+  sparks = [];
   stars = Array.from({ length: 90 }, () => ({ x: rand(0, W), y: rand(0, H), z: rand(0.2, 1) }));
+  level = 1;
+  enterLevel(1, false);
+}
+
+/** Lay out a level: clear the board, then place what the table asks for. */
+function enterLevel(n, announce = true) {
+  level = n;
+  cfg = levelFor(n);
+  collected = 0;
+  orbs = []; drones = []; mines = []; spinners = [];
   for (let i = 0; i < 4; i++) spawnOrb();
+  // one hunter to begin with; the rest arrive as you collect
   spawnDrone();
+  for (let i = 0; i < cfg.mines; i++) spawnMine();
+  for (let i = 0; i < cfg.spinners; i++) spawnSpinner(i);
+  if (announce) {
+    bannerText = `LEVEL ${n} · ${cfg.name}`;
+    banner = 150;
+  }
+}
+
+/* A mine is laid away from wherever the ship currently is, and fades in before
+   it can hurt you. Dropping a live hazard on top of the player is the cheapest
+   possible way to lose their trust. */
+function spawnMine() {
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const m = { x: rand(70, W - 70), y: rand(90, H - 90), r: 13, born: time, drift: rand(0, 6.28) };
+    if (dist2(m, ship) > 210 ** 2) { mines.push(m); return; }
+  }
+}
+
+/* A bar on a pivot. Readable at a glance, and the only hazard that punishes
+   standing still in a corner — which is otherwise the dominant strategy. */
+function spawnSpinner(i) {
+  spinners.push({
+    x: rand(W * 0.25, W * 0.75),
+    y: rand(H * 0.3, H * 0.7),
+    len: rand(90, 150),
+    a: rand(0, 6.28),
+    spin: (i % 2 ? -1 : 1) * rand(0.012, 0.02),
+    born: time,
+  });
 }
 
 function spawnOrb() {
@@ -192,23 +242,29 @@ function update(dt) {
       comboTimer = 110;
       shake = Math.min(14, shake + 4);
       spark(o.x, o.y, '#ffd166', 20, 5);
+      collected++;
+      if (collected >= cfg.quota) { levelUp(); return; }
       spawnOrb();
-      if (Math.random() < 0.55) spawnDrone();
+      // hunters arrive as you collect, up to this level's allowance
+      if (drones.length < cfg.drones && Math.random() < 0.7) spawnDrone();
     }
   }
 
   comboTimer -= dt;
   if (comboTimer <= 0 && combo > 1) { combo = 1; comboTimer = 0; }
 
-  /* hunters — they steer towards you, and get faster as the run goes on */
-  const chase = 0.055 + Math.min(0.1, time / 9000);
+  /* hunters — how hard they steer and how fast they go is the level's job now,
+     not a function of how long you have survived. A run is a sequence of
+     levels, so the difficulty has to belong to the level or clearing one would
+     mean nothing. */
+  const chase = cfg.chase;
   for (const d of drones) {
     const dx = ship.x - d.x, dy = ship.y - d.y;
     const len = Math.hypot(dx, dy) || 1;
     d.vx += (dx / len) * chase * dt;
     d.vy += (dy / len) * chase * dt;
     const s = Math.hypot(d.vx, d.vy);
-    const cap = 2.4 + Math.min(2.6, time / 2400);
+    const cap = cfg.speed;
     if (s > cap) { d.vx = d.vx / s * cap; d.vy = d.vy / s * cap; }
     d.x += d.vx * dt; d.y += d.vy * dt;
 
@@ -223,6 +279,27 @@ function update(dt) {
   }
   drones = drones.filter((d) => !d.dead);
 
+  /* mines: inert while they fade in, then fatal. No dash gets you through one,
+     which is what makes them different from a hunter rather than more of one. */
+  for (const m of mines) {
+    m.drift += dt * 0.01;
+    m.x += Math.cos(m.drift) * 0.18 * dt;
+    m.y += Math.sin(m.drift * 0.8) * 0.18 * dt;
+    m.x = Math.max(24, Math.min(W - 24, m.x));
+    m.y = Math.max(24, Math.min(H - 24, m.y));
+    if (time - m.born > 60 && dist2(m, ship) < (m.r + ship.r) ** 2) die();
+  }
+
+  /* spinners: a bar on a pivot, tested against as a line segment rather than
+     as a series of blobs, or the ship slips through between samples */
+  for (const sp of spinners) {
+    sp.a += sp.spin * dt;
+    if (time - sp.born < 60) continue;
+    const ex = sp.x + Math.cos(sp.a) * sp.len, ey = sp.y + Math.sin(sp.a) * sp.len;
+    const ex2 = sp.x - Math.cos(sp.a) * sp.len, ey2 = sp.y - Math.sin(sp.a) * sp.len;
+    if (segmentHit(ex2, ey2, ex, ey, ship.x, ship.y, ship.r + 5)) die();
+  }
+
   for (const s of sparks) {
     s.x += s.vx * dt; s.y += s.vy * dt;
     s.vx *= 0.94; s.vy *= 0.94;
@@ -231,7 +308,27 @@ function update(dt) {
   sparks = sparks.filter((s) => s.life > 0);
 
   shake *= 0.88;
-  if (time > 300 && drones.length < 2) spawnDrone();
+  if (time > 300 && drones.length < Math.min(2, cfg.drones)) spawnDrone();
+}
+
+/** Distance from a point to a line segment, squared against a radius. */
+function segmentHit(x1, y1, x2, y2, px, py, r) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const len2 = dx * dx + dy * dy || 1;
+  let t = ((px - x1) * dx + (py - y1) * dy) / len2;
+  t = t < 0 ? 0 : t > 1 ? 1 : t;
+  const cx = x1 + dx * t, cy = y1 + dy * t;
+  return (px - cx) ** 2 + (py - cy) ** 2 < r * r;
+}
+
+function levelUp() {
+  score += clearBonus(level);
+  shake = 16;
+  spark(ship.x, ship.y, '#7dd3fc', 40, 7);
+  for (const d of drones) spark(d.x, d.y, '#ff4d6d', 10, 4);
+  // a clean board for a second, so the new level does not open with a hunter
+  // already on top of you
+  enterLevel(level + 1);
 }
 
 function die() {
@@ -240,11 +337,13 @@ function die() {
   shake = 26;
   spark(ship.x, ship.y, '#ff4d6d', 60, 9);
   spark(ship.x, ship.y, '#ffd166', 30, 6);
+  const fresh = store.record(score, level);
   best = Math.max(best, score);
-  store.set('comet.best', best);
+  bestLevel = Math.max(bestLevel, level);
   document.getElementById('finalScore').textContent = score;
-  document.getElementById('finalNote').textContent =
-    score >= best && score > 0 ? 'NEW BEST' : `best ${best}`;
+  document.getElementById('finalNote').innerHTML = fresh.score
+    ? `NEW BEST &middot; reached level ${level}`
+    : `level ${level} &middot; best ${best} (level ${bestLevel})`;
   setTimeout(() => document.getElementById('over').classList.remove('hide'), 700);
 }
 
@@ -280,6 +379,44 @@ function draw(dt) {
     ctx.beginPath(); ctx.arc(o.x, o.y, o.r * pulse + 4, 0, 6.2832); ctx.stroke();
   }
 
+  /* spinners first, so a hunter crossing one still reads on top */
+  for (const sp of spinners) {
+    const arming = time - sp.born < 60;
+    const ex = Math.cos(sp.a) * sp.len, ey = Math.sin(sp.a) * sp.len;
+    ctx.save();
+    ctx.translate(sp.x, sp.y);
+    ctx.globalAlpha = arming ? 0.28 : 1;
+    ctx.strokeStyle = arming ? 'rgba(255,77,109,.5)' : '#ff4d6d';
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-ex, -ey); ctx.lineTo(ex, ey); ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#0b0d16';
+    ctx.beginPath(); ctx.arc(0, 0, 7, 0, 6.2832); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(0, 0, 7, 0, 6.2832); ctx.stroke();
+    ctx.restore();
+  }
+
+  for (const m of mines) {
+    const arming = time - m.born < 60;
+    const t = Math.min(1, (time - m.born) / 60);
+    glow(m.x, m.y, m.r * 2.6, `rgba(255,77,109,${arming ? 0.08 : 0.22})`);
+    ctx.globalAlpha = arming ? 0.35 + t * 0.4 : 1;
+    ctx.fillStyle = '#c9304c';
+    ctx.beginPath();
+    // a spiked disc, so it is obviously not a thing you collect
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * 6.2832 + time * 0.004;
+      const r = i % 2 ? m.r * 0.62 : m.r * 1.18;
+      ctx.lineTo(m.x + Math.cos(a) * r, m.y + Math.sin(a) * r);
+    }
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#0b0d16';
+    ctx.beginPath(); ctx.arc(m.x, m.y, m.r * 0.38, 0, 6.2832); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
   for (const d of drones) {
     const warn = time - d.born < 40;
     glow(d.x, d.y, d.r * 3, warn ? 'rgba(255,77,109,.12)' : 'rgba(255,77,109,.3)');
@@ -307,9 +444,26 @@ function draw(dt) {
 
   ctx.restore();
 
+  // the level banner sits above everything, including the shake
+  if (banner > 0) {
+    banner -= dt;
+    const t = Math.min(1, banner / 150);
+    ctx.globalAlpha = Math.min(1, t * 3) * Math.min(1, (1 - t) * 6 + 0.35);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#7dd3fc';
+    ctx.font = '800 34px "Inter", ui-sans-serif, system-ui, sans-serif';
+    ctx.fillText(bannerText, W / 2, H * 0.42);
+    ctx.globalAlpha = 1;
+    ctx.textAlign = 'left';
+  }
+
   if (state === 'play') {
+    const pct = Math.round(progress(collected, cfg.quota) * 100);
     document.getElementById('hud').innerHTML =
-      `${score}${combo > 1 ? ` <b>x${combo}</b>` : ''} <span class="best">best ${best}</span>`;
+      `<span class="lv">L${level}</span> ${score}` +
+      `${combo > 1 ? ` <b>x${combo}</b>` : ''}` +
+      `<span class="bar"><i style="width:${pct}%"></i></span>` +
+      `<span class="best">${collected}/${cfg.quota}</span>`;
   }
 }
 
@@ -342,7 +496,7 @@ function startGame() {
 }
 document.getElementById('go').onclick = startGame;
 document.getElementById('again').onclick = startGame;
-document.getElementById('best').textContent = best ? 'best ' + best : '';
+document.getElementById('best').textContent = best ? `best ${best} · level ${bestLevel}` : '';
 
 reset();
 state = 'menu';
