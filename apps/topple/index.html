@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="icon" href="../../favicon.svg" />
+<meta name="theme-color" content="#0b0d14" />
+<title>Topple — a web page with weight</title>
+<meta name="description" content="A perfectly ordinary web page. Then you knock it over, and every heading, button and card falls down and piles up at the bottom of the screen. Pick the pieces up and throw them. Then put it back." />
+<meta property="og:title" content="Topple — a web page with weight" />
+<meta property="og:description" content="Knock the page over. Every word on it is a real element that fell." />
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --ink: #eef1f8; --dim: rgba(238,241,248,.62); --dimmer: rgba(238,241,248,.38);
+    --line: rgba(255,255,255,.10); --line2: rgba(255,255,255,.2);
+    --accent: #7bc2ff; --accent2: #b79cff;
+  }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0d14; color: var(--ink);
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased; }
+  [hidden] { display: none !important; }
+
+  /* the glow behind everything, so the page looks designed rather than plain */
+  body::before {
+    content: ''; position: fixed; inset: -20%; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(42% 38% at 22% 14%, rgba(123,194,255,.16), transparent 70%),
+      radial-gradient(38% 40% at 82% 22%, rgba(183,156,255,.14), transparent 70%),
+      radial-gradient(60% 50% at 50% 108%, rgba(123,194,255,.07), transparent 70%);
+  }
+
+  #page {
+    position: relative; z-index: 1;
+    height: 100dvh; display: flex; flex-direction: column;
+    padding: clamp(14px, 2.4vh, 26px) clamp(16px, 4vw, 54px) clamp(12px, 2vh, 22px);
+    gap: clamp(10px, 1.8vh, 22px);
+  }
+
+  .brick { will-change: transform; }
+  /* A word is an inline-block so it has a box of its own to fall as. Without
+     it a word is a run of text inside a line and has no rectangle to give a
+     mass to. */
+  .word { display: inline-block; will-change: transform; }
+
+  nav { display: flex; align-items: center; gap: clamp(10px, 2vw, 26px); flex-shrink: 0; padding-left: clamp(0px, 9vw, 116px); }
+  .logo { display: flex; align-items: center; gap: 9px; font-weight: 800; font-size: 15px; letter-spacing: -.01em; }
+  .logo i { width: 22px; height: 22px; border-radius: 7px; display: block;
+    background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+  nav a.link { color: var(--dim); text-decoration: none; font-size: 13.5px; font-weight: 550; }
+  nav a.link:hover { color: var(--ink); }
+  .spacer { flex: 1 1 auto; }
+  .pill { border: 1px solid var(--line2); border-radius: 99px; padding: 7px 14px;
+    font-size: 13px; font-weight: 650; color: var(--ink); text-decoration: none; white-space: nowrap; }
+
+  header { flex: 0 1 auto; text-align: center; display: flex; flex-direction: column;
+    align-items: center; gap: clamp(8px, 1.4vh, 16px); padding: clamp(6px, 3vh, 40px) 0 0; }
+  .eyebrow { font: 650 11px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--accent); border: 1px solid rgba(123,194,255,.3);
+    border-radius: 99px; padding: 7px 13px; }
+  h1 { margin: 0; font-size: clamp(30px, 6.4vw, 66px); line-height: 1.02; letter-spacing: -.035em;
+    font-weight: 820; max-width: 15ch; }
+  h1 em { font-style: normal; background: linear-gradient(100deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  /* Gradient text is painted by clipping a background to the glyphs, so it
+     lives on whichever element carries the background. Split the line into
+     words and each word becomes a transparent box with no background of its
+     own — the text does not move, it VANISHES. Every word gets its own. */
+  h1 em .word { background: linear-gradient(100deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sub { margin: 0; font-size: clamp(14px, 1.7vw, 18px); color: var(--dim); max-width: 46ch; line-height: 1.5; }
+  .cta { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  button.big, a.big {
+    border: 0; border-radius: 12px; padding: 13px 22px; cursor: pointer; text-decoration: none;
+    font: 700 14.5px/1 "Inter", system-ui, sans-serif;
+    background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #08101c;
+  }
+  a.ghost { background: rgba(255,255,255,.07); border: 1px solid var(--line2); color: var(--ink); }
+
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(8px, 1.2vw, 16px);
+    flex: 0 1 auto; }
+  .card { border: 1px solid var(--line); border-radius: 16px; padding: clamp(12px, 1.7vh, 20px);
+    background: rgba(255,255,255,.035); }
+  .card h3 { margin: 0 0 6px; font-size: clamp(13px, 1.3vw, 16px); font-weight: 720; }
+  .card p { margin: 0; font-size: clamp(11.5px, 1.05vw, 13.5px); color: var(--dim); line-height: 1.5; }
+  .stats { display: flex; gap: clamp(14px, 4vw, 54px); justify-content: center; flex-wrap: wrap; }
+  .stat b { display: block; font-size: clamp(19px, 2.6vw, 31px); font-weight: 800; letter-spacing: -.02em; }
+  .stat span { font-size: 11.5px; color: var(--dimmer); }
+  footer { display: flex; gap: 14px; align-items: center; color: var(--dimmer); font-size: 12px;
+    border-top: 1px solid var(--line); padding-top: 12px; margin-top: auto; flex-shrink: 0; }
+
+  /* the one control that is not part of the fiction */
+  #bar {
+    position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 40;
+    display: flex; gap: 8px; align-items: center;
+    padding: 8px; border-radius: 99px;
+    background: rgba(10,12,20,.72); backdrop-filter: blur(14px);
+    border: 1px solid var(--line2); box-shadow: 0 18px 50px -18px rgba(0,0,0,.9);
+  }
+  #bar button {
+    border: 0; border-radius: 99px; padding: 11px 18px; cursor: pointer;
+    font: 700 13.5px/1 "Inter", system-ui, sans-serif; color: #08101c;
+    background: linear-gradient(135deg, #ff9f6b, #ff6b8b);
+  }
+  #bar button.calm { background: rgba(255,255,255,.1); color: var(--ink); }
+  #bar span { font-size: 12px; color: var(--dimmer); padding: 0 8px 0 4px; white-space: nowrap; }
+
+  .back {
+    position: fixed; top: 12px; left: 12px; z-index: 40;
+    padding: 8px 12px; border-radius: 10px; background: rgba(10,12,20,.5);
+    backdrop-filter: blur(10px); border: 1px solid var(--line);
+    color: var(--dim); text-decoration: none;
+    font: 600 11.5px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .07em;
+    opacity: .5; transition: opacity .15s;
+  }
+  .back:hover { opacity: 1; }
+
+  body.fallen { cursor: grab; }
+  body.fallen .brick { cursor: grab; }
+  body.fallen .brick:active { cursor: grabbing; }
+
+  @media (max-width: 720px) {
+    .cards { grid-template-columns: 1fr; }
+    .cards .card:nth-child(3) { display: none; }
+    nav a.link { display: none; }
+    #bar span { display: none; }
+  }
+  @media (max-height: 560px) { .cards { display: none; } header { padding-top: 0; } }
+</style>
+</head>
+<body>
+<a class="back" href="../../index.html">&larr; INDEX</a>
+
+<div id="page">
+  <nav>
+    <span class="logo brick"><i></i>Northwind</span>
+    <a class="link brick" href="#">Product</a>
+    <a class="link brick" href="#">Pricing</a>
+    <a class="link brick" href="#">Customers</a>
+    <a class="link brick" href="#">Docs</a>
+    <span class="spacer"></span>
+    <a class="pill brick" href="#">Sign in</a>
+  </nav>
+
+  <header>
+    <span class="eyebrow brick">Series B · hiring</span>
+    <h1 data-split>Ship the thing. <em>Then ship it again.</em></h1>
+    <p class="sub" data-split>Northwind is the deployment platform your team already knows how to use. No YAML, no waiting, no pager at 3am.</p>
+    <div class="cta">
+      <button class="big brick" type="button">Start free</button>
+      <a class="big ghost brick" href="#">Book a demo</a>
+    </div>
+  </header>
+
+  <div class="cards">
+    <div class="card brick"><h3>Ship in seconds</h3><p>Push to main and it is live before the tab finishes loading. Roll back just as fast.</p></div>
+    <div class="card brick"><h3>Costs you know</h3><p>One price per environment. No egress surprises, no invoice nobody can explain.</p></div>
+    <div class="card brick"><h3>Sleep at night</h3><p>Every deploy is reversible and every change is attributable to a person.</p></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat brick"><b>99.99%</b><span>uptime, measured</span></div>
+    <div class="stat brick"><b>1.2s</b><span>median deploy</span></div>
+    <div class="stat brick"><b>4,100</b><span>teams shipping</span></div>
+  </div>
+
+  <footer>
+    <span class="brick">© Northwind</span>
+    <span class="brick">Privacy</span>
+    <span class="brick">Terms</span>
+    <span class="spacer"></span>
+    <span class="brick">Every word on this page is about to fall over.</span>
+  </footer>
+</div>
+
+<div id="bar">
+  <button id="go" type="button">Knock it down</button>
+  <button id="sound" class="calm" type="button" aria-label="Mute">&#128266;</button>
+  <span id="note">then pick the pieces up and throw them</span>
+</div>
+
+<script type="module">
+/* ───────────────────────────────────────────────────────────────────────────
+   Topple — a web page with weight.
+
+   The page above is an ordinary one: real headings, real buttons, real
+   paragraphs, laid out by the browser the way every page is. Nothing is drawn
+   on a canvas and nothing is a picture.
+
+   Then every one of those elements is handed to a physics engine, and from
+   that moment it has a mass, a centre of gravity and a moment of inertia. It
+   falls, it hits the others, it slides, it tips over and it settles into a
+   heap. You can pick a paragraph up and throw it at a button.
+
+   The elements never stop being elements. They are moved with a transform,
+   which changes where the browser PAINTS them without changing where it thinks
+   they are — so the text is still text, still crisp at any zoom, still
+   selectable — and putting the page back is a matter of removing one style.
+
+   The engine is in engine.js and knows nothing about any of this. It is a list
+   of rectangles with mass and a step function, which is why it can be tested
+   from a terminal rather than by shaking a web page and forming an opinion.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+import { World, Body, homeStep, RULES } from './engine.js';
+
+const el = (id) => document.getElementById(id);
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* Split the big text into words BEFORE anything is measured.
+   This is the difference between a page that sags and a page that shatters:
+   as one element, the headline is a nine-hundred-pixel slab that has nowhere
+   to fall to and holds everything above it up. As nine words it comes apart
+   and rains down. */
+for (const host of document.querySelectorAll('[data-split]')) {
+  const walk = (node) => {
+    for (const child of [...node.childNodes]) {
+      if (child.nodeType === 3) {
+        const frag = document.createDocumentFragment();
+        for (const part of child.textContent.split(/(\s+)/)) {
+          if (!part) continue;
+          if (/^\s+$/.test(part)) { frag.append(part); continue; }
+          const w = document.createElement('span');
+          w.className = 'brick word';
+          w.textContent = part;
+          frag.append(w);
+        }
+        child.replaceWith(frag);
+      } else if (child.nodeType === 1) walk(child);
+    }
+  };
+  walk(host);
+}
+
+const bricks = [...document.querySelectorAll('.brick')];
+const world = new World({ width: innerWidth, height: innerHeight });
+let pieces = [];            // { node, body, home }
+let state = 'standing';     // standing | falling | returning
+let last = performance.now();
+let shake = 0;
+
+/* ── sound ───────────────────────────────────────────────────────────────── */
+
+let audio = null, muted = false;
+try { muted = localStorage.getItem('topple.muted') === '1'; } catch {}
+const paintSound = () => { el('sound').innerHTML = muted ? '&#128263;' : '&#128266;'; };
+paintSound();
+el('sound').addEventListener('click', (e) => {
+  e.stopPropagation();
+  muted = !muted;
+  paintSound();
+  el('sound').blur();
+  try { localStorage.setItem('topple.muted', muted ? '1' : '0'); } catch {}
+});
+
+let lastThud = 0;
+function thud(force) {
+  if (muted || performance.now() - lastThud < 26) return;
+  lastThud = performance.now();
+  try {
+    audio ||= new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === 'suspended') audio.resume();
+    const t = audio.currentTime;
+    const gain = Math.min(0.09, 0.006 + force * 0.00006);
+    const g = audio.createGain();
+    g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+    g.connect(audio.destination);
+    const o = audio.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(90 + Math.random() * 50, t);
+    o.frequency.exponentialRampToValueAtTime(42, t + 0.12);
+    o.connect(g); o.start(t); o.stop(t + 0.15);
+  } catch { /* silence is survivable */ }
+}
+
+/* ── turning the page into objects ───────────────────────────────────────── */
+
+function build() {
+  world.resize(innerWidth, innerHeight);
+  world.clear();
+  pieces = bricks.map((node) => {
+    const r = node.getBoundingClientRect();
+    if (r.width < 4 || r.height < 4) return null;
+    const home = { x: r.left + r.width / 2, y: r.top + r.height / 2, angle: 0 };
+    /* Mass from area, so a headline is heavy and a footer link is light —
+       which is what makes the pile look like a collapsed page rather than a
+       box of identical bricks. */
+    /* A shade smaller than it looks. Page elements sit flush against each
+       other, so bodies the exact size of their boxes start the simulation
+       already touching on every side — a solid wall that props itself up
+       instead of a page that falls down. */
+    const body = world.add(new Body({
+      x: home.x, y: home.y,
+      w: Math.max(6, r.width - 3), h: Math.max(6, r.height - 3), data: node,
+    }));
+    return { node, body, home };
+  }).filter(Boolean);
+}
+
+function place(piece) {
+  const { node, body, home } = piece;
+  const dx = body.p.x - home.x, dy = body.p.y - home.y;
+  node.style.transform = `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px) rotate(${body.angle.toFixed(4)}rad)`;
+}
+
+function knockDown() {
+  build();
+  state = 'falling';
+  document.body.classList.add('fallen');
+  el('go').textContent = 'Put it back';
+  el('note').textContent = 'drag a piece and let go to throw it';
+  if (!reduced) shake = 1;
+
+  /* A shove, so it collapses rather than sinking straight down. The higher up
+     the page something is, the harder it is pushed — a building does not fall
+     from the ground floor. */
+  for (const p of pieces) {
+    const height = 1 - p.home.y / innerHeight;
+    p.body.vel.x = (Math.random() - 0.5) * 340 * height;
+    p.body.vel.y = -60 * Math.random() * height;
+    p.body.spin = (Math.random() - 0.5) * 3.4 * height;
+  }
+  thud(900);
+}
+
+function putBack() {
+  state = 'returning';
+  document.body.classList.remove('fallen');
+  el('go').textContent = 'Knock it down';
+  el('note').textContent = 'then pick the pieces up and throw them';
+  for (const p of pieces) { p.body.asleep = false; p.body.grabbed = false; }
+  release();
+}
+
+el('go').addEventListener('click', () => {
+  el('go').blur();
+  if (state === 'falling') putBack(); else knockDown();
+});
+
+/* ── picking things up ───────────────────────────────────────────────────── */
+
+let held = null;
+const at = (e) => ({ x: e.clientX, y: e.clientY });
+
+function pieceAt(x, y) {
+  /* Topmost first, so grabbing where two pieces overlap picks the one you can
+     actually see. */
+  for (let i = pieces.length - 1; i >= 0; i--) {
+    const b = pieces[i].body;
+    const dx = x - b.p.x, dy = y - b.p.y;
+    const c = Math.cos(-b.angle), s = Math.sin(-b.angle);
+    const lx = dx * c - dy * s, ly = dx * s + dy * c;
+    if (Math.abs(lx) <= b.w / 2 && Math.abs(ly) <= b.h / 2) return pieces[i];
+  }
+  return null;
+}
+
+addEventListener('pointerdown', (e) => {
+  if (state !== 'falling') return;
+  const t = e.target;
+  if (t instanceof Element && t.closest('#bar, .back')) return;
+  const p = pieceAt(e.clientX, e.clientY);
+  if (!p) return;
+  e.preventDefault();
+  held = { piece: p, grab: at(e), last: at(e), t: performance.now(), vel: { x: 0, y: 0 } };
+  p.body.grabbed = true;
+  p.body.wake();
+});
+
+addEventListener('pointermove', (e) => {
+  if (!held) return;
+  const now = performance.now();
+  const dt = Math.max(1, now - held.t) / 1000;
+  const p = at(e);
+  /* The throw speed comes from how fast the pointer was ACTUALLY moving when
+     you let go, smoothed — reading a single last frame gives you a wild number
+     whenever the last event happened to be a long one. */
+  held.vel.x = held.vel.x * 0.55 + ((p.x - held.last.x) / dt) * 0.45;
+  held.vel.y = held.vel.y * 0.55 + ((p.y - held.last.y) / dt) * 0.45;
+  held.piece.body.p.x += p.x - held.last.x;
+  held.piece.body.p.y += p.y - held.last.y;
+  held.last = p; held.t = now;
+});
+
+function release() {
+  if (!held) return;
+  const b = held.piece.body;
+  b.grabbed = false;
+  b.vel.x = Math.max(-2600, Math.min(2600, held.vel.x));
+  b.vel.y = Math.max(-2600, Math.min(2600, held.vel.y));
+  b.wake();
+  held = null;
+}
+addEventListener('pointerup', release);
+addEventListener('pointercancel', release);
+
+/* ── the loop ────────────────────────────────────────────────────────────── */
+
+let contactWas = 0;
+function frame(now) {
+  const dt = (now - last) / 1000;
+  last = now;
+
+  if (state === 'falling') {
+    world.step(dt);
+    /* A thud when something new lands, loud in proportion to how hard. The
+       count of touching bodies rising is a good enough proxy for "something
+       just hit something" without threading events out of the solver. */
+    let touching = 0, fastest = 0;
+    for (const p of pieces) {
+      if (p.body.touching) touching++;
+      fastest = Math.max(fastest, Math.hypot(p.body.vel.x, p.body.vel.y));
+    }
+    if (touching > contactWas && fastest > 120) thud(fastest);
+    contactWas = touching;
+    for (const p of pieces) place(p);
+  } else if (state === 'returning') {
+    const h = Math.min(0.033, dt);
+    let done = true;
+    for (const p of pieces) {
+      if (!homeStep(p.body, p.home, h)) done = false;
+      place(p);
+    }
+    if (done) {
+      state = 'standing';
+      for (const p of pieces) p.node.style.transform = '';
+    }
+  }
+
+  if (shake > 0) {
+    shake = Math.max(0, shake - dt * 2.2);
+    const s = shake * 9;
+    el('page').style.transform =
+      `translate(${((Math.random() - 0.5) * s).toFixed(1)}px, ${((Math.random() - 0.5) * s).toFixed(1)}px)`;
+    if (shake === 0) el('page').style.transform = '';
+  }
+
+  requestAnimationFrame(frame);
+}
+
+/* A resize while it is in pieces would leave the walls somewhere else from the
+   floor everything is lying on, so the pile is put back and re-measured. */
+addEventListener('resize', () => {
+  if (state === 'standing') return;
+  for (const p of pieces) p.node.style.transform = '';
+  state = 'standing';
+  el('go').textContent = 'Knock it down';
+  document.body.classList.remove('fallen');
+});
+
+requestAnimationFrame(frame);
+window.topple = () => ({ state, pieces: pieces.length, asleep: pieces.filter((p) => p.body.asleep).length });
+</script>
+</body>
+</html>

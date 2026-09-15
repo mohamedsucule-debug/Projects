@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" href="favicon.svg" />
 <meta name="theme-color" content="#06070d" />
-<title>Playground — twenty-one things you can click</title>
-<meta name="description" content="A paper-plane arcade game you understand in one second. A photo rebuilt out of six thousand dots. A gallery that morphs between seven layouts on springs. Twenty-one things that all run in your browser, with nothing to install." />
-<meta property="og:title" content="Playground — twenty-one things you can click" />
+<title>Playground — twenty-two things you can click</title>
+<meta name="description" content="A paper-plane arcade game you understand in one second. A photo rebuilt out of six thousand dots. A gallery that morphs between seven layouts on springs. Twenty-two things that all run in your browser, with nothing to install." />
+<meta property="og:title" content="Playground — twenty-two things you can click" />
 <meta property="og:description" content="Tap to fly a paper plane through a canyon. Then: a photo rebuilt out of six thousand dots, a gallery that morphs on springs, a node-based image studio, and six serious tools with plain-English explanations." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://mohamedsucule-debug.github.io/Projects/" />
@@ -15,7 +15,7 @@
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Playground — twenty-one things you can click" />
+<meta name="twitter:title" content="Playground — twenty-two things you can click" />
 <meta name="twitter:description" content="Tap to fly a paper plane through a canyon, rebuild your photo out of six thousand dots, or wire boxes together into a picture. All running in the browser." />
 <meta name="twitter:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <link rel="canonical" href="https://mohamedsucule-debug.github.io/Projects/" />
@@ -209,7 +209,7 @@
   <header class="hero">
     <!-- ↓↓ YOUR NAME AND TITLE — edit these two lines ↓↓ -->
     <p class="eyebrow"><b>Mohamed Sucule</b> &middot; software engineer</p>
-    <h1>Twenty-one things I built. <em>All of them run right here.</em></h1>
+    <h1>Twenty-two things I built. <em>All of them run right here.</em></h1>
     <p>
       No videos, no screenshots, no “request a demo”. Click any of them and it starts
       immediately — in your browser, on your phone, with nothing to install.
@@ -294,7 +294,7 @@
     <p class="colophon">
       No frameworks, no build step, no dependencies — every page here is plain HTML, CSS and
       JavaScript, about 17,000 lines of it, with the engine behind Ace, Morph, Portrait, Loom
-      and each of the six tools unit-tested: 386 tests, run in CI before anything is published.
+      and each of the six tools unit-tested: 414 tests, run in CI before anything is published.
       Written with Claude Code; the commit history is the full record.
     </p>
   </footer>
@@ -333,12 +333,17 @@ const loadModules = Promise.all([
    arcade games. Mercury first because it is the one that stops somebody
    scrolling; then two games, then something that is plainly not one, then
    keep alternating — no more than two of a kind before the subject changes. */
+/* Topple first: it is the one that makes somebody who does not write software
+   stop and say "that is a web page?". After that, never more than two of a
+   kind in a row — six games together are good but they are the same kind of
+   good, and a grid that opens with six of them says this is a person who
+   makes arcade games. */
 const TOYS = [
   {
-    href: 'apps/mercury/index.html', tag: 'touch it', gl: true,
-    title: 'Mercury',
-    blurb: 'A sheet of liquid metal under a sunset sky. Drag it and it ripples, and the ripples bend the reflections as they spread. There is no 3D model and no texture in it — every pixel is worked out from scratch, sixty times a second.',
-    preview: mercuryPreview,
+    href: 'apps/topple/index.html', tag: 'knock it over', gl: false,
+    title: 'Topple',
+    blurb: 'A perfectly ordinary web page. Then you knock it over, and every heading, button and word falls down, bounces off the others and piles up at the bottom of the screen. Pick a word up and throw it. Then put the page back.',
+    preview: topplePreview,
   },
   {
     href: 'play/ace/index.html', tag: 'game',
@@ -357,6 +362,12 @@ const TOYS = [
     title: 'Sift',
     blurb: 'Drop a spreadsheet in and it tells you what is actually in it: what each column holds, where the gaps are, what the numbers look like. Then sort and filter a hundred thousand rows without it stuttering. Nothing is uploaded.',
     preview: siftPreview,
+  },
+  {
+    href: 'apps/mercury/index.html', tag: 'touch it', gl: true,
+    title: 'Mercury',
+    blurb: 'A sheet of liquid metal under a sunset sky. Drag it and it ripples, and the ripples bend the reflections as they spread. There is no 3D model and no texture in it — every pixel is worked out from scratch, sixty times a second.',
+    preview: mercuryPreview,
   },
   {
     href: 'play/stack/index.html', tag: 'game',
@@ -1107,6 +1118,104 @@ function mercuryPreview(api) {
     gl.uniform1f(drawP.u.uTime, time);
     gl.uniform1f(drawP.u.uWorld, sc.WORLD);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+  };
+}
+
+/** Topple, in miniature: the real physics engine, knocking over a tiny page.
+    The shapes are drawn rather than being DOM, but every position and angle
+    comes from the same solver the real one uses. */
+function topplePreview(api) {
+  let E = null, world = null, parts = [], phase = 0, at = 0;
+  import('./apps/topple/engine.js').then((m) => { E = m; }).catch(() => null);
+
+  const LAYOUT = [
+    // x, y, w, h as fractions of the card, and how to draw it
+    [0.06, 0.10, 0.16, 0.055, 'logo'],
+    [0.30, 0.11, 0.10, 0.035, 'dim'],
+    [0.44, 0.11, 0.10, 0.035, 'dim'],
+    [0.80, 0.10, 0.14, 0.055, 'pill'],
+    [0.22, 0.30, 0.24, 0.10, 'head'],
+    [0.50, 0.30, 0.28, 0.10, 'head'],
+    [0.28, 0.46, 0.44, 0.045, 'dim'],
+    [0.34, 0.545, 0.32, 0.045, 'dim'],
+    [0.32, 0.65, 0.16, 0.075, 'cta'],
+    [0.52, 0.65, 0.16, 0.075, 'ghost'],
+    [0.06, 0.80, 0.26, 0.14, 'card'],
+    [0.37, 0.80, 0.26, 0.14, 'card'],
+    [0.68, 0.80, 0.26, 0.14, 'card'],
+  ];
+
+  const build = () => {
+    const { w, h } = api;
+    world = new E.World({ width: w, height: h });
+    parts = LAYOUT.map(([fx, fy, fw, fh, kind]) => {
+      const bw = fw * w, bh = fh * h;
+      const home = { x: (fx + fw / 2) * w, y: (fy + fh / 2) * h };
+      return { kind, home, body: world.add(new E.Body({ x: home.x, y: home.y, w: bw, h: bh })) };
+    });
+    phase = 0; at = 0;
+  };
+
+  api.reset = () => { world = null; };
+
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    ctx.fillStyle = '#0b0d14';
+    ctx.fillRect(0, 0, w, h);
+    if (!E) return;
+    if (!world || world.width !== w) build();
+
+    at += 1 / 60;
+    if (phase === 0 && at > 1.6) {
+      phase = 1;
+      for (const p of parts) {
+        const up = 1 - p.home.y / h;
+        p.body.vel.x = (Math.random() - 0.5) * 220 * up;
+        p.body.spin = (Math.random() - 0.5) * 3.2 * up;
+      }
+    }
+    if (phase === 1) {
+      world.step(1 / 60);
+      if (at > 7.5) { phase = 2; }
+    } else if (phase === 2) {
+      let done = true;
+      for (const p of parts) {
+        if (!E.homeStep(p.body, { ...p.home, angle: 0 }, 1 / 60)) done = false;
+      }
+      if (done) { phase = 0; at = 0; }
+    }
+
+    const paint = {
+      logo: ['#e8ecf7', 0.92], pill: ['#e8ecf7', 0.5], dim: ['#8e9ab4', 0.5],
+      head: ['#dfe6f7', 0.95], cta: ['#8fb7ff', 0.95], ghost: ['#5d6685', 0.7],
+      card: ['#1a2032', 1],
+    };
+    for (const p of parts) {
+      const b = p.body;
+      const [fill, alpha] = paint[p.kind] || ['#888', 1];
+      ctx.save();
+      ctx.translate(b.p.x, b.p.y);
+      ctx.rotate(b.angle);
+      ctx.globalAlpha = alpha;
+      const r = Math.min(6, b.h / 3);
+      ctx.beginPath();
+      const x = -b.w / 2, y = -b.h / 2;
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + b.w, y, x + b.w, y + b.h, r);
+      ctx.arcTo(x + b.w, y + b.h, x, y + b.h, r);
+      ctx.arcTo(x, y + b.h, x, y, r);
+      ctx.arcTo(x, y, x + b.w, y, r);
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+      if (p.kind === 'card') {
+        ctx.strokeStyle = 'rgba(255,255,255,.12)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
   };
 }
 

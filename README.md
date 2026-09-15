@@ -1,6 +1,6 @@
 # Playground
 
-Twenty-one things I built. All of them run in a browser — no install, no signup,
+Twenty-two things I built. All of them run in a browser — no install, no signup,
 no video of someone else using it.
 
 **→ [Open the playground](https://mohamedsucule-debug.github.io/Projects/)**
@@ -79,6 +79,33 @@ example: 5 boxes of 7 redrawn in 30ms, against 165ms for the whole graph cold.
 [Full write-up, including what it deliberately does not do](play/loom/README.md).
 
 ---
+
+### [Topple](apps/topple/) — a web page with weight
+
+A perfectly ordinary web page. Then you knock it over, and every heading, button
+and individual word falls, bounces off the others and piles up at the bottom of
+the screen. Pick a word up and throw it. Then put the page back.
+
+**They stay real elements the whole time.** Nothing is drawn on a canvas and
+nothing is a picture — each element is moved with a transform, which changes
+where the browser paints it without changing where it thinks it is. The text is
+still text, still crisp, still selectable, lying in a heap on the floor. Putting
+it back is removing one style, and the headline returns to the exact pixel it
+started on.
+
+Underneath is a 2D rigid body engine written from scratch: separating-axis
+collision, contact points by face clipping, and sequential impulses. Four things
+separate a pile that stands from a pile that sags, and each was found by
+watching a stack fall over — contacts that remember their impulse between
+passes, overlap correction that never becomes real velocity, contacts recognised
+between frames (which took stable stacks from four boxes to eight), and sleeping
+bodies that look exactly like walls to the solver.
+
+Sleeping has to be done in groups. Stop one body on its own and the one resting
+against it gets a different answer, twitches, and wakes it straight back up —
+a pile of six oscillates between the two states for ever.
+
+[Full write-up](apps/topple/README.md), including where it gives up.
 
 ### [Mercury](apps/mercury/) — liquid metal you can put your finger in
 
@@ -240,7 +267,7 @@ projects/<name>/
   engine.js             the algorithm, pure and DOM-free
   index.html            the interface
   README.md             the design problem, and the limits
-tests/run.mjs           386 tests, no framework, no install
+tests/run.mjs           414 tests, no framework, no install
 ```
 
 ```bash
