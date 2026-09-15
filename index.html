@@ -148,86 +148,8 @@
     text-transform: uppercase; display: block; margin-bottom: 10px;
   }
 
-  /* ── the feature ───────────────────────────────────────── */
-  a.feature {
-    display: grid; grid-template-columns: 1.05fr 1fr; gap: 0;
-    text-decoration: none; color: inherit; overflow: hidden;
-    background: var(--card); border: 1px solid var(--line2);
-    border-radius: 24px; position: relative;
-    transition: transform .2s cubic-bezier(.2,.7,.3,1), border-color .2s, box-shadow .2s;
-  }
-  a.feature:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 34px 80px -34px rgba(0,0,0,.98);
-    border-color: rgba(255,255,255,.28);
-  }
-  a.feature .fstage {
-    position: relative; aspect-ratio: 1 / 1; background: #04050a; overflow: hidden;
-  }
-  a.feature .fstage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  a.feature .fstage .cap {
-    position: absolute; left: 14px; bottom: 13px; z-index: 2;
-    background: rgba(6,8,13,.74); backdrop-filter: blur(10px);
-    border: 1px solid var(--line); border-radius: 99px;
-    padding: 7px 13px; font: 500 11.5px/1 var(--mono); color: var(--dim);
-    letter-spacing: .03em;
-  }
-  a.feature .fmeta { padding: 34px 34px 32px; display: flex; flex-direction: column; }
-  a.feature .pill {
-    align-self: flex-start;
-    border: 1px solid var(--line2); border-radius: 99px;
-    padding: 6px 12px; font: 600 11px/1 var(--mono);
-    letter-spacing: .06em; text-transform: uppercase; color: var(--dim);
-  }
-  a.feature .fmeta h2 {
-    margin: 12px 0 12px; font-size: clamp(27px, 3.3vw, 38px);
-    letter-spacing: -.035em; line-height: 1.04;
-  }
-  a.feature .fmeta > p { margin: 0 0 16px; font-size: 15.5px; line-height: 1.62; color: var(--dim); }
-  a.feature .fmeta > p b { color: var(--fg); font-weight: 650; }
-  a.feature ul { margin: 0 0 22px; padding: 0; list-style: none; }
-  a.feature li {
-    position: relative; padding-left: 20px; margin-bottom: 7px;
-    font-size: 13.8px; line-height: 1.55; color: var(--dim);
-  }
-  a.feature li::before {
-    content: ''; position: absolute; left: 3px; top: .58em;
-    width: 6px; height: 6px; border-radius: 50%;
-    background: linear-gradient(120deg, #ffd166, #ff4d8d);
-  }
-  a.feature .go {
-    margin-top: auto; align-self: flex-start;
-    display: inline-flex; align-items: center; gap: 8px;
-    background: #ffd166; color: #140f02; font-size: 14.5px; font-weight: 650;
-    padding: 13px 21px; border-radius: 12px;
-    box-shadow: 0 14px 40px -16px rgba(255,209,102,.85);
-  }
-  @media (max-width: 800px) {
-    a.feature { grid-template-columns: 1fr; }
-    a.feature .fmeta { padding: 24px 22px 26px; }
-  }
-
   /* ── deep cuts ─────────────────────────────────────────── */
   .deep { display: grid; gap: 13px; grid-template-columns: repeat(auto-fill, minmax(345px, 1fr)); }
-  a.dcard {
-    display: flex; flex-direction: column; text-decoration: none;
-    background: var(--card); border: 1px solid var(--line);
-    border-radius: 17px; padding: 20px 21px 21px;
-    transition: border-color .16s, transform .16s, box-shadow .16s;
-  }
-  a.dcard:hover {
-    border-color: var(--line2); transform: translateY(-3px);
-    box-shadow: 0 22px 48px -28px rgba(0,0,0,.9);
-  }
-  a.dcard .dhead { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
-  a.dcard .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
-  a.dcard h4 { margin: 0; font-size: 17px; letter-spacing: -.022em; font-weight: 700; }
-  a.dcard .arrow { margin-left: auto; color: var(--mute); font-size: 17px; transition: transform .16s, color .16s; }
-  a.dcard:hover .arrow { color: var(--fg); transform: translateX(3px); }
-  a.dcard .dtag { margin: 0 0 10px; font-size: 14px; line-height: 1.5; color: var(--fg); font-weight: 500; }
-  a.dcard .dplain { margin: 0; font-size: 13.6px; line-height: 1.66; color: var(--dim); }
-  a.dcard .dplain i { color: var(--dim); }
-  a.dcard .dplain b { color: var(--fg); font-weight: 600; }
   a.row {
     display: flex; align-items: center; gap: 14px; text-decoration: none;
     background: var(--card); border: 1px solid var(--line);
@@ -298,84 +220,12 @@
       you press the button.
     </p>
     <div class="cta">
-      <a class="btn primary" href="play/ace/index.html">Play the game →</a>
-      <a class="btn ghost" href="#toys">Or something smaller</a>
+      <a class="btn primary" href="#toys">Play with something →</a>
+      <a class="btn ghost" href="#how">How I work</a>
     </div>
   </header>
 
-  <h3 class="section" id="loom">The big ones</h3>
-
-  <a class="feature" href="play/morph/index.html" style="margin-bottom:16px">
-    <div class="fstage">
-      <canvas id="morphCanvas"></canvas>
-      <span class="cap" id="morphCap">masonry</span>
-    </div>
-    <div class="fmeta">
-      <span class="pill">interface</span>
-      <h2>Morph</h2>
-      <p>
-        One gallery, seven completely different layouts, and <b>not a single CSS transition
-        anywhere in it</b>. Switch layout and every tile flies to its new place. Switch again
-        before they land and they bend into the new arrangement carrying the speed they
-        already had.
-      </p>
-      <ul>
-        <li>Every position is a spring, so any gesture can interrupt any other mid-flight</li>
-        <li>Drag to reorder and the rest of the gallery flows around your finger</li>
-        <li>Click a tile and it grows into the detail view — the same element, not a copy</li>
-        <li>Stiffness and damping are sliders, so you can feel what each one does</li>
-      </ul>
-      <span class="go">Go and interrupt it →</span>
-    </div>
-  </a>
-
-  <a class="feature" href="play/portrait/index.html" style="margin-bottom:16px">
-    <div class="fstage">
-      <canvas id="portraitCanvas"></canvas>
-      <span class="cap" id="portraitCap">settling…</span>
-    </div>
-    <div class="fmeta">
-      <span class="pill">image tool</span>
-      <h2>Portrait</h2>
-      <p>
-        Drop in <b>a photo of yourself</b> and watch it taken apart and rebuilt out of six
-        thousand dots. They start scattered at random and crawl into position over a couple of
-        seconds — and then it is unmistakably you, drawn in a way no camera could.
-      </p>
-      <ul>
-        <li>Four ways to rebuild it: dots, triangles, tiles, or pure black and white</li>
-        <li>Use your camera, drop a file, or just paste — it works on a phone too</li>
-        <li>Your photo never leaves your device; there is no server anywhere in it</li>
-        <li>Save the result as a PNG big enough to print</li>
-      </ul>
-      <span class="go">Try it on your face →</span>
-    </div>
-  </a>
-
-  <a class="feature" href="play/loom/index.html">
-    <div class="fstage">
-      <canvas id="loomCanvas"></canvas>
-      <span class="cap" id="loomCap">rendering…</span>
-    </div>
-    <div class="fmeta">
-      <span class="pill">node editor</span>
-      <h2>Loom</h2>
-      <p>
-        A studio for making pictures by <b>wiring boxes together</b>. One box makes a cloud of
-        random fog, another bends whatever it is given, another swaps grey for colour. Plug them
-        into each other and the last box is the picture.
-      </p>
-      <ul>
-        <li>Every box shows a live thumbnail, so you watch the picture being assembled one step at a time</li>
-        <li>Six finished examples to pull apart, or press Shuffle and see what falls out</li>
-        <li>Save the result as a PNG, or copy a link that carries the whole recipe inside it</li>
-        <li>Drag a slider and only the boxes after it recalculate — which is why it feels instant</li>
-      </ul>
-      <span class="go">Open Loom →</span>
-    </div>
-  </a>
-
-  <h3 class="section" id="toys">Or something smaller. They all start instantly.</h3>
+  <h3 class="section" id="toys">Pick one. They all start instantly.</h3>
   <div class="grid" id="grid"></div>
 
   <h3 class="section" id="how">How I work</h3>
@@ -478,6 +328,24 @@ const TOYS = [
     title: 'Ace',
     blurb: 'Tap to fly a paper plane through a canyon. Do not hit the rocks. That is the whole game, and you will understand it before you have finished reading this.',
     preview: acePreview,
+  },
+  {
+    href: 'play/portrait/index.html', tag: 'your photo',
+    title: 'Portrait',
+    blurb: 'Drop in a photo of your face and watch six thousand dots crawl out of random noise until it is unmistakably you. It never leaves your device.',
+    preview: portraitPreview,
+  },
+  {
+    href: 'play/morph/index.html', tag: 'interface',
+    title: 'Morph',
+    blurb: 'One gallery, seven layouts, and not one CSS transition. Switch again before the tiles land and they bend into the new arrangement mid-flight.',
+    preview: morphPreview,
+  },
+  {
+    href: 'play/loom/index.html', tag: 'node editor',
+    title: 'Loom',
+    blurb: 'Make a picture by wiring boxes together. One makes fog, one bends whatever it is given, one swaps grey for colour. The last box is the picture.',
+    preview: loomPreview,
   },
   {
     href: 'play/sandbox/index.html', tag: 'sandbox',
@@ -1004,16 +872,15 @@ loadModules.then(([{ BRIEFINGS, BRIEFING_ORDER }]) => {
   for (const key of BRIEFING_ORDER) {
     const b = BRIEFINGS[key];
     const a = document.createElement('a');
-    a.className = 'dcard';
+    a.className = 'row';
     a.href = b.href;
+    /* One line each, not a paragraph. The full explanation lives inside each
+       tool now, where somebody who has decided to open it will actually read
+       it — six long cards here pushed everything below them off the page. */
     a.innerHTML = `
-      <div class="dhead">
-        <span class="dot" style="background:${b.colour}"></span>
-        <h4>${b.title}</h4>
-        <span class="arrow">→</span>
-      </div>
-      <p class="dtag">${b.tagline}</p>
-      <p class="dplain">${b.plain}</p>`;
+      <span class="dot" style="background:${b.colour}"></span>
+      <span><span class="t">${b.title}</span><div class="d">${b.tagline}</div></span>
+      <span class="arrow">→</span>`;
     deep.append(a);
   }
 }).catch(() => {
@@ -1023,141 +890,112 @@ loadModules.then(([{ BRIEFINGS, BRIEFING_ORDER }]) => {
     localhost, or use the published site.</p>`;
 });
 
-/* ── the Morph card ─────────────────────────────────────────────────────────
-   The same layout functions and the same spring integrator the real thing
-   uses, cycling through the layouts on a timer. Eighteen rounded rectangles
-   rather than eighteen DOM nodes, because a card on a landing page should not
-   cost what the tool costs. */
-loadModules.then(([, , , , morph]) => {
-  const canvas = document.getElementById('morphCanvas');
-  const cap = document.getElementById('morphCap');
-  const ctx = canvas.getContext('2d', { alpha: false });
-  const W = 380;
-  canvas.width = canvas.height = W;
+/* ── previews for the three big ones ─────────────────────────────────────────
+   Each runs the project's own engine on a small canvas. They were three
+   full-height feature cards before, which pushed the grid — the actual design
+   of this page — almost three screens down. Same code, same honesty about
+   running the real thing, one twelfth of the vertical space. */
 
-  const ASPECTS = [1, 0.75, 1.4, 1, 1.2, 0.85];
+/** Morph: the real layout functions and the real spring integrator. */
+function morphPreview(api) {
+  let M = null, tiles = null, targets = [], which = 0, held = 0;
+  const ORDER = ['masonry', 'grid', 'justified', 'spiral', 'deck'];
   const TINTS = ['#ffd166', '#ff4d8d', '#7dd3fc', '#a3e635', '#f472b6', '#c084fc'];
-  const N = 18;
-  const tiles = Array.from({ length: N }, (_, i) => ({
-    aspect: ASPECTS[i % ASPECTS.length],
-    tint: TINTS[i % TINTS.length],
-    sp: {
-      x: morph.makeSpring(W / 2), y: morph.makeSpring(W / 2),
-      w: morph.makeSpring(6), h: morph.makeSpring(6), rot: morph.makeSpring(0),
-    },
-    wobble: 1 + ((i * 29) % 9) / 36,
-  }));
+  const ASPECTS = [1, 0.75, 1.4, 1, 1.2, 0.85];
 
-  const ORDER = ['masonry', 'grid', 'justified', 'spiral', 'deck', 'list'];
-  let which = 0, held = 0, visible = false, targets = [];
+  loadModules.then(([, , , , morph]) => { M = morph; }).catch(() => {});
 
   const retarget = () => {
-    const key = ORDER[which];
-    targets = morph.LAYOUTS[key].fn(tiles, {
-      width: W, height: W, gap: 7, columns: 4,
-      targetHeight: 70, size: key === 'deck' ? 150 : 52, focus: N / 2,
+    const { w, h } = api;
+    targets = M.LAYOUTS[ORDER[which]].fn(tiles, {
+      width: w, height: h, gap: 5, columns: 5,
+      targetHeight: h / 3.4, size: ORDER[which] === 'deck' ? h * 0.6 : h / 7, focus: tiles.length / 2,
     });
-
-    /* Each layout is laid out at its natural size and then scaled to fit the
-       card. Tuning seven sets of sizes by hand to fit one box is the version
-       of this that breaks the first time the card changes width. */
+    // every layout is laid out at its natural size and then scaled to fit
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     for (const t of targets) {
       x0 = Math.min(x0, t.x); y0 = Math.min(y0, t.y);
       x1 = Math.max(x1, t.x + t.w); y1 = Math.max(y1, t.y + t.h);
     }
-    const pad = 14;
-    const k = Math.min((W - pad * 2) / (x1 - x0), (W - pad * 2) / (y1 - y0), 1);
-    const ox = (W - (x1 - x0) * k) / 2, oy = (W - (y1 - y0) * k) / 2;
+    const pad = 10;
+    const k = Math.min((w - pad * 2) / (x1 - x0), (h - pad * 2) / (y1 - y0), 1);
+    const ox = (w - (x1 - x0) * k) / 2, oy = (h - (y1 - y0) * k) / 2;
     for (const t of targets) {
       t.x = ox + (t.x - x0) * k; t.y = oy + (t.y - y0) * k;
       t.w *= k; t.h *= k;
     }
-    cap.textContent = morph.LAYOUTS[key].label.toLowerCase();
   };
-  retarget();
 
-  let last = performance.now();
-  function step(now) {
-    const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    if (visible) {
-      held += dt;
-      if (held > 2.9) { held = 0; which = (which + 1) % ORDER.length; retarget(); }
-      ctx.fillStyle = '#05060b';
-      ctx.fillRect(0, 0, W, W);
-      tiles.forEach((t, i) => {
-        const g = targets[i];
-        const cfg = { stiffness: 190 * t.wobble, damping: 19, mass: 1 };
-        morph.stepSpring(t.sp.x, g.x, cfg, dt);
-        morph.stepSpring(t.sp.y, g.y, cfg, dt);
-        morph.stepSpring(t.sp.w, g.w, cfg, dt);
-        morph.stepSpring(t.sp.h, g.h, cfg, dt);
-        morph.stepSpring(t.sp.rot, g.rot || 0, cfg, dt);
-        const { x, y, w, h, rot } = t.sp;
-        ctx.save();
-        ctx.translate(x.value + w.value / 2, y.value + h.value / 2);
-        if (rot.value) ctx.rotate((rot.value * Math.PI) / 180);
-        ctx.fillStyle = t.tint;
-        ctx.globalAlpha = 0.92;
-        const r = Math.min(7, Math.abs(w.value) / 3, Math.abs(h.value) / 3);
-        ctx.beginPath();
-        ctx.roundRect(-w.value / 2, -h.value / 2, Math.max(1, w.value), Math.max(1, h.value), r);
-        ctx.fill();
-        ctx.restore();
-      });
+  api.reset = () => { tiles = null; };
+
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    ctx.fillStyle = '#05060b';
+    ctx.fillRect(0, 0, w, h);
+    if (!M) return;
+    if (!tiles) {
+      tiles = Array.from({ length: 16 }, (_, i) => ({
+        aspect: ASPECTS[i % ASPECTS.length],
+        tint: TINTS[i % TINTS.length],
+        sp: { x: M.makeSpring(w / 2), y: M.makeSpring(h / 2), w: M.makeSpring(4), h: M.makeSpring(4), rot: M.makeSpring(0) },
+        wobble: 1 + ((i * 29) % 9) / 36,
+      }));
+      retarget();
     }
-    requestAnimationFrame(step);
-  }
-
-  new IntersectionObserver((entries) => {
-    for (const e of entries) visible = e.isIntersecting;
-  }, { rootMargin: '150px' }).observe(canvas);
-  requestAnimationFrame(step);
-}).catch(() => {
-  const cap = document.getElementById('morphCap');
-  if (cap) cap.textContent = 'open over http to see this run live';
-});
-
-/* ── the Portrait card ──────────────────────────────────────────────────────
-   This runs the real stippler on a real image, because the settling IS the
-   product and a still picture of it sells nothing. The source is one of Loom's
-   own presets — the two share this page, so there is no third thing to load.
-
-   It relaxes at 190x190 and draws at 380, which is the same trick the tool
-   itself uses: dot positions are continuous, so only the source needs pixels.
-   Then it holds the finished picture for a few seconds and starts again. */
-loadModules.then(([, loom, presets, portrait]) => {
-  const canvas = document.getElementById('portraitCanvas');
-  const cap = document.getElementById('portraitCap');
-  const ctx = canvas.getContext('2d', { alpha: false });
-  const SRC = 190, OUT = 380;
-  canvas.width = canvas.height = OUT;
-
-  // one Loom render, turned into the darkness map the dots chase
-  const g = loom.deserialize(structuredClone(presets.PRESETS[1].graph));   // Marble
-  const outNode = g.nodes.find((n) => n.type === 'output');
-  const img = loom.evaluate(g, outNode.id, SRC, SRC).image;
-  const rgba = loom.toRGBA(img);
-  const gray = portrait.luma(rgba, SRC, SRC);
-  const adjusted = portrait.adjust(gray, { contrast: 1.25 });
-  const weight = new Float32Array(adjusted.length);
-  for (let i = 0; i < weight.length; i++) weight[i] = 1 - adjusted[i];
-
-  const DOTS = 2600, PASSES = 34;
-  let stip = null, visible = false, holding = 0, seed = 5;
-
-  const reset = () => {
-    stip = new portrait.Stippler(weight, SRC, SRC, DOTS, seed, { start: 'uniform' });
-    holding = 0;
+    held += 1 / 60;
+    if (held > 2.6) { held = 0; which = (which + 1) % ORDER.length; retarget(); }
+    tiles.forEach((t, i) => {
+      const g = targets[i];
+      const cfg = { stiffness: 190 * t.wobble, damping: 19, mass: 1 };
+      M.stepSpring(t.sp.x, g.x, cfg, 1 / 60); M.stepSpring(t.sp.y, g.y, cfg, 1 / 60);
+      M.stepSpring(t.sp.w, g.w, cfg, 1 / 60); M.stepSpring(t.sp.h, g.h, cfg, 1 / 60);
+      M.stepSpring(t.sp.rot, g.rot || 0, cfg, 1 / 60);
+      const { x, y, w: tw, h: th, rot } = t.sp;
+      ctx.save();
+      ctx.translate(x.value + tw.value / 2, y.value + th.value / 2);
+      if (rot.value) ctx.rotate((rot.value * Math.PI) / 180);
+      ctx.fillStyle = t.tint;
+      ctx.globalAlpha = 0.92;
+      const r = Math.min(5, Math.abs(tw.value) / 3, Math.abs(th.value) / 3);
+      ctx.beginPath();
+      ctx.roundRect(-tw.value / 2, -th.value / 2, Math.max(1, tw.value), Math.max(1, th.value), r);
+      ctx.fill();
+      ctx.restore();
+    });
+    ctx.globalAlpha = 1;
   };
-  reset();
+}
 
-  const paint = () => {
-    const s = OUT / SRC;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+/** Portrait: the real stippler, relaxing a real image, on loop. */
+function portraitPreview(api) {
+  let P = null, weight = null, src = 0, stip = null, holding = 0;
+  const SRC = 132, DOTS = 1500, PASSES = 30;
+
+  loadModules.then(([, loom, presets, portrait]) => {
+    P = portrait;
+    const g = loom.deserialize(structuredClone(presets.PRESETS[1].graph));   // Marble
+    const out = g.nodes.find((n) => n.type === 'output');
+    const img = loom.evaluate(g, out.id, SRC, SRC).image;
+    const gray = P.adjust(P.luma(loom.toRGBA(img), SRC, SRC), { contrast: 1.25 });
+    weight = new Float32Array(gray.length);
+    for (let i = 0; i < weight.length; i++) weight[i] = 1 - gray[i];
+    src = SRC;
+  }).catch(() => {});
+
+  api.frame = () => {
+    const { ctx, w, h } = api;
     ctx.fillStyle = '#f6f3ec';
-    ctx.fillRect(0, 0, OUT, OUT);
-    ctx.setTransform(s, 0, 0, s, 0, 0);
+    ctx.fillRect(0, 0, w, h);
+    if (!weight) return;
+    if (!stip) stip = new P.Stippler(weight, src, src, DOTS, 5, { start: 'uniform' });
+    if (stip.passes < PASSES) stip.step();
+    else if ((holding += 1 / 60) > 3.6) { holding = 0; stip = null; return; }
+
+    const k = Math.min(w / src, h / src);
+    const ox = (w - src * k) / 2, oy = (h - src * k) / 2;
+    ctx.save();
+    ctx.translate(ox, oy);
+    ctx.scale(k, k);
     ctx.fillStyle = '#12141a';
     const base = stip.spacing * 0.46;
     for (let i = 0; i < stip.n; i++) {
@@ -1166,120 +1004,59 @@ loadModules.then(([, loom, presets, portrait]) => {
       ctx.arc(stip.pts[i * 2], stip.pts[i * 2 + 1], r, 0, 6.2832);
       ctx.fill();
     }
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.restore();
   };
+}
 
-  let last = performance.now();
-  function step(now) {
-    const dt = now - last; last = now;
-    if (visible) {
-      if (stip.passes < PASSES) {
-        stip.step();
-        paint();
-        cap.textContent = `settling · pass ${stip.passes}`;
-      } else {
-        holding += dt;
-        cap.textContent = `${DOTS.toLocaleString()} dots`;
-        if (holding > 4200) { seed = (seed * 7 + 13) % 9973; reset(); }
-      }
-    }
-    requestAnimationFrame(step);
-  }
-
-  new IntersectionObserver((entries) => {
-    for (const e of entries) visible = e.isIntersecting;
-  }, { rootMargin: '150px' }).observe(canvas);
-
-  paint();
-  requestAnimationFrame(step);
-}).catch(() => {
-  const cap = document.getElementById('portraitCap');
-  if (cap) cap.textContent = 'open over http to see this run live';
-});
-
-/* ── the feature card ───────────────────────────────────────────────────────
-   This runs the real Loom engine rather than showing screenshots of it. Each
-   example is rendered once, on an idle frame, and only after the card has
-   actually scrolled into view — then they cross-fade. Rendering all six up
-   front would cost most of a second on a phone for something nobody had
-   looked at yet. */
-loadModules.then(([, { evaluate, deserialize, toRGBA }, { PRESETS }]) => {
-  const canvas = document.getElementById('loomCanvas');
-  const cap = document.getElementById('loomCap');
-  const ctx = canvas.getContext('2d', { alpha: false });
-  const RES = 384;
-  canvas.width = canvas.height = RES;
-
+/** Loom: its own presets, rendered by its own engine, cross-fading. */
+function loomPreview(api) {
+  const RES = 200;
   const frames = [];
-  let queue = -1, cur = 0, fade = 1, hold = 0, visible = false;
+  let queued = false, cur = 0, fade = 1, hold = 0;
 
-  const renderNext = () => {
-    queue++;
-    if (queue >= PRESETS.length) return;
-    const preset = PRESETS[queue];
-    try {
-      const g = deserialize(structuredClone(preset.graph));
-      const out = g.nodes.find((n) => n.type === 'output');
-      const { image } = evaluate(g, out.id, RES, RES);
-      const off = document.createElement('canvas');
-      off.width = off.height = RES;
-      off.getContext('2d').putImageData(new ImageData(toRGBA(image), RES, RES), 0, 0);
-      frames.push({ canvas: off, name: preset.name });
-      if (frames.length === 1) { cap.textContent = preset.name; paint(); }
-    } catch { /* one bad preset must not take the whole card down */ }
-    // one per idle slice, so the page stays responsive while they arrive
-    (window.requestIdleCallback || ((f) => setTimeout(f, 60)))(renderNext);
-  };
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    ctx.fillStyle = '#05060b';
+    ctx.fillRect(0, 0, w, h);
 
-  function paint() {
+    if (!queued) {
+      queued = true;
+      loadModules.then(([, loom, presets]) => {
+        let i = 0;
+        const next = () => {
+          if (i >= presets.PRESETS.length) return;
+          try {
+            const g = loom.deserialize(structuredClone(presets.PRESETS[i++].graph));
+            const out = g.nodes.find((n) => n.type === 'output');
+            const img = loom.evaluate(g, out.id, RES, RES).image;
+            const off = document.createElement('canvas');
+            off.width = off.height = RES;
+            off.getContext('2d').putImageData(new ImageData(loom.toRGBA(img), RES, RES), 0, 0);
+            frames.push(off);
+          } catch {}
+          (window.requestIdleCallback || ((f) => setTimeout(f, 60)))(next);
+        };
+        next();
+      }).catch(() => {});
+    }
     if (!frames.length) return;
-    const a = frames[cur % frames.length];
-    const b = frames[(cur + 1) % frames.length];
-    ctx.globalAlpha = 1;
-    ctx.drawImage(a.canvas, 0, 0, RES, RES);
+
+    if (fade >= 1) { if ((hold += 1 / 60) > 2.4) { hold = 0; fade = 0; } }
+    else { fade = Math.min(1, fade + 1 / 42); if (fade >= 1) cur = (cur + 1) % frames.length; }
+
+    // the square render is drawn to cover the card, cropped rather than squashed
+    const a = frames[cur % frames.length], b = frames[(cur + 1) % frames.length];
+    const k = Math.max(w / RES, h / RES);
+    const dw = RES * k, dh = RES * k, dx = (w - dw) / 2, dy = (h - dh) / 2;
+    ctx.drawImage(a, dx, dy, dw, dh);
     if (fade < 1 && frames.length > 1) {
       ctx.globalAlpha = 1 - fade;
-      ctx.drawImage(b.canvas, 0, 0, RES, RES);
+      ctx.drawImage(b, dx, dy, dw, dh);
       ctx.globalAlpha = 1;
     }
-  }
+  };
+}
 
-  let last = performance.now();
-  function step(now) {
-    const dt = Math.min(64, now - last); last = now;
-    if (visible && frames.length > 1) {
-      if (fade >= 1) {
-        hold += dt;
-        if (hold > 2600) { hold = 0; fade = 0; }
-      } else {
-        fade = Math.min(1, fade + dt / 700);
-        if (fade >= 1) {
-          cur = (cur + 1) % frames.length;
-          cap.textContent = frames[cur].name;
-        }
-      }
-      paint();
-    }
-    requestAnimationFrame(step);
-  }
-
-  new IntersectionObserver((entries) => {
-    for (const e of entries) {
-      visible = e.isIntersecting;
-      if (e.isIntersecting && queue === -1) {
-        queue = -1;
-        (window.requestIdleCallback || ((f) => setTimeout(f, 0)))(renderNext);
-      }
-    }
-  }, { rootMargin: '150px' }).observe(canvas);
-
-  requestAnimationFrame(step);
-}).catch(() => {
-  // without the engine the card is still a link; just say so rather than
-  // leaving a black square that looks broken
-  const cap = document.getElementById('loomCap');
-  if (cap) cap.textContent = 'open over http to see this render live';
-});
 </script>
 </body>
 </html>
