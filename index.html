@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" href="favicon.svg" />
 <meta name="theme-color" content="#06070d" />
-<title>Playground — nineteen things you can click</title>
-<meta name="description" content="A paper-plane arcade game you understand in one second. A photo rebuilt out of six thousand dots. A gallery that morphs between seven layouts on springs. Nineteen things that all run in your browser, with nothing to install." />
-<meta property="og:title" content="Playground — nineteen things you can click" />
+<title>Playground — twenty things you can click</title>
+<meta name="description" content="A paper-plane arcade game you understand in one second. A photo rebuilt out of six thousand dots. A gallery that morphs between seven layouts on springs. Twenty things that all run in your browser, with nothing to install." />
+<meta property="og:title" content="Playground — twenty things you can click" />
 <meta property="og:description" content="Tap to fly a paper plane through a canyon. Then: a photo rebuilt out of six thousand dots, a gallery that morphs on springs, a node-based image studio, and six serious tools with plain-English explanations." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://mohamedsucule-debug.github.io/Projects/" />
@@ -15,7 +15,7 @@
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Playground — nineteen things you can click" />
+<meta name="twitter:title" content="Playground — twenty things you can click" />
 <meta name="twitter:description" content="Tap to fly a paper plane through a canyon, rebuild your photo out of six thousand dots, or wire boxes together into a picture. All running in the browser." />
 <meta name="twitter:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <link rel="canonical" href="https://mohamedsucule-debug.github.io/Projects/" />
@@ -209,7 +209,7 @@
   <header class="hero">
     <!-- ↓↓ YOUR NAME AND TITLE — edit these two lines ↓↓ -->
     <p class="eyebrow"><b>Mohamed Sucule</b> &middot; software engineer</p>
-    <h1>Nineteen things I built. <em>All of them run right here.</em></h1>
+    <h1>Twenty things I built. <em>All of them run right here.</em></h1>
     <p>
       No videos, no screenshots, no “request a demo”. Click any of them and it starts
       immediately — in your browser, on your phone, with nothing to install.
@@ -294,7 +294,7 @@
     <p class="colophon">
       No frameworks, no build step, no dependencies — every page here is plain HTML, CSS and
       JavaScript, about 17,000 lines of it, with the engine behind Ace, Morph, Portrait, Loom
-      and each of the six tools unit-tested: 306 tests, run in CI before anything is published.
+      and each of the six tools unit-tested: 355 tests, run in CI before anything is published.
       Written with Claude Code; the commit history is the full record.
     </p>
   </footer>
@@ -324,6 +324,10 @@ const loadModules = Promise.all([
 
 /* Games and Flow first: they are the ones that need no explanation and
    reward a click immediately. The tools come after them. */
+/* Not six games in a row. They are good but they are the same kind of good,
+   and a grid that opens with six of them says this is a person who makes
+   arcade games. Two games, then something that is plainly not one, then keep
+   alternating — no more than two of a kind before the subject changes. */
 const TOYS = [
   {
     href: 'play/ace/index.html', tag: 'game',
@@ -338,28 +342,16 @@ const TOYS = [
     preview: cometPreview,
   },
   {
+    href: 'apps/sift/index.html', tag: 'your data',
+    title: 'Sift',
+    blurb: 'Drop a spreadsheet in and it tells you what is actually in it: what each column holds, where the gaps are, what the numbers look like. Then sort and filter a hundred thousand rows without it stuttering. Nothing is uploaded.',
+    preview: siftPreview,
+  },
+  {
     href: 'play/stack/index.html', tag: 'game',
     title: 'Stack',
     blurb: 'A block slides past. Tap. Whatever hangs over the edge is sliced off and falls away, so every sloppy drop makes the next one harder. Land it dead centre and you lose nothing.',
     preview: stackPreview,
-  },
-  {
-    href: 'play/tether/index.html', tag: 'game',
-    title: 'Tether',
-    blurb: 'You swing round a planet on a tether. Tap and you let go, flying off exactly the way you were already pointing. If the line passes close enough to another planet, it catches you. One decision: when.',
-    preview: tetherPreview,
-  },
-  {
-    href: 'play/tangle/index.html', tag: 'daily puzzle',
-    title: 'Tangle',
-    blurb: 'Tap a tile to turn it. The board is solved when no connector is left dangling. Everybody in the world gets the same board each day, and finishing gives you a line you can paste into a group chat.',
-    preview: tanglePreview,
-  },
-  {
-    href: 'play/sumo/index.html', tag: 'two players',
-    title: 'Sumo',
-    blurb: 'Two people, one keyboard, one key each. Hold it: your arrow stops turning and you charge that way. Knock the other one out of the ring before it closes under you. There is a bot if you are on your own.',
-    preview: sumoPreview,
   },
   {
     href: 'play/flow/index.html', tag: 'toy',
@@ -368,10 +360,28 @@ const TOYS = [
     preview: flowPreview,
   },
   {
+    href: 'play/sumo/index.html', tag: 'two players',
+    title: 'Sumo',
+    blurb: 'Two people, one keyboard, one key each. Hold it: your arrow stops turning and you charge that way. Knock the other one out of the ring before it closes under you. There is a bot if you are on your own.',
+    preview: sumoPreview,
+  },
+  {
+    href: 'play/tangle/index.html', tag: 'daily puzzle',
+    title: 'Tangle',
+    blurb: 'Tap a tile to turn it. The board is solved when no connector is left dangling. Everybody in the world gets the same board each day, and finishing gives you a line you can paste into a group chat.',
+    preview: tanglePreview,
+  },
+  {
     href: 'play/sandbox/index.html', tag: 'sandbox',
     title: 'Sandbox',
     blurb: 'Pour sand. Add water. Set it on fire and watch the smoke rise. Ten materials that all behave the way you would expect them to, which is the whole trick.',
     preview: sandPreview,
+  },
+  {
+    href: 'play/tether/index.html', tag: 'game',
+    title: 'Tether',
+    blurb: 'You swing round a planet on a tether. Tap and you let go, flying off exactly the way you were already pointing. If the line passes close enough to another planet, it catches you. One decision: when.',
+    preview: tetherPreview,
   },
   {
     href: 'play/beats/index.html', tag: 'music',
@@ -870,6 +880,105 @@ function sumoPreview(api) {
     ctx.textAlign = 'right';
     ctx.fillStyle = tint[1];
     ctx.fillText(String(bout.score[1]), w - 16, h - 16);
+  };
+}
+
+/** Sift, reading a file: the real parser and profiler on a real sample. */
+function siftPreview(api) {
+  let cols = null, rows = 0, at = 0, t = 0;
+  import('./apps/sift/engine.js').then((m) => {
+    const table = m.parseTable(m.sampleCSV(1200, 7));
+    rows = table.rows.length;
+    cols = m.profile(table.columns, table.rows);
+  }).catch(() => null);
+
+  const TINT = {
+    integer: '#7ee0b0', decimal: '#7ee0b0', date: '#c9a6ff',
+    category: '#ffc46b', text: '#9fb3d9', boolean: '#ff9bb0',
+  };
+
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    ctx.fillStyle = '#0a0d16';
+    ctx.fillRect(0, 0, w, h);
+    if (!cols) return;
+
+    t += 1 / 60;
+    // three columns at a time, swapping every four seconds
+    const page = Math.floor(t / 4) % Math.ceil(cols.length / 3);
+    if (page !== at) at = page;
+    const show = cols.slice(at * 3, at * 3 + 3);
+    const grow = Math.min(1, ((t % 4) / 0.6));
+
+    // right-aligned: the card's tag chip sits in the top-left corner
+    ctx.fillStyle = 'rgba(233,238,251,.42)';
+    ctx.font = '650 10.5px ui-monospace, "SF Mono", Menlo, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${rows.toLocaleString()} ROWS · ${cols.length} COLUMNS`, w - 14, 21);
+    ctx.textAlign = 'left';
+
+    const pad = 12, gap = 9;
+    const cw = (w - pad * 2 - gap * 2) / 3;
+    const top = 32, ch = h - top - 14;
+
+    show.forEach((c, i) => {
+      const x = pad + i * (cw + gap);
+      ctx.fillStyle = '#0f1422';
+      ctx.strokeStyle = 'rgba(255,255,255,.09)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.rect(x, top, cw, ch);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x, top, cw, ch); ctx.clip();
+
+      ctx.fillStyle = 'rgba(233,238,251,.92)';
+      ctx.font = '700 11.5px "Inter", system-ui, sans-serif';
+      ctx.fillText(c.name, x + 9, top + 18);
+
+      ctx.fillStyle = TINT[c.type] || '#9fb3d9';
+      ctx.font = '650 9px ui-monospace, "SF Mono", Menlo, monospace';
+      ctx.fillText(c.type.toUpperCase(), x + 9, top + 32);
+
+      ctx.fillStyle = c.blanks ? '#ffb37a' : 'rgba(233,238,251,.4)';
+      ctx.font = '500 9.5px ui-monospace, "SF Mono", Menlo, monospace';
+      ctx.fillText(c.blanks ? `${c.blanks} blank` : 'no gaps', x + 9, top + 46);
+
+      const chartTop = top + 56, chartH = ch - 66;
+      if (c.histogram && c.histogram.length) {
+        const max = Math.max(...c.histogram.map((b) => b.count), 1);
+        const bw = (cw - 18) / c.histogram.length;
+        c.histogram.forEach((b, k) => {
+          const bh = (b.count / max) * chartH * grow;
+          ctx.fillStyle = 'rgba(95,184,255,.6)';
+          ctx.fillRect(x + 9 + k * bw, chartTop + chartH - bh, Math.max(1, bw - 1), bh);
+        });
+      } else if (c.unique) {
+        ctx.fillStyle = 'rgba(233,238,251,.5)';
+        ctx.font = '500 10px ui-monospace, "SF Mono", Menlo, monospace';
+        ctx.fillText('every value', x + 9, chartTop + 12);
+        ctx.fillText('unique', x + 9, chartTop + 26);
+      } else if (c.top && c.top.length) {
+        const max = Math.max(...c.top.map((v) => v.count), 1);
+        c.top.slice(0, 4).forEach((v, k) => {
+          const y = chartTop + k * 15;
+          ctx.fillStyle = 'rgba(95,184,255,.2)';
+          ctx.fillRect(x + 9, y, (cw - 18) * (v.count / max) * grow, 12);
+          ctx.fillStyle = 'rgba(233,238,251,.6)';
+          ctx.font = '500 9.5px ui-monospace, "SF Mono", Menlo, monospace';
+          ctx.fillText(v.value, x + 12, y + 9);
+        });
+      } else if (c.stats) {
+        ctx.fillStyle = 'rgba(233,238,251,.55)';
+        ctx.font = '500 10px ui-monospace, "SF Mono", Menlo, monospace';
+        const d = (ms) => new Date(ms).toISOString().slice(0, 10);
+        ctx.fillText(d(c.stats.min), x + 9, chartTop + 12);
+        ctx.fillText(`to ${d(c.stats.max)}`, x + 9, chartTop + 26);
+      }
+      ctx.restore();
+    });
   };
 }
 

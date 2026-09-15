@@ -1,6 +1,6 @@
 # Playground
 
-Nineteen things I built. All of them run in a browser — no install, no signup,
+Twenty things I built. All of them run in a browser — no install, no signup,
 no video of someone else using it.
 
 **→ [Open the playground](https://mohamedsucule-debug.github.io/Projects/)**
@@ -79,6 +79,32 @@ example: 5 boxes of 7 redrawn in 30ms, against 165ms for the whole graph cold.
 [Full write-up, including what it deliberately does not do](play/loom/README.md).
 
 ---
+
+### [Sift](apps/sift/) — drop a CSV in and see what is actually in it
+
+Every column gets a type, a count of the gaps, a range and a shape. Then sort
+and filter a hundred thousand rows without it stuttering. Nothing is uploaded.
+
+**Splitting a line on commas is the single most common data bug in working
+software.** It silently truncates any row with a comma inside a quoted field,
+the row count still looks about right, and nobody notices until a customer asks
+where half their address went. So the parser is a character loop that handles
+the whole list — escaped quotes, embedded newlines, CRLF, a byte-order mark,
+ragged rows, and a trailing newline that must not invent a record that is not
+in the file. There is a test for each, because each is a bug I have seen ship.
+
+It also refuses to guess. `new Date('03/04/2025')` is March in the US and April
+almost everywhere else, so anything that is not ISO stays text rather than being
+silently wrong by up to eleven months.
+
+A hundred thousand rows across eleven columns is 1.1 million elements, and a
+browser handed that allocates for forty seconds and then scrolls at four frames
+a second. So it does not make them: a tall empty box keeps the scrollbar honest
+and only the ~36 rows actually on screen exist, recycled rather than rebuilt.
+Measured: **36 DOM rows at a hundred thousand, and 36 after scrolling to the
+bottom.**
+
+[Full write-up](apps/sift/README.md).
 
 ## The game
 
@@ -188,7 +214,7 @@ projects/<name>/
   engine.js             the algorithm, pure and DOM-free
   index.html            the interface
   README.md             the design problem, and the limits
-tests/run.mjs           306 tests, no framework, no install
+tests/run.mjs           355 tests, no framework, no install
 ```
 
 ```bash
