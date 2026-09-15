@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" href="favicon.svg" />
 <meta name="theme-color" content="#06070d" />
-<title>Playground — twenty things you can click</title>
-<meta name="description" content="A paper-plane arcade game you understand in one second. A photo rebuilt out of six thousand dots. A gallery that morphs between seven layouts on springs. Twenty things that all run in your browser, with nothing to install." />
-<meta property="og:title" content="Playground — twenty things you can click" />
+<title>Playground — twenty-one things you can click</title>
+<meta name="description" content="A paper-plane arcade game you understand in one second. A photo rebuilt out of six thousand dots. A gallery that morphs between seven layouts on springs. Twenty-one things that all run in your browser, with nothing to install." />
+<meta property="og:title" content="Playground — twenty-one things you can click" />
 <meta property="og:description" content="Tap to fly a paper plane through a canyon. Then: a photo rebuilt out of six thousand dots, a gallery that morphs on springs, a node-based image studio, and six serious tools with plain-English explanations." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://mohamedsucule-debug.github.io/Projects/" />
@@ -15,7 +15,7 @@
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Playground — twenty things you can click" />
+<meta name="twitter:title" content="Playground — twenty-one things you can click" />
 <meta name="twitter:description" content="Tap to fly a paper plane through a canyon, rebuild your photo out of six thousand dots, or wire boxes together into a picture. All running in the browser." />
 <meta name="twitter:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <link rel="canonical" href="https://mohamedsucule-debug.github.io/Projects/" />
@@ -209,7 +209,7 @@
   <header class="hero">
     <!-- ↓↓ YOUR NAME AND TITLE — edit these two lines ↓↓ -->
     <p class="eyebrow"><b>Mohamed Sucule</b> &middot; software engineer</p>
-    <h1>Twenty things I built. <em>All of them run right here.</em></h1>
+    <h1>Twenty-one things I built. <em>All of them run right here.</em></h1>
     <p>
       No videos, no screenshots, no “request a demo”. Click any of them and it starts
       immediately — in your browser, on your phone, with nothing to install.
@@ -294,7 +294,7 @@
     <p class="colophon">
       No frameworks, no build step, no dependencies — every page here is plain HTML, CSS and
       JavaScript, about 17,000 lines of it, with the engine behind Ace, Morph, Portrait, Loom
-      and each of the six tools unit-tested: 355 tests, run in CI before anything is published.
+      and each of the six tools unit-tested: 386 tests, run in CI before anything is published.
       Written with Claude Code; the commit history is the full record.
     </p>
   </footer>
@@ -328,7 +328,18 @@ const loadModules = Promise.all([
    and a grid that opens with six of them says this is a person who makes
    arcade games. Two games, then something that is plainly not one, then keep
    alternating — no more than two of a kind before the subject changes. */
+/* Not six games in a row. They are good but they are the same kind of good,
+   and a grid that opens with six of them says this is a person who makes
+   arcade games. Mercury first because it is the one that stops somebody
+   scrolling; then two games, then something that is plainly not one, then
+   keep alternating — no more than two of a kind before the subject changes. */
 const TOYS = [
+  {
+    href: 'apps/mercury/index.html', tag: 'touch it', gl: true,
+    title: 'Mercury',
+    blurb: 'A sheet of liquid metal under a sunset sky. Drag it and it ripples, and the ripples bend the reflections as they spread. There is no 3D model and no texture in it — every pixel is worked out from scratch, sixty times a second.',
+    preview: mercuryPreview,
+  },
   {
     href: 'play/ace/index.html', tag: 'game',
     title: 'Ace',
@@ -441,13 +452,16 @@ for (const toy of TOYS) {
   grid.append(a);
 
   const canvas = a.querySelector('canvas');
-  const api = { canvas, ctx: canvas.getContext('2d'), w: 0, h: 0, t: 0, alive: false };
+  /* A canvas gets exactly one kind of context for its whole life, so asking
+     for a 2d one here would quietly stop the card that wants WebGL from ever
+     getting it — getContext just returns null and the card stays black. */
+  const api = { canvas, ctx: toy.gl ? null : canvas.getContext('2d'), w: 0, h: 0, t: 0, alive: false };
   const fit = () => {
     const r = canvas.getBoundingClientRect();
-    const dpr = Math.min(2, devicePixelRatio || 1);
-    canvas.width = Math.max(1, r.width * dpr);
-    canvas.height = Math.max(1, r.height * dpr);
-    api.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const dpr = toy.gl ? 1 : Math.min(2, devicePixelRatio || 1);
+    canvas.width = Math.max(1, Math.round(r.width * dpr * (toy.gl ? 0.5 : 1)));
+    canvas.height = Math.max(1, Math.round(r.height * dpr * (toy.gl ? 0.5 : 1)));
+    api.ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
     api.w = r.width; api.h = r.height;
     api.reset?.();
   };
@@ -979,6 +993,120 @@ function siftPreview(api) {
       }
       ctx.restore();
     });
+  };
+}
+
+/** Mercury, at a fraction of the size: the same two shaders, on its own
+    WebGL context, drawing about a fortieth of the pixels. A card that faked it
+    with a 2D drawing would be a picture of the thing rather than the thing. */
+function mercuryPreview(api) {
+  const canvas = api.canvas;
+  const gl = canvas.getContext('webgl2', { antialias: false, alpha: false });
+  let ready = false, sim = null, t0 = performance.now();
+
+  if (!gl || !gl.getExtension('EXT_color_buffer_float')) {
+    /* No WebGL2 here. The card cannot fall back to a 2d drawing, because this
+       canvas has already been handed a WebGL context — so it says so in CSS
+       and the link still works. */
+    canvas.style.background = 'linear-gradient(#c4622c, #14162e)';
+    api.frame = () => {};
+    return;
+  }
+
+  Promise.all([import('./apps/mercury/shaders.js'), import('./apps/mercury/scene.js')])
+    .then(([S, sc]) => { sim = setup(S, sc); ready = true; })
+    .catch(() => { /* the card simply stays dark */ });
+
+  function build(fragSrc, VERT) {
+    const mk = (type, src) => {
+      const sh = gl.createShader(type);
+      gl.shaderSource(sh, src); gl.compileShader(sh);
+      if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh));
+      return sh;
+    };
+    const prog = gl.createProgram();
+    gl.attachShader(prog, mk(gl.VERTEX_SHADER, VERT));
+    gl.attachShader(prog, mk(gl.FRAGMENT_SHADER, fragSrc));
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+    const u = {};
+    for (let i = 0; i < gl.getProgramParameter(prog, gl.ACTIVE_UNIFORMS); i++) {
+      const n = gl.getActiveUniform(prog, i).name.replace(/\[0\]$/, '');
+      u[n] = gl.getUniformLocation(prog, n);
+    }
+    return { prog, u };
+  }
+
+  function target(size) {
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, size, size, 0, gl.RGBA, gl.HALF_FLOAT, null);
+    for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR],
+                          [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) {
+      gl.texParameteri(gl.TEXTURE_2D, k, v);
+    }
+    const fbo = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT);
+    return { tex, fbo };
+  }
+
+  function setup(S, sc) {
+    const SIZE = 256;                    // a quarter of the real one
+    return {
+      S, sc, SIZE,
+      simP: build(S.SIM, S.VERT),
+      drawP: build(S.DRAW, S.VERT),
+      a: target(SIZE), b: target(SIZE),
+      drops: [], next: 0,
+    };
+  }
+
+  api.frame = () => {
+    if (!ready) return;
+    const { S, sc, SIZE, simP, drawP } = sim;
+    const time = (performance.now() - t0) / 1000;
+
+    if (time > sim.next) {
+      sim.next = time + 1.1 + Math.random() * 1.1;
+      const ang = Math.random() * 6.283, r = Math.random() * 0.32;
+      sim.drops.push([0.5 + Math.cos(ang) * r, 0.5 + Math.sin(ang) * r, 0.55]);
+    }
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, sim.b.fbo);
+    gl.viewport(0, 0, SIZE, SIZE);
+    gl.useProgram(simP.prog);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, sim.a.tex);
+    gl.uniform1i(simP.u.uState, 0);
+    gl.uniform2f(simP.u.uTexel, 1 / SIZE, 1 / SIZE);
+    gl.uniform1f(simP.u.uSpeed, sc.WAVE.speed);
+    gl.uniform1f(simP.u.uDamping, sc.WAVE.damping);
+    gl.uniform1f(simP.u.uTime, time);
+    const flat = new Float32Array(36);
+    sim.drops.slice(0, 12).forEach((d, i) => { flat[i * 3] = d[0]; flat[i * 3 + 1] = d[1]; flat[i * 3 + 2] = d[2]; });
+    gl.uniform3fv(simP.u.uDrops, flat);
+    gl.uniform1i(simP.u.uDropCount, Math.min(12, sim.drops.length));
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    sim.drops.length = 0;
+    [sim.a, sim.b] = [sim.b, sim.a];
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.useProgram(drawP.prog);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, sim.a.tex);
+    gl.uniform1i(drawP.u.uHeight, 0);
+    const cam = { yaw: 0.5 + Math.sin(time * 0.06) * 0.5, pitch: 0.4, dist: 7.4 };
+    const eye = sc.eyeOf(cam), tgt = sc.target();
+    gl.uniform3f(drawP.u.uEye, eye[0], eye[1], eye[2]);
+    gl.uniform3f(drawP.u.uTarget, tgt[0], tgt[1], tgt[2]);
+    gl.uniform2f(drawP.u.uRes, canvas.width, canvas.height);
+    gl.uniform1f(drawP.u.uTime, time);
+    gl.uniform1f(drawP.u.uWorld, sc.WORLD);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
   };
 }
 

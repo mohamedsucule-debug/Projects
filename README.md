@@ -1,6 +1,6 @@
 # Playground
 
-Twenty things I built. All of them run in a browser — no install, no signup,
+Twenty-one things I built. All of them run in a browser — no install, no signup,
 no video of someone else using it.
 
 **→ [Open the playground](https://mohamedsucule-debug.github.io/Projects/)**
@@ -79,6 +79,32 @@ example: 5 boxes of 7 redrawn in 30ms, against 165ms for the whole graph cold.
 [Full write-up, including what it deliberately does not do](play/loom/README.md).
 
 ---
+
+### [Mercury](apps/mercury/) — liquid metal you can put your finger in
+
+A sheet of liquid metal under a sunset sky. Drag it and it ripples; drag the sky
+and you walk around it.
+
+**There is no 3D model in that page.** No mesh, no vertex data, no texture of
+anything, no library, no asset of any kind. The floating shape is four moving
+spheres blended by a formula, the metal is a flat plane whose height comes out
+of a physics simulation, and the sky is a gradient and a bright dot. Everything
+is worked out from those descriptions per pixel, sixty times a second.
+
+Nothing draws the distortion in the reflections. One pass solves a wave equation
+across a texture; the other fires a ray per pixel, and where it lands on metal it
+bounces off whatever tilt the waves left there and goes to see what is in the new
+direction. The ripples move the tilts, the tilts move the rays, and the
+reflection bends — the same way it does in the real world.
+
+The wave speed is 0.42 because the discrete wave equation is stable only while c²
+stays under a half, and past it the surface reaches infinity inside a second.
+There is a test that runs it at 0.69 and asserts it holds, then at 0.75 and
+asserts it comes apart — a test that only checked the working value would pass
+just as well if the number were meaningless.
+
+[Full write-up](apps/mercury/README.md), including the five things that looked
+wrong and why.
 
 ### [Sift](apps/sift/) — drop a CSV in and see what is actually in it
 
@@ -214,7 +240,7 @@ projects/<name>/
   engine.js             the algorithm, pure and DOM-free
   index.html            the interface
   README.md             the design problem, and the limits
-tests/run.mjs           355 tests, no framework, no install
+tests/run.mjs           386 tests, no framework, no install
 ```
 
 ```bash

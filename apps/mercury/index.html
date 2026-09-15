@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="icon" href="../../favicon.svg" />
+<meta name="theme-color" content="#0a0a12" />
+<title>Mercury — liquid metal you can touch</title>
+<meta name="description" content="An endless sheet of liquid metal under a sunset sky. Touch it and it ripples, and the ripples bend the reflections. There are no 3D models and no textures in it — every pixel is worked out from scratch, sixty times a second." />
+<meta property="og:title" content="Mercury — liquid metal you can touch" />
+<meta property="og:description" content="Drag the metal to make waves. Drag the sky to look around. No models, no textures — just maths, per pixel." />
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0a0a12; color: #fff;
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+  canvas:active { cursor: grabbing; }
+  [hidden] { display: none !important; }
+
+  .back {
+    position: fixed; top: 12px; left: 12px; z-index: 10;
+    padding: 8px 12px; border-radius: 10px;
+    background: rgba(8,8,16,.42); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,.16);
+    color: rgba(255,255,255,.78); text-decoration: none;
+    font: 600 11.5px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .07em;
+    opacity: .55; transition: opacity .15s;
+  }
+  .back:hover { opacity: 1; }
+
+  #hint {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 10;
+    display: flex; gap: 14px; align-items: center; white-space: nowrap;
+    padding: 10px 16px; border-radius: 99px;
+    background: rgba(8,8,16,.42); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,.14);
+    font-size: 13px; color: rgba(255,255,255,.72);
+    transition: opacity .6s; pointer-events: none;
+  }
+  #hint b { color: #fff; font-weight: 650; }
+  #hint.gone { opacity: 0; }
+
+  #stats {
+    position: fixed; top: 12px; right: 12px; z-index: 10;
+    padding: 8px 11px; border-radius: 10px;
+    background: rgba(8,8,16,.42); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,.14);
+    font: 600 11px/1.6 ui-monospace, "SF Mono", Menlo, monospace;
+    color: rgba(255,255,255,.5); text-align: right;
+  }
+  #stats b { color: rgba(255,255,255,.92); font-weight: 700; }
+
+  #sorry { position: fixed; inset: 0; display: grid; place-items: center; padding: 30px;
+    text-align: center; z-index: 20; background: #0a0a12; }
+  #sorry div { max-width: 460px; line-height: 1.6; color: rgba(255,255,255,.7); }
+  #sorry h1 { font-size: 21px; margin: 0 0 10px; color: #fff; }
+
+  @media (max-width: 560px) { #hint { font-size: 12px; gap: 10px; padding: 9px 13px; } }
+</style>
+</head>
+<head></head>
+<body>
+<a class="back" href="../../index.html">&larr; INDEX</a>
+<canvas id="c"></canvas>
+<div id="stats"><b id="fps">—</b> fps<br><span id="res">—</span></div>
+<div id="hint"><span><b>Drag the metal</b> to make waves</span><span><b>Drag the sky</b> to look around</span></div>
+<div id="sorry" hidden><div>
+  <h1>This one needs WebGL 2</h1>
+  <p>Mercury draws every pixel from scratch on the graphics card, and this browser will not give it one. Everything else on the site runs fine without it.</p>
+</div></div>
+
+<script type="module">
+/* ───────────────────────────────────────────────────────────────────────────
+   Mercury — a sheet of liquid metal you can put your finger in.
+
+   There is no 3D model anywhere in this page, and no texture of anything. The
+   floating shape is four moving spheres blended together by a formula. The
+   metal is a flat plane whose height comes out of a physics simulation. The
+   sky is a gradient and a dot. Everything you can see is worked out per pixel,
+   from those descriptions, sixty times a second.
+
+   Two passes:
+
+     1. THE WATER, on a 512×512 texture. A wave equation, one step per frame:
+        every cell looks at its four neighbours and works out where it should
+        be next. Your finger pushes cells down. That is all a wave is.
+
+     2. THE PICTURE, one ray per pixel. Fire the ray from the eye, find what it
+        hits, and for metal, bounce it and go again. The ripples move the
+        surface normals, the normals move the bounced rays, and the reflection
+        bends. Nothing draws the distortion — it falls out of tracing the light.
+
+   The maths that is not drawing — the camera, where your finger landed on the
+   water, and the resolution controller — lives in scene.js so it can be
+   tested from a terminal.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+import {
+  WORLD, WAVE, orbit, zoom, eyeOf, target, touchToWater, makeQuality, quality, clamp,
+} from './scene.js';
+import { VERT, SIM, DRAW } from './shaders.js';
+
+const canvas = document.getElementById('c');
+const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, powerPreference: 'high-performance' });
+const el = (id) => document.getElementById(id);
+
+if (!gl || !gl.getExtension('EXT_color_buffer_float')) {
+  el('sorry').hidden = false;
+  canvas.hidden = true;
+  el('stats').hidden = true;
+  el('hint').hidden = true;
+} else {
+  run();
+}
+
+function run() {
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ── plumbing ────────────────────────────────────────────────────────────── */
+
+function compile(type, src, label) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+    throw new Error(`${label} shader: ${gl.getShaderInfoLog(s)}`);
+  }
+  return s;
+}
+
+function program(fragSrc, label) {
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl.VERTEX_SHADER, VERT, `${label} vertex`));
+  gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fragSrc, label));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+    throw new Error(`${label} link: ${gl.getProgramInfoLog(p)}`);
+  }
+  const uniforms = {};
+  const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+  for (let i = 0; i < n; i++) {
+    const name = gl.getActiveUniform(p, i).name.replace(/\[0\]$/, '');
+    uniforms[name] = gl.getUniformLocation(p, name);
+  }
+  return { p, u: uniforms };
+}
+
+let simProg, drawProg;
+try {
+  simProg = program(SIM, 'water');
+  drawProg = program(DRAW, 'picture');
+} catch (e) {
+  el('sorry').hidden = false;
+  el('sorry').querySelector('p').textContent = String(e.message).slice(0, 400);
+  canvas.hidden = true; el('stats').hidden = true; el('hint').hidden = true;
+  throw e;
+}
+
+const SIM_SIZE = 512;
+
+function makeTarget(size) {
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, size, size, 0, gl.RGBA, gl.HALF_FLOAT, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  const fbo = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  return { tex, fbo };
+}
+
+let front = makeTarget(SIM_SIZE);
+let back = makeTarget(SIM_SIZE);
+
+// start from a flat, still surface
+for (const t of [front, back]) {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, t.fbo);
+  gl.clearColor(0, 0, 0, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+}
+gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+/* ── state ───────────────────────────────────────────────────────────────── */
+
+let cam = { yaw: 0.65, pitch: 0.42, dist: 7.2 };
+const dpr = Math.min(2, devicePixelRatio || 1);
+let q = makeQuality(dpr);
+q.scale = Math.min(1, dpr);        // start modest; it climbs if the machine can take it
+const drops = [];
+let width = 1, height = 1;
+
+function resize() {
+  const s = q.scale;
+  width = Math.max(1, Math.round(innerWidth * s));
+  height = Math.max(1, Math.round(innerHeight * s));
+  canvas.width = width;
+  canvas.height = height;
+  el('res').textContent = `${width}×${height}`;
+}
+addEventListener('resize', resize);
+
+/* ── input ───────────────────────────────────────────────────────────────── */
+
+let dragging = null;
+const hint = el('hint');
+let touched = false;
+const noteTouched = () => { if (!touched) { touched = true; hint.classList.add('gone'); } };
+
+function addDrop(x, y, strength) {
+  const hit = touchToWater(cam, x, y, innerWidth, innerHeight, { fov: 1.0 });
+  if (!hit) return false;
+  if (drops.length < 12) drops.push([hit.u, hit.v, strength]);
+  return true;
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  canvas.setPointerCapture(e.pointerId);
+  /* Drag the metal and you draw on it; drag the sky and you move around it.
+     One gesture, and which one it is depends on what is under your finger,
+     which nobody has to be told. */
+  const onWater = addDrop(e.clientX, e.clientY, 0.62);
+  dragging = { x: e.clientX, y: e.clientY, mode: onWater ? 'water' : 'orbit' };
+  if (onWater) noteTouched();
+});
+
+canvas.addEventListener('pointermove', (e) => {
+  if (!dragging) return;
+  const dx = e.clientX - dragging.x, dy = e.clientY - dragging.y;
+  if (dragging.mode === 'orbit') {
+    cam = orbit(cam, dx, dy);
+    noteTouched();
+  } else {
+    addDrop(e.clientX, e.clientY, 0.26);
+  }
+  dragging.x = e.clientX; dragging.y = e.clientY;
+});
+
+const endDrag = () => { dragging = null; };
+canvas.addEventListener('pointerup', endDrag);
+canvas.addEventListener('pointercancel', endDrag);
+
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  cam = zoom(cam, Math.exp(e.deltaY * 0.0012));
+}, { passive: false });
+
+// pinch, on a phone
+const pinch = new Map();
+canvas.addEventListener('pointerdown', (e) => pinch.set(e.pointerId, e));
+canvas.addEventListener('pointermove', (e) => {
+  if (!pinch.has(e.pointerId)) return;
+  pinch.set(e.pointerId, e);
+  if (pinch.size !== 2) return;
+  const [a, b] = [...pinch.values()];
+  const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  if (pinch.last) cam = zoom(cam, pinch.last / Math.max(1, d));
+  pinch.last = d;
+});
+const dropPinch = (e) => { pinch.delete(e.pointerId); if (pinch.size < 2) pinch.last = 0; };
+canvas.addEventListener('pointerup', dropPinch);
+canvas.addEventListener('pointercancel', dropPinch);
+
+/* ── the loop ────────────────────────────────────────────────────────────── */
+
+let last = performance.now(), fpsAt = last, frames = 0, t0 = last;
+let autoAt = 0;
+
+function frame(now) {
+  const dt = now - last;
+  last = now;
+
+  const before = q.scale;
+  q = quality(q, dt);
+  if (q.scale !== before) resize();
+
+  frames++;
+  if (now - fpsAt > 500) {
+    el('fps').textContent = Math.round((frames * 1000) / (now - fpsAt));
+    frames = 0; fpsAt = now;
+  }
+
+  const time = (now - t0) / 1000;
+
+  /* Something happens on its own until somebody touches it, so the page is
+     alive on arrival rather than a still picture waiting to be discovered. */
+  if (!touched && !reduced && now > autoAt) {
+    autoAt = now + 1500 + Math.random() * 1400;
+    const a = Math.random() * Math.PI * 2, r = Math.random() * 0.34;
+    drops.push([0.5 + Math.cos(a) * r, 0.5 + Math.sin(a) * r, 0.5]);
+  }
+
+  /* one step of water */
+  gl.bindFramebuffer(gl.FRAMEBUFFER, back.fbo);
+  gl.viewport(0, 0, SIM_SIZE, SIM_SIZE);
+  gl.useProgram(simProg.p);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, front.tex);
+  gl.uniform1i(simProg.u.uState, 0);
+  gl.uniform2f(simProg.u.uTexel, 1 / SIM_SIZE, 1 / SIM_SIZE);
+  gl.uniform1f(simProg.u.uSpeed, WAVE.speed);
+  gl.uniform1f(simProg.u.uDamping, WAVE.damping);
+  gl.uniform1f(simProg.u.uTime, time);
+  const flat = new Float32Array(36);
+  for (let i = 0; i < drops.length && i < 12; i++) {
+    flat[i * 3] = drops[i][0]; flat[i * 3 + 1] = drops[i][1]; flat[i * 3 + 2] = drops[i][2];
+  }
+  gl.uniform3fv(simProg.u.uDrops, flat);
+  gl.uniform1i(simProg.u.uDropCount, Math.min(12, drops.length));
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  drops.length = 0;
+  [front, back] = [back, front];
+
+  /* the picture */
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, width, height);
+  gl.useProgram(drawProg.p);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, front.tex);
+  gl.uniform1i(drawProg.u.uHeight, 0);
+  const eye = eyeOf(cam), tgt = target();
+  gl.uniform3f(drawProg.u.uEye, eye[0], eye[1], eye[2]);
+  gl.uniform3f(drawProg.u.uTarget, tgt[0], tgt[1], tgt[2]);
+  gl.uniform2f(drawProg.u.uRes, width, height);
+  gl.uniform1f(drawProg.u.uTime, time);
+  gl.uniform1f(drawProg.u.uWorld, WORLD);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  requestAnimationFrame(frame);
+}
+
+resize();
+requestAnimationFrame(frame);
+
+window.mercury = () => ({ cam, scale: q.scale, width, height });
+}
+</script>
+</body>
+</html>
