@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" href="favicon.svg" />
 <meta name="theme-color" content="#06070d" />
-<title>Playground — sixteen things you can click</title>
-<meta name="description" content="A paper-plane arcade game you understand in one second. A photo rebuilt out of six thousand dots. A gallery that morphs between seven layouts on springs. Sixteen things that all run in your browser, with nothing to install." />
-<meta property="og:title" content="Playground — sixteen things you can click" />
+<title>Playground — seventeen things you can click</title>
+<meta name="description" content="A paper-plane arcade game you understand in one second. A photo rebuilt out of six thousand dots. A gallery that morphs between seven layouts on springs. Seventeen things that all run in your browser, with nothing to install." />
+<meta property="og:title" content="Playground — seventeen things you can click" />
 <meta property="og:description" content="Tap to fly a paper plane through a canyon. Then: a photo rebuilt out of six thousand dots, a gallery that morphs on springs, a node-based image studio, and six serious tools with plain-English explanations." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://mohamedsucule-debug.github.io/Projects/" />
@@ -15,7 +15,7 @@
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Playground — sixteen things you can click" />
+<meta name="twitter:title" content="Playground — seventeen things you can click" />
 <meta name="twitter:description" content="Tap to fly a paper plane through a canyon, rebuild your photo out of six thousand dots, or wire boxes together into a picture. All running in the browser." />
 <meta name="twitter:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <link rel="canonical" href="https://mohamedsucule-debug.github.io/Projects/" />
@@ -209,7 +209,7 @@
   <header class="hero">
     <!-- ↓↓ YOUR NAME AND TITLE — edit these two lines ↓↓ -->
     <p class="eyebrow"><b>Mohamed Sucule</b> &middot; software engineer</p>
-    <h1>Sixteen things I built. <em>All of them run right here.</em></h1>
+    <h1>Seventeen things I built. <em>All of them run right here.</em></h1>
     <p>
       No videos, no screenshots, no “request a demo”. Click any of them and it starts
       immediately — in your browser, on your phone, with nothing to install.
@@ -294,7 +294,7 @@
     <p class="colophon">
       No frameworks, no build step, no dependencies — every page here is plain HTML, CSS and
       JavaScript, about 17,000 lines of it, with the engine behind Ace, Morph, Portrait, Loom
-      and each of the six tools unit-tested: 225 tests, run in CI before anything is published.
+      and each of the six tools unit-tested: 254 tests, run in CI before anything is published.
       Written with Claude Code; the commit history is the full record.
     </p>
   </footer>
@@ -342,6 +342,12 @@ const TOYS = [
     title: 'Stack',
     blurb: 'A block slides past. Tap. Whatever hangs over the edge is sliced off and falls away, so every sloppy drop makes the next one harder. Land it dead centre and you lose nothing.',
     preview: stackPreview,
+  },
+  {
+    href: 'play/tether/index.html', tag: 'game',
+    title: 'Tether',
+    blurb: 'You swing round a planet on a tether. Tap and you let go, flying off exactly the way you were already pointing. If the line passes close enough to another planet, it catches you. One decision: when.',
+    preview: tetherPreview,
   },
   {
     href: 'play/flow/index.html', tag: 'toy',
@@ -602,6 +608,98 @@ function stackPreview(api) {
       ctx.fillRect(game.top.x, yOf(game.top.row), game.top.w, 3);
       ctx.globalAlpha = 1;
       flash -= 0.05;
+    }
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(255,255,255,.92)';
+    ctx.font = '700 20px "Inter", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(String(game.score), w / 2, 26);
+  };
+}
+
+/** Tether, playing itself: the real Run, released by a bot that aims the line. */
+function tetherPreview(api) {
+  let game = null, dead = 0;
+  let E = null;
+  import('./play/tether/engine.js').then((m) => { E = m; }).catch(() => null);
+  let cam = 0;
+
+  api.reset = () => { game = null; };
+
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    if (!E) { ctx.fillStyle = '#070a16'; ctx.fillRect(0, 0, w, h); return; }
+    /* The real world height, not a squashed one. Shortening it would leave the
+       recentring pull fighting a spread wider than the band it is allowed to
+       use, and every planet would slam between the two clamps. The card zooms
+       out instead, which also fits three planets in. */
+    if (!game) { game = new E.Run({ height: 620, seed: (Math.random() * 1e6) | 0 }); cam = 0; dead = 0; }
+
+    // let go when the line the craft is on points at the next planet
+    if (game.state === 'orbit' || game.state === 'ready') {
+      const t = game.planets[game.index + 1];
+      const c = game.craft, hd = game.heading;
+      const dx = t.x - c.x, dy = t.y - c.y;
+      if (dx * hd.x + dy * hd.y > 0 && Math.abs(dx * hd.y - dy * hd.x) < t.capture * 0.42) game.release();
+    }
+    game.step(1 / 60);
+    game.events.length = 0;
+    if (game.state === 'dead' && ++dead > 60) { game = null; return; }
+
+    const craft = game.craft;
+    const VIEW = 620 * (16 / 9);            // the card is 16:9 over a 620-tall world
+    const k = w / VIEW;
+    const target = craft.x - VIEW * 0.34;
+    cam += (target - cam) * 0.1;
+
+    const sky = ctx.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, '#070a16'); sky.addColorStop(1, '#120b22');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.save();
+    ctx.scale(k, k);
+    ctx.translate(-cam, 0);
+
+    for (const p of game.planets) {
+      if (p.x - cam < -140 || p.x - cam > VIEW + 160) continue;
+      const hue = (196 + p.n * 41) % 360;
+      const pull = ctx.createRadialGradient(p.x, p.y, p.core * 0.8, p.x, p.y, p.capture);
+      pull.addColorStop(0, `hsla(${hue} 90% 62% / .2)`);
+      pull.addColorStop(1, `hsla(${hue} 90% 62% / 0)`);
+      ctx.fillStyle = pull;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.capture, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = `hsl(${hue} 72% 60%)`;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.core, 0, 6.2832); ctx.fill();
+    }
+
+    if (game.state === 'orbit' || game.state === 'ready') {
+      const o = game.orbit;
+      ctx.strokeStyle = `hsla(${(196 + o.planet.n * 41) % 360} 90% 76% / .3)`;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(o.planet.x, o.planet.y, o.r, 0, 6.2832); ctx.stroke();
+    }
+
+    const hd = game.heading;
+    if (game.state !== 'dead') {
+      ctx.setLineDash([3, 6]);
+      ctx.strokeStyle = 'rgba(226,240,255,.6)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(craft.x + hd.x * 14, craft.y + hd.y * 14);
+      ctx.lineTo(craft.x + hd.x * 150, craft.y + hd.y * 150);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.save();
+      ctx.translate(craft.x, craft.y);
+      ctx.rotate(Math.atan2(hd.y, hd.x));
+      ctx.beginPath();
+      ctx.moveTo(15, 0); ctx.lineTo(-10, -8); ctx.lineTo(-4, 0); ctx.lineTo(-10, 8);
+      ctx.closePath();
+      ctx.fillStyle = '#f6fbff';
+      ctx.fill();
+      ctx.restore();
     }
     ctx.restore();
 

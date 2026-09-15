@@ -160,7 +160,10 @@ export class Game {
     if (dt > 0.5) dt = H;
     this.acc += Math.max(0, dt);
     let guard = 0;
-    while (this.acc >= H && guard++ < 240) {
+    /* The epsilon: adding 1/144 to itself forty-eight times lands a hair under
+       40 slices rather than on it, so without it a slice fires a frame late at
+       some frame rates and not at others. A rounding error is not a rule. */
+    while (this.acc >= H - 1e-9 && guard++ < 240) {
       this.acc -= H;
       this.#tick(H);
     }

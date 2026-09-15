@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="icon" href="../../favicon.svg" />
+<meta name="theme-color" content="#05070f" />
+<title>Tether — let go at the right moment</title>
+<meta name="description" content="You swing round a planet on a tether. Tap to let go and you fly off along the tangent. If the line passes close enough to another planet it catches you. One button, one decision: when." />
+<meta property="og:title" content="Tether — let go at the right moment" />
+<meta property="og:description" content="Swing, release, fly, get caught. One button. The only decision is when." />
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: #05070f;
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  }
+  #wrap { position: fixed; inset: 0; display: grid; place-items: center; }
+  canvas {
+    display: block; touch-action: none; cursor: pointer;
+    box-shadow: 0 30px 90px -30px rgba(0,0,0,.95), 0 0 0 1px rgba(255,255,255,.06);
+  }
+  .back {
+    position: fixed; top: 12px; left: 12px; z-index: 10;
+    padding: 8px 12px; border-radius: 10px;
+    background: rgba(9,13,26,.5); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.14);
+    color: rgba(255,255,255,.72); text-decoration: none;
+    font: 600 11.5px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .07em;
+    opacity: .5; transition: opacity .15s;
+  }
+  .back:hover { opacity: 1; }
+  .sound {
+    position: fixed; top: 12px; right: 12px; z-index: 10;
+    width: 38px; height: 38px; border-radius: 10px;
+    background: rgba(9,13,26,.5); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.14);
+    color: rgba(255,255,255,.72); cursor: pointer; font-size: 15px; line-height: 1;
+    opacity: .5; transition: opacity .15s;
+  }
+  .sound:hover { opacity: 1; }
+</style>
+</head>
+<body>
+<a class="back" href="../../index.html">&larr; INDEX</a>
+<button class="sound" id="sound" type="button" aria-label="Mute">&#128266;</button>
+<div id="wrap"><canvas id="c"></canvas></div>
+
+<script type="module">
+/* ───────────────────────────────────────────────────────────────────────────
+   Tether — the part you can see.
+
+   The rules are in engine.js. Here: a camera that runs ahead of you rather
+   than centring you, because the whole game is reading what is coming; the
+   orbit you are on drawn as a ring, so the direction you will leave in is
+   never a guess; and a short dotted line off the nose showing that direction,
+   which is the only piece of help the game gives and the reason it is fair.
+
+   The line is deliberately short. Long enough to read where you are pointing,
+   nowhere near long enough to reach the planet you are aiming at — so it tells
+   you what you are doing, not whether it will work.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+import { Run, STATE, RULES, store, releaseWindow } from './engine.js';
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d', { alpha: false });
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const WORLD_H = 620;          // the band planets live in
+const MAX_VIEW = 980;         // the most of it anybody may see across, ever
+const MIN_VIEW = 560;         // and the least, or a phone cannot see what is next
+const MAX_ZOOM = 1.15;        // screen pixels per world unit
+
+let WORLD_W = 880, scale = 1, top = 0, visH = WORLD_H;
+
+const game = new Run({ height: WORLD_H });
+let best = store.best();
+
+function fit() {
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  const vw = innerWidth, vh = innerHeight;
+
+  /* How much of the world you can see across is capped in both directions. Let
+     it grow and the game gets easier the bigger your monitor is, which is not a
+     difficulty setting anybody chose; let it shrink and a phone cannot see the
+     planet it is aiming at. */
+  WORLD_W = Math.max(MIN_VIEW, Math.min(MAX_VIEW, vw / MAX_ZOOM));
+  scale = Math.min(MAX_ZOOM, vw / WORLD_W);
+
+  const cssW = Math.round(WORLD_W * scale);
+  canvas.style.width = `${cssW}px`;
+  canvas.style.height = `${vh}px`;
+  canvas.width = Math.round(cssW * dpr);
+  canvas.height = Math.round(vh * dpr);
+
+  /* The canvas is as tall as the screen and the 620-unit band sits in the
+     middle of it, with stars filling the rest. Sizing the canvas to the band
+     instead leaves a phone showing a thin letterbox with dead black above and
+     below it — which is what this did until somebody looked at it on a phone. */
+  visH = vh / scale;
+  top = -(visH - WORLD_H) / 2;
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, -top * scale * dpr);
+}
+addEventListener('resize', fit);
+
+/* ── sound ───────────────────────────────────────────────────────────────── */
+
+let audio = null, muted = false;
+try { muted = localStorage.getItem('tether.muted') === '1'; } catch {}
+const soundBtn = document.getElementById('sound');
+const paintSound = () => { soundBtn.innerHTML = muted ? '&#128263;' : '&#128266;'; };
+paintSound();
+soundBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  muted = !muted;
+  paintSound();
+  try { localStorage.setItem('tether.muted', muted ? '1' : '0'); } catch {}
+});
+
+function tone({ freq, to = freq, dur = 0.12, type = 'sine', gain = 0.13, noise = false }) {
+  if (muted) return;
+  try {
+    audio ||= new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === 'suspended') audio.resume();
+    const t = audio.currentTime;
+    const g = audio.createGain();
+    g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    g.connect(audio.destination);
+    let src;
+    if (noise) {
+      const buf = audio.createBuffer(1, Math.max(1, (audio.sampleRate * dur) | 0), audio.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+      src = audio.createBufferSource(); src.buffer = buf;
+    } else {
+      src = audio.createOscillator();
+      src.type = type;
+      src.frequency.setValueAtTime(freq, t);
+      src.frequency.exponentialRampToValueAtTime(Math.max(1, to), t + dur);
+    }
+    src.connect(g); src.start(t); src.stop(t + dur + 0.02);
+  } catch { /* silence is survivable */ }
+}
+
+/* A pentatonic run, so consecutive catches are a melody going up rather than
+   the same blip every time. It resets when you lose, which you can hear. */
+const SCALE = [0, 2, 4, 7, 9];
+const note = (i) => 196 * Math.pow(2, (SCALE[i % 5] + 12 * Math.floor(i / 5)) / 12);
+
+/* ── the world in front of you ───────────────────────────────────────────── */
+
+const STARS = [];
+{
+  let s = 20260915;
+  const rand = () => ((s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+  for (let i = 0; i < 260; i++) {
+    STARS.push({ x: rand() * 4000, fy: rand(), z: 0.12 + rand() * 0.55, r: 0.4 + rand() * 1.3 });
+  }
+}
+
+const hueOf = (n) => (196 + n * 41) % 360;
+
+let camX = 0, shake = 0;
+const texts = [];    // floating "+140 SKIP" and friends
+const debris = [];   // what is left of you
+const trail = [];
+
+function drainEvents() {
+  for (const e of game.events) {
+    if (e.kind === 'release') tone({ freq: 340, to: 210, dur: 0.1, type: 'triangle', gain: 0.08 });
+    if (e.kind === 'caught') {
+      tone({ freq: note(Math.min(19, game.hops - 1)), dur: 0.2, type: 'triangle', gain: 0.13 });
+      const at = game.craft;
+      if (e.skipped > 0) {
+        tone({ freq: 880, to: 1320, dur: 0.22, type: 'square', gain: 0.07 });
+        texts.push({ x: at.x, y: at.y - 34, life: 1, text: `SKIP ×${e.skipped}  +${e.skipped * RULES.skipPoints}`, tint: '#ffd166' });
+      } else if (e.close) {
+        tone({ freq: 1320, to: 1760, dur: 0.16, type: 'sine', gain: 0.07 });
+        texts.push({ x: at.x, y: at.y - 34, life: 1, text: `CLOSE  +${RULES.closePoints}`, tint: '#7dd3fc' });
+      }
+    }
+    if (e.kind === 'lost') {
+      tone({ freq: 240, to: 40, dur: 0.5, type: 'sawtooth', gain: 0.12 });
+      tone({ noise: true, dur: 0.4, gain: 0.1 });
+      const at = game.craft;
+      if (!reduced) {
+        for (let i = 0; i < 26; i++) {
+          const a = Math.random() * 6.283, s = 40 + Math.random() * 190;
+          debris.push({ x: at.x, y: at.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1 });
+        }
+        shake = 1;
+      }
+      best = store.best();
+      const rec = store.record(game.score, game.hops);
+      if (rec.score || rec.hops) best = store.best();
+    }
+  }
+  game.events.length = 0;
+}
+
+/* ── input ───────────────────────────────────────────────────────────────── */
+
+let deadAt = 0;
+function press() {
+  if (game.state === STATE.DEAD) {
+    // a lockout, or the tap that killed you also restarts and you never see it
+    if (performance.now() - deadAt < 620) return;
+    game.reset();
+    trail.length = 0; debris.length = 0; texts.length = 0; shake = 0;
+    camX = 0;
+    return;
+  }
+  game.release();
+}
+addEventListener('pointerdown', (e) => {
+  /* The listener is on the window, so the target is not guaranteed to be an
+     element — `closest` is not on every EventTarget, and calling it blind
+     throws on the very first tap. */
+  const t = e.target;
+  if (t instanceof Element && t.closest('button, a')) return;
+  press();
+});
+addEventListener('keydown', (e) => {
+  if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'Enter') { e.preventDefault(); press(); }
+});
+
+/* ── drawing ─────────────────────────────────────────────────────────────── */
+
+function drawPlanet(p, active) {
+  const hue = hueOf(p.n);
+  // the pull: where the line has to pass to be caught, drawn because hiding it
+  // would make every death arguable
+  const pull = ctx.createRadialGradient(p.x, p.y, p.core * 0.8, p.x, p.y, p.capture);
+  pull.addColorStop(0, `hsla(${hue} 90% 62% / .20)`);
+  pull.addColorStop(1, `hsla(${hue} 90% 62% / 0)`);
+  ctx.fillStyle = pull;
+  ctx.beginPath(); ctx.arc(p.x, p.y, p.capture, 0, 6.2832); ctx.fill();
+
+  ctx.strokeStyle = `hsla(${hue} 80% 66% / ${active ? 0.4 : 0.2})`;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 6]);
+  ctx.beginPath(); ctx.arc(p.x, p.y, p.capture, 0, 6.2832); ctx.stroke();
+  ctx.setLineDash([]);
+
+  const body = ctx.createRadialGradient(p.x - p.core * 0.4, p.y - p.core * 0.45, 1, p.x, p.y, p.core);
+  body.addColorStop(0, `hsl(${hue} 78% 72%)`);
+  body.addColorStop(1, `hsl(${(hue + 22) % 360} 66% 38%)`);
+  ctx.fillStyle = body;
+  ctx.beginPath(); ctx.arc(p.x, p.y, p.core, 0, 6.2832); ctx.fill();
+  ctx.strokeStyle = `hsla(${hue} 95% 82% / .55)`;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.arc(p.x, p.y, p.core, 0, 6.2832); ctx.stroke();
+}
+
+function drawCraft(at, h, hue) {
+  ctx.save();
+  ctx.translate(at.x, at.y);
+  ctx.rotate(Math.atan2(h.y, h.x));
+  ctx.shadowColor = `hsl(${hue} 90% 70%)`;
+  ctx.shadowBlur = 14;
+  ctx.beginPath();
+  ctx.moveTo(17, 0); ctx.lineTo(-11, -9); ctx.lineTo(-5, 0); ctx.lineTo(-11, 9);
+  ctx.closePath();
+  ctx.fillStyle = '#f6fbff';
+  ctx.fill();
+  ctx.restore();
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.25, (now - last) / 1000);
+  last = now;
+
+  game.step(dt);
+  drainEvents();
+  if (game.state === STATE.DEAD && !deadAt) deadAt = performance.now();
+  if (game.state !== STATE.DEAD) deadAt = 0;
+
+  const craft = game.craft;
+  const head = game.heading;
+
+  // the camera sits behind you, so most of the screen is what is coming
+  const targetCam = craft.x - WORLD_W * 0.34;
+  camX += (targetCam - camX) * Math.min(1, dt * (game.state === STATE.FLYING ? 7 : 4));
+  if (shake > 0) shake = Math.max(0, shake - dt * 2.4);
+
+  if (game.state === STATE.FLYING) {
+    trail.push({ x: craft.x, y: craft.y, life: 1 });
+    if (trail.length > 90) trail.shift();
+  }
+  for (const t of trail) t.life -= dt * 1.3;
+  while (trail.length && trail[0].life <= 0) trail.shift();
+
+  /* ── paint ── */
+  const sky = ctx.createLinearGradient(0, top, 0, top + visH);
+  sky.addColorStop(0, '#070a16');
+  sky.addColorStop(0.55, '#0b1026');
+  sky.addColorStop(1, '#120b22');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, top, WORLD_W, visH);
+
+  ctx.save();
+  if (shake > 0) ctx.translate((Math.random() - 0.5) * 12 * shake, (Math.random() - 0.5) * 12 * shake);
+
+  // stars, three depths, wrapping so the field is endless without being stored
+  for (const s of STARS) {
+    const x = ((s.x - camX * s.z) % 4000 + 4000) % 4000;
+    if (x > WORLD_W + 4) continue;
+    ctx.globalAlpha = 0.25 + s.z * 0.8;
+    ctx.fillStyle = '#cfe0ff';
+    ctx.fillRect(x, top + s.fy * visH, s.r, s.r);
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.translate(-camX, 0);
+
+  for (const p of game.planets) {
+    if (p.x - camX < -160 || p.x - camX > WORLD_W + 200) continue;
+    drawPlanet(p, p.n === game.index);
+  }
+
+  // the tether, and the circle it holds you on
+  if (game.state === STATE.ORBIT || game.state === STATE.READY) {
+    const o = game.orbit, hue = hueOf(o.planet.n);
+    ctx.strokeStyle = `hsla(${hue} 90% 76% / .22)`;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(o.planet.x, o.planet.y, o.r, 0, 6.2832); ctx.stroke();
+    ctx.strokeStyle = `hsla(${hue} 95% 80% / .55)`;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(o.planet.x, o.planet.y);
+    ctx.lineTo(craft.x, craft.y);
+    ctx.stroke();
+  }
+
+  // the trail behind a flight
+  if (trail.length > 1) {
+    ctx.lineCap = 'round';
+    for (let i = 1; i < trail.length; i++) {
+      const a = trail[i - 1], b = trail[i];
+      ctx.globalAlpha = Math.max(0, b.life) * 0.5;
+      ctx.strokeStyle = '#8fd3ff';
+      ctx.lineWidth = 1 + b.life * 2.4;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // the only help: a short dotted line off the nose
+  if (game.state !== STATE.DEAD) {
+    ctx.setLineDash([3, 6]);
+    ctx.strokeStyle = 'rgba(226,240,255,.72)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(craft.x + head.x * 16, craft.y + head.y * 16);
+    ctx.lineTo(craft.x + head.x * 170, craft.y + head.y * 170);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    drawCraft(craft, head, hueOf(game.index));
+  }
+
+  for (let i = debris.length - 1; i >= 0; i--) {
+    const d = debris[i];
+    d.x += d.vx * dt; d.y += d.vy * dt; d.life -= dt * 1.1;
+    if (d.life <= 0) { debris.splice(i, 1); continue; }
+    ctx.globalAlpha = d.life;
+    ctx.fillStyle = '#ffd4b0';
+    ctx.fillRect(d.x, d.y, 2.4, 2.4);
+  }
+  ctx.globalAlpha = 1;
+
+  for (let i = texts.length - 1; i >= 0; i--) {
+    const t = texts[i];
+    t.life -= dt * 0.9; t.y -= dt * 34;
+    if (t.life <= 0) { texts.splice(i, 1); continue; }
+    ctx.globalAlpha = Math.min(1, t.life * 1.6);
+    ctx.fillStyle = t.tint;
+    ctx.font = '700 15px "Inter", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(t.text, t.x, t.y);
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  /* ── the numbers ── */
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,255,255,.95)';
+  ctx.font = '800 46px "Inter", system-ui, sans-serif';
+  ctx.fillText(String(game.score), WORLD_W / 2, top + 62);
+  ctx.font = '600 12.5px ui-monospace, "SF Mono", Menlo, monospace';
+  ctx.fillStyle = 'rgba(255,255,255,.45)';
+  ctx.fillText(`${game.hops} PLANETS · BEST ${best.score}`, WORLD_W / 2, top + 84);
+
+  if (game.state === STATE.READY) {
+    /* Down here rather than in the middle: the middle is where the first
+       planet and the line you are about to leave on both are, and a title
+       printed over the thing it is describing hides the demonstration. */
+    const y = top + visH - 108;
+    ctx.fillStyle = 'rgba(255,255,255,.96)';
+    ctx.font = '800 46px "Inter", system-ui, sans-serif';
+    ctx.fillText('Tether', WORLD_W / 2, y);
+    ctx.font = '700 17px "Inter", system-ui, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,.82)';
+    ctx.fillText('tap to let go', WORLD_W / 2, y + 30);
+    ctx.font = '500 14px "Inter", system-ui, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,.46)';
+    ctx.fillText('you fly off the way you were already pointing', WORLD_W / 2, y + 54);
+  }
+
+  if (game.state === STATE.DEAD && performance.now() - deadAt > 500) {
+    /* A flat rectangle here leaves two hard horizontal seams across the middle
+       of the picture. Fading it out at both ends costs three lines. */
+    const panelY = top + visH * 0.33, tall = 172;
+    const scrim = ctx.createLinearGradient(0, panelY, 0, panelY + tall);
+    scrim.addColorStop(0, 'rgba(5,7,15,0)');
+    scrim.addColorStop(0.28, 'rgba(5,7,15,.78)');
+    scrim.addColorStop(0.72, 'rgba(5,7,15,.78)');
+    scrim.addColorStop(1, 'rgba(5,7,15,0)');
+    ctx.fillStyle = scrim;
+    ctx.fillRect(0, panelY, WORLD_W, tall);
+    ctx.fillStyle = 'rgba(255,255,255,.95)';
+    ctx.font = '800 34px "Inter", system-ui, sans-serif';
+    ctx.fillText('deep space', WORLD_W / 2, panelY + 54);
+    ctx.font = '600 14px "Inter", system-ui, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,.62)';
+    ctx.fillText(
+      `${game.score} points · ${game.hops} planets${game.closes ? ` · ${game.closes} close` : ''}${game.skips ? ` · ${game.skips} skipped` : ''}`,
+      WORLD_W / 2, panelY + 84,
+    );
+    ctx.fillStyle = 'rgba(255,255,255,.44)';
+    ctx.fillText('tap to go again', WORLD_W / 2, panelY + 118);
+  }
+
+  requestAnimationFrame(frame);
+}
+
+window.__game = game;   /* so a headless driver can play it for a screenshot */
+fit();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
