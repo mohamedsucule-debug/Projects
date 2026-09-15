@@ -1,6 +1,6 @@
 # Playground
 
-Eighteen things I built. All of them run in a browser — no install, no signup,
+Nineteen things I built. All of them run in a browser — no install, no signup,
 no video of someone else using it.
 
 **→ [Open the playground](https://mohamedsucule-debug.github.io/Projects/)**
@@ -112,6 +112,7 @@ Click any of these and they start immediately.
 
 | | |
 |---|---|
+| **[Sumo](play/sumo/)** | Two players, one keyboard, one key each — or two thumbs on one phone. Hold your key and your arrow stops turning and you charge that way, so you are choosing a moment rather than steering. Knock the other one out of the ring before it closes under you. The physics was tuned by having two bots play a few thousand rounds and measuring how often a round was decided by a shove rather than by the ring; the first draft scored 9%. |
 | **[Tangle](play/tangle/)** | A daily connection puzzle. Turn the tiles until no connector is left dangling. The board is grown as a spanning tree and then scrambled, so it is provably solvable *before* you see it — the alternative is shipping an impossible board on day 46. Same board for everyone, every day, and a spoiler-free line to paste into a group chat at the end. |
 | **[Tether](play/tether/)** | You swing round a planet on a tether. Tap and you let go, flying off in a straight line — exactly the way you were already pointing, which is drawn on screen the whole time. If that line passes close enough to another planet it catches you; if it doesn't, you are in deep space. One button, one decision: when. |
 | **[Stack](play/stack/)** | A block slides past. Tap. Whatever hangs over the edge of the block below is sliced off and falls away, so every sloppy drop makes the next one harder — the width of the top block *is* your remaining margin for error, drawn in the middle of the screen at all times. Land one dead centre and you lose nothing. |
@@ -187,7 +188,7 @@ projects/<name>/
   engine.js             the algorithm, pure and DOM-free
   index.html            the interface
   README.md             the design problem, and the limits
-tests/run.mjs           281 tests, no framework, no install
+tests/run.mjs           306 tests, no framework, no install
 ```
 
 ```bash

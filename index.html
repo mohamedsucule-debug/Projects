@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" href="favicon.svg" />
 <meta name="theme-color" content="#06070d" />
-<title>Playground — eighteen things you can click</title>
-<meta name="description" content="A paper-plane arcade game you understand in one second. A photo rebuilt out of six thousand dots. A gallery that morphs between seven layouts on springs. Eighteen things that all run in your browser, with nothing to install." />
-<meta property="og:title" content="Playground — eighteen things you can click" />
+<title>Playground — nineteen things you can click</title>
+<meta name="description" content="A paper-plane arcade game you understand in one second. A photo rebuilt out of six thousand dots. A gallery that morphs between seven layouts on springs. Nineteen things that all run in your browser, with nothing to install." />
+<meta property="og:title" content="Playground — nineteen things you can click" />
 <meta property="og:description" content="Tap to fly a paper plane through a canyon. Then: a photo rebuilt out of six thousand dots, a gallery that morphs on springs, a node-based image studio, and six serious tools with plain-English explanations." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://mohamedsucule-debug.github.io/Projects/" />
@@ -15,7 +15,7 @@
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Playground — eighteen things you can click" />
+<meta name="twitter:title" content="Playground — nineteen things you can click" />
 <meta name="twitter:description" content="Tap to fly a paper plane through a canyon, rebuild your photo out of six thousand dots, or wire boxes together into a picture. All running in the browser." />
 <meta name="twitter:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <link rel="canonical" href="https://mohamedsucule-debug.github.io/Projects/" />
@@ -209,7 +209,7 @@
   <header class="hero">
     <!-- ↓↓ YOUR NAME AND TITLE — edit these two lines ↓↓ -->
     <p class="eyebrow"><b>Mohamed Sucule</b> &middot; software engineer</p>
-    <h1>Eighteen things I built. <em>All of them run right here.</em></h1>
+    <h1>Nineteen things I built. <em>All of them run right here.</em></h1>
     <p>
       No videos, no screenshots, no “request a demo”. Click any of them and it starts
       immediately — in your browser, on your phone, with nothing to install.
@@ -294,7 +294,7 @@
     <p class="colophon">
       No frameworks, no build step, no dependencies — every page here is plain HTML, CSS and
       JavaScript, about 17,000 lines of it, with the engine behind Ace, Morph, Portrait, Loom
-      and each of the six tools unit-tested: 281 tests, run in CI before anything is published.
+      and each of the six tools unit-tested: 306 tests, run in CI before anything is published.
       Written with Claude Code; the commit history is the full record.
     </p>
   </footer>
@@ -354,6 +354,12 @@ const TOYS = [
     title: 'Tangle',
     blurb: 'Tap a tile to turn it. The board is solved when no connector is left dangling. Everybody in the world gets the same board each day, and finishing gives you a line you can paste into a group chat.',
     preview: tanglePreview,
+  },
+  {
+    href: 'play/sumo/index.html', tag: 'two players',
+    title: 'Sumo',
+    blurb: 'Two people, one keyboard, one key each. Hold it: your arrow stops turning and you charge that way. Knock the other one out of the ring before it closes under you. There is a bot if you are on your own.',
+    preview: sumoPreview,
   },
   {
     href: 'play/flow/index.html', tag: 'toy',
@@ -792,6 +798,78 @@ function tanglePreview(api) {
     ctx.font = '700 15px ui-monospace, "SF Mono", Menlo, monospace';
     ctx.textAlign = 'center';
     ctx.fillText(puzzle.solved ? 'UNTANGLED' : `${puzzle.loose} LOOSE`, w / 2, 24);
+  };
+}
+
+/** Sumo, played by two bots: the real engine, the real ring, the real shoves. */
+function sumoPreview(api) {
+  let S = null, bout = null, rand = Math.random, over = 0;
+  import('./play/sumo/engine.js').then((m) => { S = m; }).catch(() => null);
+
+  api.reset = () => { bout = null; };
+
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    ctx.fillStyle = '#0b0d18';
+    ctx.fillRect(0, 0, w, h);
+    if (!S) return;
+    if (!bout) { bout = new S.Bout({ seed: (Math.random() * 1e6) | 0 }); over = 0; }
+
+    bout.hold(0, S.botHold(bout, 0, { rand }));
+    bout.hold(1, S.botHold(bout, 1, { rand }));
+    bout.step(1 / 60);
+    bout.events.length = 0;
+    if (bout.state === 'over' && ++over > 90) { bout = null; return; }
+
+    const R = S.RULES;
+    const ring = bout.ring;
+    /* Zoom follows the ring rather than sitting at its starting size, or the
+       card spends most of its life showing two specks in a lot of nothing.
+       It stops following part way down so the shrink is still legible against
+       the dashed ghost of where the ring started. */
+    const shown = Math.max(ring, R.ringStart * 0.55);
+    const k = Math.min(w, h * 0.86) / (shown * 2.2);
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+    ctx.scale(k, k);
+    ctx.fillStyle = '#141a2e';
+    ctx.beginPath(); ctx.arc(0, 0, ring, 0, 6.2832); ctx.fill();
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,255,255,.2)';
+    ctx.beginPath(); ctx.arc(0, 0, ring, 0, 6.2832); ctx.stroke();
+    ctx.lineWidth = 2; ctx.setLineDash([5, 10]);
+    ctx.strokeStyle = 'rgba(255,255,255,.07)';
+    ctx.beginPath(); ctx.arc(0, 0, R.ringStart, 0, 6.2832); ctx.stroke();
+    ctx.setLineDash([]);
+
+    const tint = ['#ff7a59', '#4ea8ff'];
+    for (const p of bout.players) {
+      if (!p.alive) continue;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.save();
+      ctx.rotate(p.angle);
+      ctx.beginPath();
+      ctx.moveTo(R.radius + 26, 0); ctx.lineTo(R.radius + 6, -11);
+      ctx.lineTo(R.radius + 11, 0); ctx.lineTo(R.radius + 6, 11);
+      ctx.closePath();
+      ctx.globalAlpha = p.hold ? 1 : 0.5;
+      ctx.fillStyle = tint[p.i];
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+      ctx.fillStyle = tint[p.i];
+      ctx.beginPath(); ctx.arc(0, 0, R.radius, 0, 6.2832); ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+
+    ctx.font = '800 22px "Inter", system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = tint[0];
+    ctx.fillText(String(bout.score[0]), 16, h - 16);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = tint[1];
+    ctx.fillText(String(bout.score[1]), w - 16, h - 16);
   };
 }
 

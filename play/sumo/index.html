@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="icon" href="../../favicon.svg" />
+<meta name="theme-color" content="#0b0d18" />
+<title>Sumo — two players, one keyboard</title>
+<meta name="description" content="One key each. Hold it and your arrow stops turning and you charge the way it points. Knock the other one out of the ring. Plays on one keyboard, or two thumbs on one phone." />
+<meta property="og:title" content="Sumo — two players, one keyboard" />
+<meta property="og:description" content="A and L. One key each. Knock the other one out of the ring before it closes under you." />
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: #0b0d18; color: #eef2ff;
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    touch-action: none; user-select: none; -webkit-user-select: none;
+  }
+  #wrap { position: fixed; inset: 0; display: grid; place-items: center; }
+  canvas { display: block; touch-action: none; }
+  .back {
+    position: fixed; top: 12px; left: 12px; z-index: 10;
+    padding: 8px 12px; border-radius: 10px;
+    background: rgba(9,13,26,.5); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.14);
+    color: rgba(255,255,255,.72); text-decoration: none;
+    font: 600 11.5px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .07em;
+    opacity: .5; transition: opacity .15s;
+  }
+  .back:hover { opacity: 1; }
+  .mode {
+    position: fixed; top: 12px; right: 12px; z-index: 10; display: flex; gap: 6px;
+  }
+  .mode button {
+    border: 1px solid rgba(255,255,255,.16); background: rgba(9,13,26,.5);
+    backdrop-filter: blur(8px); color: rgba(255,255,255,.6);
+    border-radius: 9px; padding: 8px 11px; cursor: pointer;
+    font: 650 11.5px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .06em;
+  }
+  .mode button[aria-pressed="true"] { background: rgba(255,255,255,.16); color: #fff; border-color: rgba(255,255,255,.34); }
+</style>
+</head>
+<body>
+<a class="back" href="../../index.html">&larr; INDEX</a>
+<div class="mode">
+  <button id="solo" type="button" aria-pressed="true">1P</button>
+  <button id="duo" type="button" aria-pressed="false">2P</button>
+  <button id="sound" type="button" aria-label="Mute">&#128266;</button>
+</div>
+<div id="wrap"><canvas id="c"></canvas></div>
+
+<script type="module">
+/* ───────────────────────────────────────────────────────────────────────────
+   Sumo — the part you can see.
+
+   The rules are in engine.js. Here: an arrow on each blob that is the entire
+   interface, a ring that visibly closes, and a hit that shakes the screen.
+
+   The arrow is the thing to get right. It has to be readable at a glance from
+   across a desk by somebody who is also watching their own, so it is drawn as
+   a solid wedge rather than a line, it sits outside the blob rather than on
+   it, and it goes bright the instant you hold your key. Everything else here
+   is decoration; that wedge is the game.
+
+   On a phone the left half of the screen is player one and the right half is
+   player two, so two people can play it with a thumb each.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+import { Bout, STATE, RULES, botHold, store } from './engine.js';
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d', { alpha: false });
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const SIZE = 520;                 // world units across
+/* The ring sits above centre rather than in it, so the scores have somewhere
+   to live that is not on top of the fight. Centring it in a square world left
+   the arena looking small and lost with a band of nothing under it. */
+const CY = 238;
+let scale = 1;
+const bout = new Bout({});
+let solo = true, shake = 0;
+const sparks = [];
+
+const COLOUR = [
+  { core: '#ff7a59', glow: '#ffb199', name: 'A' },
+  { core: '#4ea8ff', glow: '#a5d4ff', name: 'L' },
+];
+
+function fit() {
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  scale = Math.min(innerWidth / SIZE, innerHeight / SIZE, 1.3);
+  const px = Math.round(SIZE * scale);
+  canvas.style.width = `${px}px`;
+  canvas.style.height = `${px}px`;
+  canvas.width = Math.round(px * dpr);
+  canvas.height = Math.round(px * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', fit);
+
+/* ── sound ───────────────────────────────────────────────────────────────── */
+
+let audio = null, muted = false;
+try { muted = localStorage.getItem('sumo.muted') === '1'; } catch {}
+const soundBtn = document.getElementById('sound');
+const paintSound = () => { soundBtn.innerHTML = muted ? '&#128263;' : '&#128266;'; };
+paintSound();
+soundBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  muted = !muted;
+  paintSound();
+  soundBtn.blur();          // or space, which restarts the match, also hits the button
+  try { localStorage.setItem('sumo.muted', muted ? '1' : '0'); } catch {}
+});
+
+function tone({ freq, to = freq, dur = 0.12, type = 'sine', gain = 0.13, noise = false }) {
+  if (muted) return;
+  try {
+    audio ||= new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === 'suspended') audio.resume();
+    const t = audio.currentTime;
+    const g = audio.createGain();
+    g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    g.connect(audio.destination);
+    let src;
+    if (noise) {
+      const buf = audio.createBuffer(1, Math.max(1, (audio.sampleRate * dur) | 0), audio.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+      src = audio.createBufferSource(); src.buffer = buf;
+    } else {
+      src = audio.createOscillator();
+      src.type = type;
+      src.frequency.setValueAtTime(freq, t);
+      src.frequency.exponentialRampToValueAtTime(Math.max(1, to), t + dur);
+    }
+    src.connect(g); src.start(t); src.stop(t + dur + 0.02);
+  } catch { /* silence is survivable */ }
+}
+
+/* ── input ───────────────────────────────────────────────────────────────── */
+
+const held = [false, false];
+const KEYS = { KeyA: 0, KeyL: 1, ArrowLeft: 0, ArrowRight: 1 };
+
+addEventListener('keydown', (e) => {
+  if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); restartIfOver(); return; }
+  const i = KEYS[e.code];
+  if (i === undefined) return;
+  e.preventDefault();
+  if (solo && i === 1) return;     // player two's key does nothing in a one-player match
+  held[i] = true;
+});
+addEventListener('keyup', (e) => {
+  const i = KEYS[e.code];
+  if (i !== undefined) held[i] = false;
+});
+
+/* On a phone: the left half of the screen is player one, the right half is
+   player two. Tracking pointerId rather than a single flag, because two thumbs
+   on one screen is the entire point of doing it this way. */
+const touches = new Map();
+const side = (x) => (x < innerWidth / 2 ? 0 : 1);
+addEventListener('pointerdown', (e) => {
+  if (e.pointerType === 'mouse' && e.target.closest('button, a')) return;
+  if (bout.state === STATE.OVER) { restartIfOver(); return; }
+  const i = solo ? 0 : side(e.clientX);
+  touches.set(e.pointerId, i);
+  held[i] = true;
+});
+const release = (e) => {
+  const i = touches.get(e.pointerId);
+  if (i === undefined) return;
+  touches.delete(e.pointerId);
+  if (![...touches.values()].includes(i)) held[i] = false;
+};
+addEventListener('pointerup', release);
+addEventListener('pointercancel', release);
+
+function restartIfOver() {
+  if (bout.state !== STATE.OVER) return;
+  bout.reset();
+}
+
+const soloBtn = document.getElementById('solo');
+const duoBtn = document.getElementById('duo');
+function setMode(isSolo) {
+  solo = isSolo;
+  soloBtn.setAttribute('aria-pressed', String(isSolo));
+  duoBtn.setAttribute('aria-pressed', String(!isSolo));
+  held[0] = held[1] = false;
+  touches.clear();
+  bout.reset();
+}
+soloBtn.addEventListener('click', () => { setMode(true); soloBtn.blur(); });
+duoBtn.addEventListener('click', () => { setMode(false); duoBtn.blur(); });
+
+/* ── drawing ─────────────────────────────────────────────────────────────── */
+
+function blob(p, c, ring) {
+  const r = RULES.radius;
+  ctx.save();
+  ctx.translate(p.x, p.y);
+
+  // the arrow: a wedge outside the body, bright while you are holding
+  const lit = p.hold;
+  ctx.save();
+  ctx.rotate(p.angle);
+  ctx.beginPath();
+  ctx.moveTo(r + 30, 0);
+  ctx.lineTo(r + 6, -13);
+  ctx.lineTo(r + 12, 0);
+  ctx.lineTo(r + 6, 13);
+  ctx.closePath();
+  ctx.fillStyle = lit ? c.glow : c.core;
+  ctx.globalAlpha = lit ? 1 : 0.55;
+  if (lit) { ctx.shadowColor = c.glow; ctx.shadowBlur = 20; }
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.shadowBlur = 0;
+  ctx.restore();
+
+  const g = ctx.createRadialGradient(-r * 0.35, -r * 0.4, 2, 0, 0, r);
+  g.addColorStop(0, c.glow);
+  g.addColorStop(1, c.core);
+  ctx.fillStyle = g;
+  if (lit) { ctx.shadowColor = c.core; ctx.shadowBlur = 22; }
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.2832); ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // a rim that reddens as you near the edge — the only warning you get
+  /* Neutral at rest, red at the edge. The first version interpolated the green
+     channel from a white that was not white, so a blob sitting safely in the
+     middle wore an amber warning ring for no reason at all. */
+  const danger = Math.min(1, Math.max(0, (Math.hypot(p.x, p.y) / ring - 0.62) / 0.38));
+  const g2 = (255 - 180 * danger) | 0, b2 = (255 - 180 * danger) | 0;
+  ctx.lineWidth = 2 + danger * 2;
+  ctx.strokeStyle = `rgba(255,${g2},${b2},${0.16 + danger * 0.8})`;
+  ctx.beginPath(); ctx.arc(0, 0, r + 2, 0, 6.2832); ctx.stroke();
+  ctx.restore();
+}
+
+function pill(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function label(text, y, size, alpha = 1) {
+  ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+  ctx.font = `800 ${size}px "Inter", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText(text, 0, y);
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.25, (now - last) / 1000);
+  last = now;
+
+  bout.hold(0, held[0]);
+  bout.hold(1, solo ? botHold(bout, 1) : held[1]);
+  bout.step(dt);
+
+  for (const e of bout.events) {
+    if (e.kind === 'clash') {
+      tone({ freq: 150 + Math.min(300, e.force * 0.4), to: 70, dur: 0.14, type: 'square', gain: 0.1 });
+      if (!reduced) shake = Math.min(1, e.force / 420);
+      for (let i = 0; i < 10; i++) {
+        const a = Math.random() * 6.283, s = 40 + Math.random() * 160;
+        const mid = { x: (bout.players[0].x + bout.players[1].x) / 2, y: (bout.players[0].y + bout.players[1].y) / 2 };
+        sparks.push({ x: mid.x, y: mid.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1 });
+      }
+    }
+    if (e.kind === 'out') {
+      tone({ freq: 400, to: 60, dur: 0.5, type: 'sawtooth', gain: 0.11 });
+      tone({ noise: true, dur: 0.35, gain: 0.08 });
+    }
+    if (e.kind === 'go') tone({ freq: 660, dur: 0.1, type: 'triangle', gain: 0.09 });
+    if (e.kind === 'match') {
+      tone({ freq: 523, to: 1046, dur: 0.5, type: 'triangle', gain: 0.12 });
+      if (solo) store.record(e.winner === 0);
+    }
+  }
+  bout.events.length = 0;
+  if (shake > 0) shake = Math.max(0, shake - dt * 2.6);
+
+  ctx.setTransform(scale * (Math.min(2, devicePixelRatio || 1)), 0, 0, scale * (Math.min(2, devicePixelRatio || 1)), 0, 0);
+  ctx.fillStyle = '#0b0d18';
+  ctx.fillRect(0, 0, SIZE, SIZE);
+
+  ctx.save();
+  ctx.translate(SIZE / 2, CY);
+  if (shake > 0) ctx.translate((Math.random() - 0.5) * 14 * shake, (Math.random() - 0.5) * 14 * shake);
+
+  const ring = bout.ring;
+
+  // the floor, and the edge you must not cross
+  const floor = ctx.createRadialGradient(0, 0, ring * 0.2, 0, 0, ring);
+  floor.addColorStop(0, '#171d33');
+  floor.addColorStop(1, '#101528');
+  ctx.fillStyle = floor;
+  ctx.beginPath(); ctx.arc(0, 0, ring, 0, 6.2832); ctx.fill();
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = 'rgba(255,255,255,.22)';
+  ctx.beginPath(); ctx.arc(0, 0, ring, 0, 6.2832); ctx.stroke();
+
+  // a ghost of where the ring started, so the shrinking is visible rather than felt
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 8]);
+  ctx.strokeStyle = 'rgba(255,255,255,.07)';
+  ctx.beginPath(); ctx.arc(0, 0, RULES.ringStart, 0, 6.2832); ctx.stroke();
+  ctx.setLineDash([]);
+
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    const s = sparks[i];
+    s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt * 1.7;
+    if (s.life <= 0) { sparks.splice(i, 1); continue; }
+    ctx.globalAlpha = s.life;
+    ctx.fillStyle = '#ffe2b0';
+    ctx.fillRect(s.x, s.y, 3, 3);
+  }
+  ctx.globalAlpha = 1;
+
+  for (const p of bout.players) if (p.alive) blob(p, COLOUR[p.i], ring);
+
+  if (bout.state === STATE.COUNTDOWN) {
+    const n = Math.ceil(bout.timer);
+    label(String(n), 14, 64, 0.9);
+  }
+  if (bout.state === STATE.POINT) {
+    /* In a one-player match there is no "L" — that side is the bot, and
+       announcing a key nobody is pressing is just confusing. */
+    const w = 1 - bout.out;
+    const who = solo ? (w === 0 ? 'You score' : 'The bot scores') : `${COLOUR[w].name} scores`;
+    /* On a backing, because it lands wherever the survivor happens to be
+       standing and white text on a pale blob is not text. */
+    ctx.font = '800 32px "Inter", system-ui, sans-serif';
+    const tw = ctx.measureText(who).width;
+    ctx.fillStyle = 'rgba(11,13,24,.76)';
+    /* arcTo rather than ctx.roundRect: the newer call is only in browsers from
+       2022 onwards, and a rounded corner is not worth a blank rectangle on
+       somebody's older phone. */
+    pill(-tw / 2 - 18, 0, tw + 36, 46, 12);
+    ctx.fill();
+    label(who, 32, 32, 0.95);
+  }
+  if (bout.state === STATE.OVER) {
+    ctx.fillStyle = 'rgba(11,13,24,.8)';
+    ctx.fillRect(-SIZE / 2, -CY, SIZE, SIZE);
+    const who = solo
+      ? (bout.winner === 0 ? 'You win' : 'The bot wins')
+      : `${COLOUR[bout.winner].name} wins`;
+    label(who, -8, 40, 0.96);
+    label('space, or tap, to go again', 28, 15, 0.5);
+    if (solo) {
+      const w = store.wins();
+      label(`${w.you} – ${w.bot} all time`, 56, 13, 0.34);
+    }
+  }
+  ctx.restore();
+
+  // the score, and which key is whose, outside the ring where nobody trips on it
+  for (const i of [0, 1]) {
+    const c = COLOUR[i];
+    const x = i === 0 ? 26 : SIZE - 26;
+    ctx.textAlign = i === 0 ? 'left' : 'right';
+    ctx.fillStyle = c.core;
+    ctx.font = '800 40px "Inter", system-ui, sans-serif';
+    ctx.fillText(String(bout.score[i]), x, SIZE - 28);
+    ctx.font = '650 12px ui-monospace, "SF Mono", Menlo, monospace';
+    ctx.fillStyle = 'rgba(255,255,255,.4)';
+    const tag = solo && i === 1 ? 'BOT' : `${c.name} · HOLD`;
+    ctx.fillText(tag, x, SIZE - 12);
+  }
+
+  if (bout.round === 1 && bout.state !== STATE.OVER && bout.score[0] + bout.score[1] === 0) {
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(255,255,255,.44)';
+    ctx.font = '600 13px "Inter", system-ui, sans-serif';
+    ctx.fillText('hold your key: the arrow stops turning and you charge that way',
+      SIZE / 2, 24);
+  }
+
+  requestAnimationFrame(frame);
+}
+
+fit();
+requestAnimationFrame(frame);
+window.sumoBout = () => bout;   // the seam a headless browser plays through
+</script>
+</body>
+</html>
