@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" href="favicon.svg" />
 <meta name="theme-color" content="#06070d" />
-<title>Playground — twenty-four things you can click</title>
-<meta name="description" content="A ghost story that uses your browser as its stage. A paper-plane arcade game you understand in one second. A photo rebuilt out of six thousand dots. Twenty-four things that all run in your browser, with nothing to install." />
-<meta property="og:title" content="Playground — twenty-four things you can click" />
+<title>Playground — twenty-five things you can click</title>
+<meta name="description" content="A murder you solve by looking at things. A ghost story that uses your browser as its stage. A paper-plane arcade game you understand in one second. A photo rebuilt out of six thousand dots. Twenty-five things that all run in your browser, with nothing to install." />
+<meta property="og:title" content="Playground — twenty-five things you can click" />
 <meta property="og:description" content="Tap to fly a paper plane through a canyon. Then: a photo rebuilt out of six thousand dots, a gallery that morphs on springs, a node-based image studio, and six serious tools with plain-English explanations." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://mohamedsucule-debug.github.io/Projects/" />
@@ -15,7 +15,7 @@
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Playground — twenty-four things you can click" />
+<meta name="twitter:title" content="Playground — twenty-five things you can click" />
 <meta name="twitter:description" content="Tap to fly a paper plane through a canyon, rebuild your photo out of six thousand dots, or wire boxes together into a picture. All running in the browser." />
 <meta name="twitter:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <link rel="canonical" href="https://mohamedsucule-debug.github.io/Projects/" />
@@ -209,16 +209,17 @@
   <header class="hero">
     <!-- ↓↓ YOUR NAME AND TITLE — edit these two lines ↓↓ -->
     <p class="eyebrow"><b>Mohamed Sucule</b> &middot; software engineer</p>
-    <h1>Twenty-four things I built. <em>All of them run right here.</em></h1>
+    <h1>Twenty-five things I built. <em>All of them run right here.</em></h1>
     <p>
       No videos, no screenshots, no “request a demo”. Click any of them and it starts
       immediately — in your browser, on your phone, with nothing to install.
     </p>
     <p>
-      Start at the top. The first one is a ghost story that uses your browser as its
-      stage — read that one alone. After it there is a page you can knock over with your
-      finger, a sandbox you can set on fire, and an island generator that invents a new
-      world every time you press the button.
+      Start at the top. There is a murder to solve by looking at things, a five-minute
+      story told while a lighthouse keeper's last night goes by, and a ghost story that
+      uses your browser as its stage — read that one alone. After them: a page you can
+      knock over with your finger, a sandbox you can set on fire, and an island generator
+      that invents a new world every time you press the button.
     </p>
     <div class="cta">
       <a class="btn primary" href="#toys">Play with something →</a>
@@ -295,7 +296,7 @@
     <p class="colophon">
       No frameworks, no build step, no dependencies — every page here is plain HTML, CSS and
       JavaScript, about 18,000 lines of it, with the engine behind Ace, Morph, Portrait, Loom,
-      Nightshift and each of the tools unit-tested: 459 tests, run in CI before anything is published.
+      Nightshift, The Room and each of the tools unit-tested: 484 tests, run in CI before anything is published.
       Written with Claude Code; the commit history is the full record.
     </p>
   </footer>
@@ -323,10 +324,10 @@ const loadModules = Promise.all([
   import('./play/morph/engine.js'),
 ]);
 
-/* Nightshift first. Everything else here is something you play with; that one
-   is something that happens to you, and it is the only card where somebody who
-   does not write software calls a friend over. After it, never more than two
-   of a kind in a row — six games together are good, but they are the same kind
+/* The three pieces of fiction first — a murder, a story and a haunting. They
+   are the only cards on this grid where somebody who does not write software
+   calls a friend over, and the only ones that are about anything. After them,
+   never more than two of a kind in a row — six games together are good, but they are the same kind
    of good, and a grid that opens with six of them says this is a person who
    makes arcade games. */
 const TOYS = [
@@ -335,6 +336,12 @@ const TOYS = [
     title: 'Nightshift',
     blurb: 'A coastal watch log from one night in 1987, transcribed from the original daybook. It opens with the weather and the shipping and it does not stay there. Read it to the end — it is reading you back.',
     preview: nightshiftPreview,
+  },
+  {
+    href: 'apps/room/index.html', tag: 'a murder',
+    title: 'The Room',
+    blurb: 'Edmund Harkness is dead at his desk and the door was locked from the inside. Look at nineteen things, question four people, and the notebook works out for itself which two of them cannot both be true. Then name somebody — and find out whether you could prove it.',
+    preview: roomPreview,
   },
   {
     href: 'apps/lamplighter/index.html', tag: 'a short story',
@@ -1127,6 +1134,80 @@ function mercuryPreview(api) {
 /** Topple, in miniature: the real physics engine, knocking over a tiny page.
     The shapes are drawn rather than being DOM, but every position and angle
     comes from the same solver the real one uses. */
+/* The card is the plate itself, small, with the clues lighting one at a time
+   and the contradiction count climbing — because the pitch is not "a mystery
+   game", it is "the page works out for itself which two things cannot both be
+   true". It shares plate.js with the room, so the card can never draw a study
+   the game does not have. */
+function roomPreview(api) {
+  let P = null, C = null;
+  Promise.all([import('./apps/room/plate.js'), import('./apps/room/case.js')])
+    .then(([p, c]) => { P = p; C = c; }).catch(() => null);
+  let t = 0, plate = null, pw = 0, ph = 0;
+
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    t += 1 / 60;
+    if (!P) { ctx.fillStyle = '#17130e'; ctx.fillRect(0, 0, w, h); return; }
+
+    /* The plate is drawn once into an offscreen canvas and blitted. It is a
+       few hundred wobbly strokes and some clipped hatching, which is fine at
+       the start of a page and not fine sixty times a second on a grid of
+       twenty-four live cards. */
+    if (!plate || pw !== w || ph !== h) {
+      pw = w; ph = h;
+      plate = document.createElement('canvas');
+      plate.width = w * 2; plate.height = h * 2;
+      const g = plate.getContext('2d');
+      g.setTransform(2, 0, 0, 2, 0, 0);
+      P.drawRoom(g, w, h);
+    }
+    ctx.fillStyle = '#17130e';
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(plate, 0, 0, w, h);
+
+    // clues lighting up, one every second and a bit
+    const A = P.anchors();
+    const ids = C.OBJECTS.map((o) => o.id).filter((id) => A[id]);
+    const lit = Math.min(ids.length, Math.floor((t % 26) / 1.05));
+    for (let i = 0; i < ids.length; i++) {
+      const a = A[ids[i]];
+      const x = a.x * w, y = a.y * h;
+      const on = i < lit;
+      const age = on ? Math.min(1, (t % 26) / 1.05 - i) : 0;
+      ctx.beginPath();
+      ctx.arc(x, y, on ? 4.5 + (1 - age) * 5 : 4, 0, 6.2832);
+      ctx.fillStyle = on ? `rgba(224,177,100,${0.28 + (1 - age) * 0.5})` : 'rgba(43,34,25,.14)';
+      ctx.fill();
+      ctx.strokeStyle = on ? 'rgba(122,90,38,.85)' : 'rgba(43,34,25,.5)';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+    }
+
+    /* The count only moves when a clue that actually carries a contradiction
+       has been turned over, so the number on the card is the real one. */
+    const seen = new Set(ids.slice(0, lit));
+    const values = new Map();
+    for (const o of C.OBJECTS) {
+      if (!seen.has(o.id)) continue;
+      for (const f of o.facts) {
+        if (!values.has(f.claim)) values.set(f.claim, new Set());
+        values.get(f.claim).add(f.value);
+      }
+    }
+    let clashes = 0;
+    for (const v of values.values()) if (v.size > 1) clashes++;
+
+    ctx.textAlign = 'right';
+    ctx.font = '650 10px ui-monospace, "SF Mono", Menlo, monospace';
+    ctx.fillStyle = 'rgba(43,34,25,.5)';
+    ctx.fillText(`${lit} EXAMINED`, w - 13, 21);
+    ctx.fillStyle = clashes ? '#a8452c' : 'rgba(43,34,25,.4)';
+    ctx.fillText(`${clashes} CONTRADICTION${clashes === 1 ? '' : 'S'}`, w - 13, 35);
+    ctx.textAlign = 'left';
+  };
+}
+
 /* The card plays the whole night in twenty seconds — sunset, dark, the gale,
    and up again — because the one thing a still cannot show about this piece is
    that the picture is a function of where you have read to. It shares scene.js

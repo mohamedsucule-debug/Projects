@@ -1,6 +1,6 @@
 # Playground
 
-Twenty-four things I built. All of them run in a browser — no install, no signup,
+Twenty-five things I built. All of them run in a browser — no install, no signup,
 no video of someone else using it.
 
 **→ [Open the playground](https://mohamedsucule-debug.github.io/Projects/)**
@@ -8,6 +8,51 @@ no video of someone else using it.
 ---
 
 ## The big ones
+
+### [The Room](apps/room/) — a murder you solve by looking
+
+Edmund Harkness is dead at his desk, the door was locked from the inside, and
+the key was in his pocket. Nineteen things to examine, four people to question,
+and five contradictions hidden among them.
+
+**Almost every whodunnit on the web is paragraphs followed by a guess.** You
+read the clues, pick a name, and the page tells you whether the author agrees.
+There is no reasoning in it — the puzzle is remembering which paragraph
+mentioned a train ticket.
+
+Here a **claim** is one plain proposition about the night, and every piece of
+evidence assigns it a value. The boot print, the burnt letter, the coat on the
+stand and every word anybody says are all the same shape. The whole deduction
+is:
+
+```js
+const values = new Set(facts.map((f) => f.value));
+if (values.size < 2) continue;     // everything agrees
+```
+
+Group what you know by claim; any claim holding two different values is a
+contradiction. **Nothing in the case file marks which fact is the lie** — there
+is a test that greps for it — so the notebook is not a list of things I decided
+were interesting. Statements are evidence like anything else, which is why *"Mrs
+Pike heard one chair, one man, and no voices"* meets *"Two glasses stood on the
+side table; one has left the house"* by the same three lines, printed facing
+each other with **BUT** in between.
+
+**Being right is not the same as being right.** Naming the murderer having
+looked at four things is a guess, so the verdict has three outcomes: correct and
+provable, correct but guessing (and then it lists by name every piece of proof
+you never looked at), or wrong — and then it explains why not, specifically for
+that person. Daniel Ashe is the one I am happiest with: he lies, the evidence
+proves he lies, and he did not do it.
+
+The plate is a pen-and-ink drawing of the study rendered at runtime, in
+one-point perspective. Three bugs in it, each of which looked like a slightly
+odd drawing rather than a bug: everything was positioned by eye until a desk
+hovered in mid-air, every fill was translucent so you could see the chair
+through the desk, and the figure was drawn in one pass when a man slumped over
+a desk is shoulders behind it and head on top of it.
+
+[Full write-up](apps/room/README.md).
 
 ### [The Lamplighter](apps/lamplighter/) — five minutes, one night
 
@@ -339,6 +384,10 @@ play/loom/
   engine.js             node types and the evaluator, pure and DOM-free
   presets.js            the six examples, and the auto-layout that places them
   index.html            the editor
+apps/room/
+  case.js               the study, the people, what can be true, and the answer
+  engine.js             what you have found, and what in it disagrees with itself
+  plate.js              the projection, and the drawing
 apps/lamplighter/
   scene.js              the story, and every function that says what the night is doing
   index.html            the canvas that draws it, and the sound
@@ -349,7 +398,7 @@ projects/<name>/
   engine.js             the algorithm, pure and DOM-free
   index.html            the interface
   README.md             the design problem, and the limits
-tests/run.mjs           459 tests, no framework, no install
+tests/run.mjs           484 tests, no framework, no install
 ```
 
 ```bash
