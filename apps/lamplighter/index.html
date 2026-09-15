@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="icon" href="../../favicon.svg" />
+<meta name="theme-color" content="#0a0e1a" />
+<title>The Lamplighter</title>
+<meta name="description" content="A five-minute illustrated story about a lighthouse keeper's last winter. Scroll, and the night goes by. Nothing here is a photograph — the sea, the rain and the light are drawn from scratch, sixty times a second." />
+<meta property="og:title" content="The Lamplighter" />
+<meta property="og:description" content="Scroll, and the night goes by. A keeper, a gale, and a light that is about to be automated." />
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: #05070f; }
+  body {
+    margin: 0; background: #05070f; color: #eef2fb;
+    font: 400 17px/1.7 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+
+  /* Every chapter is pinned to the middle of the screen and cross-fades with
+     its neighbours. Scrolling is time here, not travel — the words should
+     change while the view stays where it is. */
+  /* The words sit to the left and the lighthouse stands on the right. Centred
+     text put "and his father before him," straight through the tower, which
+     is the one thing in the frame that has to stay legible. */
+  .stage { position: fixed; inset: 0; z-index: 2; pointer-events: none;
+    display: grid; grid-template: 1fr / 1fr; align-items: center; justify-items: start;
+    padding: 24px; }
+  /* Every chapter occupies the same single grid cell, so they stack without
+     being taken out of flow. An earlier version used position:absolute, whose
+     static position resolves against the padding box rather than the content
+     box — the words sat hard against the left edge of the window with the
+     first letter clipped off. */
+  .ch { grid-area: 1 / 1; max-width: 600px; opacity: 0; will-change: opacity;
+    text-shadow: 0 2px 30px rgba(0,0,0,.85), 0 1px 3px rgba(0,0,0,.9); }
+  .ch p { margin: 0 0 1.1em; font-size: clamp(17px, 2.3vw, 21px); line-height: 1.68; }
+  .ch p:last-child { margin-bottom: 0; }
+  .ch em { font-style: italic; color: #ffd9a3; }
+  .ch h1 { font-size: clamp(38px, 8.2vw, 82px); line-height: .96; margin: 0 0 .5em;
+    font-weight: 400; letter-spacing: -.015em; }
+  .ch .cue { font: 500 12px/1 ui-monospace, Menlo, monospace; letter-spacing: .22em;
+    text-transform: uppercase; opacity: .55; margin-top: 2.2em; }
+
+  /* the scroll track: nine screens of night */
+  .track { height: 900vh; position: relative; z-index: 1; pointer-events: none; }
+
+  .hud { position: fixed; z-index: 5; bottom: 14px; display: flex; gap: 8px; align-items: center; }
+  .hud.l { left: 14px; } .hud.r { right: 14px; }
+  .hud a, .hud button { font: 600 11px/1 ui-monospace, Menlo, monospace; letter-spacing: .08em;
+    padding: 8px 12px; border-radius: 9px; cursor: pointer;
+    background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14);
+    color: #cfd8ec; text-decoration: none; opacity: .5; transition: opacity .2s, background .2s; }
+  .hud a:hover, .hud button:hover { opacity: 1; background: rgba(255,255,255,.13); }
+
+  /* the clock: where in the night you are */
+  .hours { position: fixed; z-index: 5; top: 0; right: 0; height: 100%; width: 54px;
+    display: grid; place-items: center; pointer-events: none; }
+  .hours i { position: absolute; right: 16px; font: 600 10px/1 ui-monospace, Menlo, monospace;
+    letter-spacing: .12em; color: rgba(226,234,250,.34); font-style: normal;
+    writing-mode: vertical-rl; }
+  .hours b { position: absolute; right: 21px; top: 0; width: 1px; background: rgba(226,234,250,.16);
+    height: 100%; }
+  .hours s { position: absolute; right: 18px; width: 7px; height: 7px; border-radius: 50%;
+    background: #ffd9a3; box-shadow: 0 0 12px #ffd9a3; text-decoration: none; }
+
+  @media (min-width: 900px) { .stage { padding-left: max(7vw, 52px); } .ch { max-width: min(48vw, 620px); } }
+  @media (max-width: 899px) { .stage { justify-items: center; } }
+  @media (max-width: 640px) { .hours { display: none; } .stage { padding: 20px 20px 74px; } }
+  @media (prefers-reduced-motion: reduce) { .ch { transition: none; } }
+</style>
+</head>
+<body>
+<canvas id="c" aria-hidden="true"></canvas>
+<div class="track"></div>
+<div class="stage" id="stage"></div>
+
+<div class="hours"><b></b><i id="hourLabel">MIDNIGHT</i><s id="hourDot"></s></div>
+<div class="hud l"><a href="../../index.html">&larr; INDEX</a></div>
+<div class="hud r"><button id="sound" type="button">SOUND ON</button></div>
+
+<script type="module">
+/* ───────────────────────────────────────────────────────────────────────────
+   The Lamplighter — one night, drawn from scratch.
+
+   There is not an image file in this directory. The sky, the sea, the rock,
+   the tower, the rain and the light are all arithmetic, and the arithmetic
+   that decides what the night is doing at any moment lives in scene.js so it
+   can be checked without a browser.
+
+   Two clocks run here, and keeping them apart is the whole feel of the piece:
+
+     the reader's clock   — scroll position, which is the hour of the night
+     the lighthouse's     — wall time, which is the beam going round
+
+   A light that sped up when you scrolled faster would be a light attached to
+   the reader. This one turns at eleven seconds a revolution whether or not
+   anybody is there, which is what a lighthouse is.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+import {
+  CHAPTERS, chapterOpacity, sky, sun, storm, rain, wave, beam, flash, ROTATION,
+  clamp, lerp, smooth,
+} from './scene.js';
+
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ── the words ───────────────────────────────────────────────────────────── */
+
+const stage = document.getElementById('stage');
+const chapterEls = CHAPTERS.map((c) => {
+  const d = document.createElement('div');
+  d.className = 'ch';
+  if (c.title) d.append(Object.assign(document.createElement('h1'), { textContent: c.title }));
+  for (const line of c.lines) {
+    const p = document.createElement('p');
+    /* *word* is an emphasis, and the only markup in the story. Split rather
+       than innerHTML so the prose can never become markup by accident. */
+    line.split(/(\*[^*]+\*)/).forEach((part, i) => {
+      if (i % 2) p.append(Object.assign(document.createElement('em'), { textContent: part.slice(1, -1) }));
+      else if (part) p.append(document.createTextNode(part));
+    });
+    d.append(p);
+  }
+  if (c.at === 0) d.append(Object.assign(document.createElement('div'), { className: 'cue', textContent: 'scroll' }));
+  stage.append(d);
+  return d;
+});
+
+/* ── the night's clock in the margin ─────────────────────────────────────── */
+
+const HOURS = ['6 PM', '9 PM', 'MIDNIGHT', '3 AM', '6 AM'];
+const hourLabel = document.getElementById('hourLabel');
+const hourDot = document.getElementById('hourDot');
+
+/* ── the drawing ─────────────────────────────────────────────────────────── */
+
+let W = 0, H = 0, dpr = 1;
+function resize() {
+  dpr = Math.min(devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  makeStars();
+}
+addEventListener('resize', resize);
+
+/* Stars are fixed once rather than regenerated per frame, because a sky whose
+   stars move between frames is the single loudest tell that something is
+   being drawn rather than being there. */
+let stars = [];
+function makeStars() {
+  const rnd = mulberry(20031);
+  stars = Array.from({ length: 220 }, () => ({
+    x: rnd() * W,
+    y: rnd() * H * 0.62,
+    r: 0.4 + rnd() * 1.1,
+    m: 0.3 + rnd() * 0.7,
+    tw: rnd() * 6.28,
+  }));
+}
+function mulberry(a) {
+  return () => { a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+
+/* Raindrops carry their own position and are advanced each frame, rather than
+   being scattered fresh: rain that is re-randomised every frame flickers and
+   reads as static, which is somehow worse than no rain at all. */
+const drops = Array.from({ length: 900 }, () => ({ x: 0, y: 0, len: 0, sp: 0, seeded: false }));
+const rnd = mulberry(7717);
+
+const rgb = (c, a = 1) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+
+function draw(t, seconds) {
+  const s = storm(t);
+  const sunH = sun(t);
+  const pal = sky(t);
+  const horizon = H * 0.62;
+
+  /* ── sky ─────────────────────────────────────────────────────────────── */
+  const g = ctx.createLinearGradient(0, 0, 0, horizon);
+  g.addColorStop(0, rgb(pal.hi));
+  g.addColorStop(1, rgb(pal.lo));
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, horizon + 1);
+
+  /* ── stars ───────────────────────────────────────────────────────────── */
+  const night = clamp(-sunH * 1.5) * (1 - s * 0.75);
+  if (night > 0.01) {
+    for (const st of stars) {
+      const tw = 0.72 + 0.28 * Math.sin(seconds * 1.6 + st.tw);
+      ctx.fillStyle = `rgba(236,242,255,${night * st.m * tw * 0.9})`;
+      ctx.beginPath(); ctx.arc(st.x, st.y, st.r, 0, 6.2832); ctx.fill();
+    }
+  }
+
+  /* ── the sun, only at the two ends of the night ──────────────────────── */
+  const heat = clamp((sunH + 0.18) / 0.3);
+  /* Low and off to one side, not hanging in the middle of the sky: at the two
+     ends of this night the sun is about to touch the water or has just left
+     it, and a disc sitting halfway up reads as midday with the colours wrong.
+     Rising in the east on the left, setting in the west on the right. */
+  const sx = t > 0.5 ? W * 0.22 : W * 0.30;
+  const sy = horizon - sunH * H * 1.5;
+  if (heat > 0.01) {
+    const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, H * 0.75);
+    glow.addColorStop(0, `rgba(255,216,152,${0.55 * heat})`);
+    glow.addColorStop(0.28, `rgba(255,152,88,${0.2 * heat})`);
+    glow.addColorStop(1, 'rgba(255,120,60,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, W, horizon);
+    /* Soft-edged. A hard circle is a sticker; the last few degrees of a real
+       sun are smeared by the atmosphere it is looking through. */
+    const disc = ctx.createRadialGradient(sx, sy, 0, sx, sy, H * 0.05);
+    disc.addColorStop(0, `rgba(255,252,240,${heat})`);
+    disc.addColorStop(0.30, `rgba(255,244,206,${0.98 * heat})`);
+    disc.addColorStop(0.55, `rgba(255,214,146,${0.7 * heat})`);
+    disc.addColorStop(1, 'rgba(255,190,120,0)');
+    ctx.fillStyle = disc;
+    ctx.beginPath(); ctx.arc(sx, sy, H * 0.05, 0, 6.2832); ctx.fill();
+  }
+
+  /* ── the tower ────────────────────────────────────────────────────────── */
+  /* It stands on a rock a mile or so out, not on a headland in the
+     foreground. An earlier version had the rock running off the bottom of the
+     frame, which put the reader standing on it — and a quarter of the picture
+     became a black triangle with nothing in it. Small and far is also the
+     truer picture: the point of the story is a man alone on a stack in the
+     sea. */
+  /* The whole lighthouse comes off one number, and everything else is a
+     fraction of it. Sizing the width from W and the height from H — which is
+     the obvious thing to write — drew a tower three and a half times as tall
+     as it was wide on a laptop and nineteen times on a phone: the same code
+     producing a lighthouse and a chimney depending on which way the screen
+     was turned. Capping against W as well keeps it smaller on a narrow
+     screen, which is also the better picture there: more sea, more sky. */
+  const tx = W * 0.71;            // where it stands
+  const towerH = Math.min(H * 0.267, W * 0.34);
+  const base = horizon + H * 0.062;
+  const topY = base - towerH;
+  const halfBase = towerH * 0.145, halfTop = towerH * 0.082;
+  const lampH = towerH * 0.10;    // the glass room
+  const galleryH = towerH * 0.026;// the little balcony under it
+  const lampY = topY + lampH * 0.55;
+
+  const a = beam(seconds);
+  const away = (1 - Math.cos(a)) / 2;       // 0 = pointing at you, 1 = straight out to sea
+
+  /* ── the sea ─────────────────────────────────────────────────────────── */
+  drawSea(t, seconds, s, horizon, pal, tx, lampY, a, away, sx, heat, 0, 24);
+
+  /* ── the beam, over the water and behind the tower ───────────────────── */
+  /* Order matters here and it was wrong at first: drawn before the sea, the
+     wedge was painted over below the horizon and the beam ended in a dead
+     flat line halfway down the picture. Light falls on water; it does not
+     stop at the waterline. */
+  const haze = 0.20 + s * 0.55;             // rain and spray are what make a beam visible
+  drawBeam(tx, lampY, a, away, haze, horizon);
+
+  /* the rock, then the tower on top of it */
+  ctx.fillStyle = '#05070d';
+  ctx.beginPath();
+  ctx.moveTo(tx - halfBase * 4.4, base + H * 0.055);
+  ctx.lineTo(tx - halfBase * 2.5, base + H * 0.006);
+  ctx.lineTo(tx - halfBase * 1.45, base - H * 0.006);
+  ctx.lineTo(tx + halfBase * 1.6, base - H * 0.003);
+  ctx.lineTo(tx + halfBase * 2.9, base + H * 0.012);
+  ctx.lineTo(tx + halfBase * 4.0, base + H * 0.055);
+  ctx.closePath(); ctx.fill();
+
+  ctx.fillStyle = '#080b13';
+  ctx.beginPath();
+  ctx.moveTo(tx - halfBase, base);
+  ctx.lineTo(tx - halfTop, topY + lampH + galleryH);
+  ctx.lineTo(tx - halfTop * 1.46, topY + lampH + galleryH);
+  ctx.lineTo(tx - halfTop * 1.46, topY + lampH);
+  ctx.lineTo(tx - halfTop * 1.18, topY + lampH);
+  ctx.lineTo(tx - halfTop * 1.18, topY);
+  ctx.lineTo(tx + halfTop * 1.18, topY);
+  ctx.lineTo(tx + halfTop * 1.18, topY + lampH);
+  ctx.lineTo(tx + halfTop * 1.46, topY + lampH);
+  ctx.lineTo(tx + halfTop * 1.46, topY + lampH + galleryH);
+  ctx.lineTo(tx + halfTop, topY + lampH + galleryH);
+  ctx.lineTo(tx + halfBase, base);
+  ctx.closePath(); ctx.fill();
+  // the cap
+  ctx.beginPath();
+  ctx.moveTo(tx - halfTop * 1.30, topY);
+  ctx.lineTo(tx, topY - towerH * 0.062);
+  ctx.lineTo(tx + halfTop * 1.30, topY);
+  ctx.closePath(); ctx.fill();
+
+  /* The lamp is lit whenever the sun is down — and it goes out across the
+     final chapter, because that chapter opens with "I put the lamp out". The
+     reader scrolling through those four lines is what extinguishes it, which
+     is the one moment in the piece where they do something rather than
+     watch. */
+  const lit = clamp(1 - (sunH + 0.02) * 6) * (1 - smooth(0.935, 0.99, t));
+  /* A rim of the lamp's own light down the tower. Without it the tower at
+     three in the morning is a black shape on a black sky and the reader has
+     to take the lighthouse on trust. */
+  if (lit > 0.01) {
+    const rim = ctx.createLinearGradient(tx - halfBase, 0, tx + halfBase, 0);
+    rim.addColorStop(0, `rgba(255,214,150,${0.22 * lit})`);
+    rim.addColorStop(0.16, 'rgba(255,214,150,0)');
+    rim.addColorStop(0.84, 'rgba(255,214,150,0)');
+    rim.addColorStop(1, `rgba(255,214,150,${0.28 * lit})`);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = rim;
+    ctx.beginPath();
+    ctx.moveTo(tx - halfBase, base);
+    ctx.lineTo(tx - halfTop, topY + lampH + galleryH);
+    ctx.lineTo(tx + halfTop, topY + lampH + galleryH);
+    ctx.lineTo(tx + halfBase, base);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  /* the lamp itself, always lit once the sun is down */
+  if (lit > 0.01) {
+    const R = Math.max(W * 0.075, towerH * 0.72);
+    const lg = ctx.createRadialGradient(tx, lampY, 0, tx, lampY, R);
+    lg.addColorStop(0, `rgba(255,240,204,${0.9 * lit})`);
+    lg.addColorStop(0.10, `rgba(255,222,160,${0.44 * lit})`);
+    lg.addColorStop(0.28, `rgba(255,198,122,${0.14 * lit})`);
+    lg.addColorStop(0.58, `rgba(255,186,110,${0.04 * lit})`);
+    lg.addColorStop(1, 'rgba(255,180,105,0)');
+    ctx.fillStyle = lg;
+    ctx.fillRect(tx - R, lampY - R, R * 2, R * 2);
+    ctx.fillStyle = `rgba(255,246,222,${lit})`;
+    ctx.beginPath(); ctx.arc(tx, lampY, halfTop * 0.4, 0, 6.2832); ctx.fill();
+  }
+
+  /* The last ten rows of water go over the foot of the rock. Drawing the
+     whole sea first and the rock on top of it puts the rock in front of the
+     waves, which makes it a photograph propped against the view rather than
+     something standing in it. */
+  drawSea(t, seconds, s, horizon, pal, tx, lampY, a, away, sx, heat, 24, 34);
+
+  /* ── rain ────────────────────────────────────────────────────────────── */
+  const r = rain(t);
+  if (r.amount > 0.01) drawRain(r, seconds);
+
+  /* ── the beam coming straight at you ─────────────────────────────────── */
+  const f = flash(seconds) * lit;
+  if (f > 0.004) {
+    ctx.fillStyle = `rgba(255,240,208,${f * (0.09 + s * 0.06)})`;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  /* ── the glass ───────────────────────────────────────────────────────── */
+  const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.28, W / 2, H / 2, H * 0.82);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, `rgba(0,0,0,${0.5 + s * 0.2})`);
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, W, H);
+}
+
+/**
+ * The beam.
+ *
+ * A lighthouse beam does not sweep left and right across a flat picture — it
+ * goes round, and what you see is that circle in perspective. So the far end
+ * of the wedge rides between the horizon (pointing out to sea, away from you)
+ * and well below the bottom of the frame (pointing back at you), while its
+ * width comes and goes with how side-on it is. Doing it as a flat rotation
+ * looks like a searchlight in a car park.
+ */
+function drawBeam(x, y, a, away, haze, horizon) {
+  const reach = Math.abs(Math.sin(a));                 // widest when fully side-on
+  const strength = (0.10 + reach * 0.9) * haze;
+  if (strength < 0.012) return;
+
+  const tipY = lerp(H * 1.5, horizon - H * 0.02, away);
+  const tipX = x + Math.sin(a) * W * 1.25;
+  const spread = lerp(W * 0.02, W * 0.115, reach) * (0.45 + away * 0.75);
+
+  const dx = tipX - x, dy = tipY - y;
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len * spread, ny = dx / len * spread;
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  /* Three wedges of decreasing width and increasing brightness rather than
+     one. A single triangle has a hard edge all the way down both sides and
+     reads as a piece of card; stacking them gives the soft-shouldered cone a
+     beam actually has, without needing a blur the canvas would charge for. */
+  for (const [spreadK, alphaK] of [[1.85, 0.09], [1.4, 0.11], [1.0, 0.14], [0.66, 0.17], [0.34, 0.22]]) {
+    const sx2 = nx * spreadK, sy2 = ny * spreadK;
+    const grad = ctx.createLinearGradient(x, y, tipX, tipY);
+    grad.addColorStop(0, `rgba(255,242,212,${alphaK * strength})`);
+    grad.addColorStop(0.3, `rgba(255,230,182,${alphaK * 0.45 * strength})`);
+    grad.addColorStop(1, 'rgba(255,214,150,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(tipX + sx2, tipY + sy2);
+    ctx.lineTo(tipX - sx2, tipY - sy2);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/**
+ * The sea.
+ *
+ * One filled shape for the water, then a few hundred short strokes for the
+ * crests, each sampled from the same `wave` sum that made the surface. The
+ * crests are what sell it: a filled gradient alone reads as a lake no matter
+ * how rough the outline is.
+ */
+function drawSea(t, seconds, s, horizon, pal, lx, ly, a, away, sunX, heat, from, to) {
+  const deep = [Math.round(pal.lo[0] * 0.20 + 4), Math.round(pal.lo[1] * 0.24 + 6), Math.round(pal.lo[2] * 0.34 + 12)];
+  const near = [Math.round(pal.lo[0] * 0.09 + 2), Math.round(pal.lo[1] * 0.11 + 3), Math.round(pal.lo[2] * 0.18 + 7)];
+  if (from === 0) {
+    const g = ctx.createLinearGradient(0, horizon, 0, H);
+    g.addColorStop(0, rgb(deep));
+    g.addColorStop(1, rgb(near));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, horizon, W, H - horizon);
+    /* The strip just under the horizon is sky reflected off water almost edge
+       on, so it is nearly as bright as the sky itself. Without it the horizon
+       is a razor line between a lit sky and a dark floor, and the whole thing
+       reads as a cardboard cut-out standing on a table. */
+    const sheen = ctx.createLinearGradient(0, horizon, 0, horizon + H * 0.30);
+    sheen.addColorStop(0, rgb(pal.lo, 0.40 + heat * 0.22));
+    sheen.addColorStop(0.18, rgb(pal.lo, 0.14 + heat * 0.08));
+    sheen.addColorStop(1, rgb(pal.lo, 0));
+    ctx.fillStyle = sheen;
+    ctx.fillRect(0, horizon, W, H * 0.31);
+  }
+
+  /* Where the beam is falling on the water. Only meaningful while it is
+     pointing away from us; on the way back round it is behind the camera. */
+  const beamX = lx + Math.sin(a) * W * 0.85;
+  const beamLit = away * Math.abs(Math.sin(a));
+
+  const rows = 34;
+  for (let i = from; i < Math.min(to, rows); i++) {
+    const k = i / (rows - 1);
+    /* Rows bunch up towards the horizon: even spacing makes a flat plane seen
+       from nowhere in particular. */
+    const y = horizon + Math.pow(k, 2.1) * (H - horizon) * 1.04;
+    const scale = 0.15 + k * 1.0;                 // nearer water is drawn bigger
+    const amp = (1.2 + s * 3.2) * scale * (H * 0.012);
+    const step = lerp(20, 68, k);
+    const alpha = (0.05 + k * 0.14) * (0.5 + s * 0.6);
+    /* Each row gets its own offset and its own slice of the wave field. An
+       earlier version offset every row by sin(y), which is a smooth function
+       of a smooth function: the crests lined up into diagonal corduroy that
+       read as hatching rather than water. */
+    const jig = mulberry(9001 + i * 131);
+    const phase = i * 4.77;
+
+    for (let x = -step * 2; x < W + step * 2; x += step) {
+      const px = x + (jig() - 0.5) * step * 1.6;
+      const wx = px * 0.012 + phase;
+      const h = wave(wx, seconds, s);
+      /* Slope of the surface at this point, so the crest mark lies along the
+         water instead of every mark tilting the same way. */
+      const slope = (wave(wx + 0.06, seconds, s) - h) / 0.06;
+      const yy = y + h * amp;
+      const w = step * lerp(0.4, 0.75, k) * (0.55 + jig() * 0.9);
+      const tilt = clamp(slope * 0.11, -0.7, 0.7);
+
+      const near = 1 - clamp(Math.abs(px - beamX) / (W * 0.30));
+      const glint = near * near * beamLit * clamp(h * 0.6 + 0.5);
+
+      /* The road of light: a sun low on the water is not a reflected disc, it
+         is a column that widens towards you, because each crest between you
+         and it turns its own little piece of the sun in your direction. */
+      const road = heat
+        * (1 - clamp(Math.abs(px - sunX) / (W * (0.035 + k * 0.30))))
+        * clamp(h * 0.45 + 0.6) * (0.35 + jig() * 0.9);
+      const bright = alpha + glint * (0.45 + s * 0.2) + road * 0.85;
+
+      ctx.strokeStyle = glint > 0.02 || road > 0.02
+        ? `rgba(255,238,202,${clamp(bright, 0, 0.9)})`
+        : `rgba(206,222,248,${alpha * (0.5 + 0.6 * clamp(h * 0.5 + 0.5))})`;
+      ctx.lineWidth = lerp(0.9, 2.4, k);
+      ctx.beginPath();
+      ctx.moveTo(px - w / 2, yy - tilt * w * 0.5);
+      ctx.lineTo(px + w / 2, yy + tilt * w * 0.5);
+      ctx.stroke();
+    }
+  }
+
+  /* spray where the water hits the rock */
+  if (s > 0.12 && to >= 34) {
+    /* An earlier version marched the droplets along one parabola at even
+       intervals, which drew a string of beads arcing out of the rock rather
+       than spray. Each one gets its own launch angle, speed and phase now,
+       and they are small. */
+    const n = Math.floor(s * 220);
+    const sp = mulberry(4242);
+    for (let i = 0; i < n; i++) {
+      const seed = sp(), side = sp() < 0.5 ? -1 : 1, lift = 0.5 + sp() * 0.9;
+      const ph = (seconds * (0.5 + seed * 0.5) + seed * 3.1) % 1;
+      const x0 = lx + side * (H * 0.02 + sp() * H * 0.095);
+      const px = x0 + side * ph * H * 0.10 * s;
+      const py = horizon + H * 0.056 - (ph * lift - ph * ph * 1.35) * H * 0.17 * s;
+      const fade = (1 - ph) * (1 - ph);
+      ctx.fillStyle = `rgba(214,230,252,${fade * s * 0.20})`;
+      ctx.beginPath(); ctx.arc(px, py, 0.5 + fade * 1.1, 0, 6.2832); ctx.fill();
+    }
+  }
+}
+
+function drawRain(r, seconds) {
+  const count = Math.floor(drops.length * r.amount);
+  ctx.strokeStyle = `rgba(200,218,248,${0.14 + r.amount * 0.2})`;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 0; i < count; i++) {
+    const d = drops[i];
+    if (!d.seeded) {
+      d.x = rnd() * (W * 1.6) - W * 0.3;
+      d.y = rnd() * H;
+      d.len = 9 + rnd() * 22;
+      d.sp = 8 + rnd() * 12;
+      d.seeded = true;
+    }
+    d.y += d.sp * r.speed;
+    d.x -= d.sp * r.speed * r.slant * 0.55;
+    if (d.y > H || d.x < -W * 0.35) { d.y = -20 - rnd() * 60; d.x = rnd() * (W * 1.6) - W * 0.2; }
+    ctx.moveTo(d.x, d.y);
+    ctx.lineTo(d.x + d.len * r.slant * 0.55, d.y - d.len);
+  }
+  ctx.stroke();
+}
+
+/* ── sound ───────────────────────────────────────────────────────────────────
+   Sea, wind, rain and a foghorn, all synthesised — there is no audio file in
+   this directory, so there is nothing to wait for and nothing to fail. The
+   wind and the rain are wired to the same storm() the picture uses, so they
+   get up together. */
+
+let actx = null, gains = null;
+document.getElementById('sound').addEventListener('click', (e) => {
+  const btn = e.currentTarget;
+  if (actx) {
+    const on = gains.master.gain.value > 0.01;
+    gains.master.gain.setTargetAtTime(on ? 0.0001 : 0.6, actx.currentTime, 0.4);
+    btn.textContent = on ? 'SOUND ON' : 'SOUND OFF';
+    return;
+  }
+  try {
+    actx = new (AudioContext || webkitAudioContext)();
+    const master = actx.createGain();
+    master.gain.value = 0.0001;
+    master.gain.exponentialRampToValueAtTime(0.6, actx.currentTime + 3);
+    master.connect(actx.destination);
+
+    const noise = () => {
+      const len = actx.sampleRate * 3;
+      const buf = actx.createBuffer(1, len, actx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      const src = actx.createBufferSource();
+      src.buffer = buf; src.loop = true; src.start();
+      return src;
+    };
+
+    // the sea: low noise with a slow swell on the cutoff
+    const seaF = actx.createBiquadFilter();
+    seaF.type = 'lowpass'; seaF.frequency.value = 340;
+    const swell = actx.createOscillator(); swell.frequency.value = 0.09;
+    const swellD = actx.createGain(); swellD.gain.value = 170;
+    swell.connect(swellD).connect(seaF.frequency); swell.start();
+    const seaG = actx.createGain(); seaG.gain.value = 0.42;
+    noise().connect(seaF).connect(seaG).connect(master);
+
+    // the wind: a band that opens as the gale gets up
+    const windF = actx.createBiquadFilter();
+    windF.type = 'bandpass'; windF.frequency.value = 620; windF.Q.value = 0.55;
+    const windG = actx.createGain(); windG.gain.value = 0.0001;
+    noise().connect(windF).connect(windG).connect(master);
+
+    // the rain: high, and only there when it is raining
+    const rainF = actx.createBiquadFilter();
+    rainF.type = 'highpass'; rainF.frequency.value = 2400;
+    const rainG = actx.createGain(); rainG.gain.value = 0.0001;
+    noise().connect(rainF).connect(rainG).connect(master);
+
+    gains = { master, wind: windG, rain: rainG, windF };
+    horn();
+    btn.textContent = 'SOUND OFF';
+  } catch { btn.textContent = 'NO AUDIO'; btn.disabled = true; }
+});
+
+/* The foghorn is on the light's clock, not the reader's: one note every third
+   revolution, whether or not anybody has scrolled. */
+function horn() {
+  if (!actx) return;
+  const t = actx.currentTime;
+  for (const f of [104, 156]) {
+    const o = actx.createOscillator();
+    o.type = 'sawtooth'; o.frequency.value = f;
+    const lp = actx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 340;
+    const g = actx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(f === 104 ? 0.12 : 0.05, t + 0.5);
+    g.gain.setValueAtTime(f === 104 ? 0.12 : 0.05, t + 2.1);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 3.4);
+    o.connect(lp).connect(g).connect(gains.master);
+    o.start(t); o.stop(t + 3.6);
+  }
+  setTimeout(horn, ROTATION * 3000);
+}
+
+/* ── the loop ────────────────────────────────────────────────────────────── */
+
+let t = 0, shown = new Array(CHAPTERS.length).fill(-1);
+const start = performance.now();
+
+function readScroll() {
+  const range = document.documentElement.scrollHeight - innerHeight;
+  return range > 1 ? clamp(scrollY / range) : 0;
+}
+
+function frame(now) {
+  const seconds = (now - start) / 1000;
+  t = readScroll();
+
+  draw(t, seconds);
+
+  for (let i = 0; i < CHAPTERS.length; i++) {
+    const o = chapterOpacity(i, t);
+    if (Math.abs(o - shown[i]) > 0.004) {
+      chapterEls[i].style.opacity = o.toFixed(3);
+      /* Text at zero opacity still sits over the picture and still takes
+         pointer events on some browsers; taking it out of the layout also
+         keeps a screen reader from reading nine chapters at once. */
+      chapterEls[i].style.visibility = o < 0.01 ? 'hidden' : 'visible';
+      shown[i] = o;
+    }
+  }
+
+  const hour = clamp(t) * (HOURS.length - 1);
+  hourLabel.textContent = HOURS[Math.round(hour)];
+  hourDot.style.top = `calc(${(8 + clamp(t) * 84).toFixed(2)}% - 3px)`;
+
+  if (gains && actx) {
+    const s = storm(t), r = rain(t);
+    gains.wind.gain.setTargetAtTime(0.02 + s * 0.30, actx.currentTime, 0.6);
+    gains.windF.frequency.setTargetAtTime(480 + s * 700, actx.currentTime, 0.8);
+    gains.rain.gain.setTargetAtTime(r.amount * 0.14, actx.currentTime, 0.6);
+  }
+
+  requestAnimationFrame(frame);
+}
+
+resize();
+requestAnimationFrame(frame);
+
+window.lamplighter = () => ({ t, storm: storm(t), sun: sun(t), sky: sky(t) });
+</script>
+</body>
+</html>

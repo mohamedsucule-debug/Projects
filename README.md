@@ -1,6 +1,6 @@
 # Playground
 
-Twenty-three things I built. All of them run in a browser — no install, no signup,
+Twenty-four things I built. All of them run in a browser — no install, no signup,
 no video of someone else using it.
 
 **→ [Open the playground](https://mohamedsucule-debug.github.io/Projects/)**
@@ -8,6 +8,42 @@ no video of someone else using it.
 ---
 
 ## The big ones
+
+### [The Lamplighter](apps/lamplighter/) — five minutes, one night
+
+A lighthouse keeper's last winter, told while the sun goes down, the gale gets
+up, the rain comes sideways and the light keeps turning. There is not an image
+file in the directory: the sky, the sea, the rock, the tower, the rain and the
+beam are all arithmetic.
+
+**Scrolling is time, not travel.** Almost every scroll-driven page moves a
+camera — you scroll, something slides past. Here the scroll position *is the
+hour of the night*, and the sun's height, the sky's colour, the wind, the rain
+and the state of the sea are all functions of that one number. The words are
+pinned to the middle of the frame and cross-fade, because the view should stay
+where it is while the night changes around it. You are not walking along a
+coast; you are standing still for nine hours.
+
+Which means it all lives in a DOM-free module and every claim the picture makes
+is one a test can hold it to — including `the sun is up at both ends of the
+night and down in the middle`, which failed: the first version peaked at
+midnight, so the story opened at dusk, *brightened* until two, and ended in the
+dark. Perfectly fine in a screenshot, nonsense the moment anybody scrolled.
+
+**Two clocks, and keeping them apart is the whole feel.** The reader's clock is
+the scroll bar. The lighthouse's is wall time: the beam turns once every 11.2
+seconds whether or not anybody is reading. A beam wired to scroll position is a
+beam attached to the reader — it stops when you stop, and the place becomes a
+diorama that only exists while it is being looked at. The test pins it by the
+shape of the function: `assert.equal(beam.length, 1)` — it takes seconds, and
+there is nowhere to pass a scroll value.
+
+The bug I liked most: sizing the tower's width from the viewport width and its
+height from the viewport height drew a lighthouse on a laptop and a **chimney**
+on a phone — nineteen times as tall as it was wide.
+
+[Full write-up](apps/lamplighter/README.md), including why the horizon needed a
+sheen and why one triangle never reads as a beam.
 
 ### [Nightshift](apps/nightshift/) — a horror story that reads you back
 
@@ -303,6 +339,9 @@ play/loom/
   engine.js             node types and the evaluator, pure and DOM-free
   presets.js            the six examples, and the auto-layout that places them
   index.html            the editor
+apps/lamplighter/
+  scene.js              the story, and every function that says what the night is doing
+  index.html            the canvas that draws it, and the sound
 apps/nightshift/
   story.js              the log, the beats, and the pure functions that time them
   index.html            the document, and the map from effect name to what it does
@@ -310,7 +349,7 @@ projects/<name>/
   engine.js             the algorithm, pure and DOM-free
   index.html            the interface
   README.md             the design problem, and the limits
-tests/run.mjs           438 tests, no framework, no install
+tests/run.mjs           459 tests, no framework, no install
 ```
 
 ```bash
