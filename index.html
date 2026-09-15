@@ -5,18 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" href="favicon.svg" />
 <meta name="theme-color" content="#06070d" />
-<title>Playground — thirteen things you can click</title>
-<meta name="description" content="Drop in a photo and watch it rebuilt out of six thousand dots. Wire boxes together into a picture. Set a sandbox on fire. Thirteen things that all run in your browser, with nothing to install." />
-<meta property="og:title" content="Playground — thirteen things you can click" />
-<meta property="og:description" content="Drop in a photo and watch it rebuilt out of six thousand dots. Plus a node-based image studio, five toys, and six serious tools — each with a plain-English explanation." />
+<title>Playground — fourteen things you can click</title>
+<meta name="description" content="Seven layouts and every tile springs between them. Drop in a photo and watch it rebuilt out of six thousand dots. Wire boxes together into a picture. Fourteen things that all run in your browser, with nothing to install." />
+<meta property="og:title" content="Playground — fourteen things you can click" />
+<meta property="og:description" content="A gallery that morphs between seven layouts on springs. A photo rebuilt out of six thousand dots. A node-based image studio. Five toys and six serious tools, each with a plain-English explanation." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://mohamedsucule-debug.github.io/Projects/" />
 <meta property="og:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Playground — thirteen things you can click" />
-<meta name="twitter:description" content="Drop in a photo and watch it rebuilt out of six thousand dots. Plus a node-based image studio, a sandbox you can set on fire, and a drum machine with no sound files in it." />
+<meta name="twitter:title" content="Playground — fourteen things you can click" />
+<meta name="twitter:description" content="A gallery that morphs between seven layouts on springs, a photo rebuilt out of six thousand dots, a node-based image studio, and a drum machine with no sound files in it." />
 <meta name="twitter:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <link rel="canonical" href="https://mohamedsucule-debug.github.io/Projects/" />
 <style>
@@ -287,7 +287,7 @@
   <header class="hero">
     <!-- ↓↓ YOUR NAME AND TITLE — edit these two lines ↓↓ -->
     <p class="eyebrow"><b>Mohamed Sucule</b> &middot; software engineer</p>
-    <h1>Thirteen things I built. <em>All of them run right here.</em></h1>
+    <h1>Fourteen things I built. <em>All of them run right here.</em></h1>
     <p>
       No videos, no screenshots, no “request a demo”. Click any of them and it starts
       immediately — in your browser, on your phone, with nothing to install.
@@ -304,6 +304,30 @@
   </header>
 
   <h3 class="section" id="loom">The big ones</h3>
+
+  <a class="feature" href="play/morph/index.html" style="margin-bottom:16px">
+    <div class="fstage">
+      <canvas id="morphCanvas"></canvas>
+      <span class="cap" id="morphCap">masonry</span>
+    </div>
+    <div class="fmeta">
+      <span class="pill">interface</span>
+      <h2>Morph</h2>
+      <p>
+        One gallery, seven completely different layouts, and <b>not a single CSS transition
+        anywhere in it</b>. Switch layout and every tile flies to its new place. Switch again
+        before they land and they bend into the new arrangement carrying the speed they
+        already had.
+      </p>
+      <ul>
+        <li>Every position is a spring, so any gesture can interrupt any other mid-flight</li>
+        <li>Drag to reorder and the rest of the gallery flows around your finger</li>
+        <li>Click a tile and it grows into the detail view — the same element, not a copy</li>
+        <li>Stiffness and damping are sliders, so you can feel what each one does</li>
+      </ul>
+      <span class="go">Go and interrupt it →</span>
+    </div>
+  </a>
 
   <a class="feature" href="play/portrait/index.html" style="margin-bottom:16px">
     <div class="fstage">
@@ -419,8 +443,8 @@
     </div>
     <p class="colophon">
       No frameworks, no build step, no dependencies — every page here is plain HTML, CSS and
-      JavaScript, about 14,000 lines of it, with the engine behind Portrait, Loom and each
-      of the six tools unit-tested: 130 tests, run in CI before anything is published.
+      JavaScript, about 15,500 lines of it, with the engine behind Morph, Portrait, Loom and
+      each of the six tools unit-tested: 159 tests, run in CI before anything is published.
       Written with Claude Code; the commit history is the full record.
     </p>
   </footer>
@@ -445,6 +469,7 @@ const loadModules = Promise.all([
   import('./play/loom/engine.js'),
   import('./play/loom/presets.js'),
   import('./play/portrait/engine.js'),
+  import('./play/morph/engine.js'),
 ]);
 
 const TOYS = [
@@ -923,6 +948,101 @@ loadModules.then(([{ BRIEFINGS, BRIEFING_ORDER }]) => {
     This page reads its content from ES modules, which browsers refuse to load from a
     <code>file://</code> address. Run <b>npx http-server</b> in the repo and open it over
     localhost, or use the published site.</p>`;
+});
+
+/* ── the Morph card ─────────────────────────────────────────────────────────
+   The same layout functions and the same spring integrator the real thing
+   uses, cycling through the layouts on a timer. Eighteen rounded rectangles
+   rather than eighteen DOM nodes, because a card on a landing page should not
+   cost what the tool costs. */
+loadModules.then(([, , , , morph]) => {
+  const canvas = document.getElementById('morphCanvas');
+  const cap = document.getElementById('morphCap');
+  const ctx = canvas.getContext('2d', { alpha: false });
+  const W = 380;
+  canvas.width = canvas.height = W;
+
+  const ASPECTS = [1, 0.75, 1.4, 1, 1.2, 0.85];
+  const TINTS = ['#ffd166', '#ff4d8d', '#7dd3fc', '#a3e635', '#f472b6', '#c084fc'];
+  const N = 18;
+  const tiles = Array.from({ length: N }, (_, i) => ({
+    aspect: ASPECTS[i % ASPECTS.length],
+    tint: TINTS[i % TINTS.length],
+    sp: {
+      x: morph.makeSpring(W / 2), y: morph.makeSpring(W / 2),
+      w: morph.makeSpring(6), h: morph.makeSpring(6), rot: morph.makeSpring(0),
+    },
+    wobble: 1 + ((i * 29) % 9) / 36,
+  }));
+
+  const ORDER = ['masonry', 'grid', 'justified', 'spiral', 'deck', 'list'];
+  let which = 0, held = 0, visible = false, targets = [];
+
+  const retarget = () => {
+    const key = ORDER[which];
+    targets = morph.LAYOUTS[key].fn(tiles, {
+      width: W, height: W, gap: 7, columns: 4,
+      targetHeight: 70, size: key === 'deck' ? 150 : 52, focus: N / 2,
+    });
+
+    /* Each layout is laid out at its natural size and then scaled to fit the
+       card. Tuning seven sets of sizes by hand to fit one box is the version
+       of this that breaks the first time the card changes width. */
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const t of targets) {
+      x0 = Math.min(x0, t.x); y0 = Math.min(y0, t.y);
+      x1 = Math.max(x1, t.x + t.w); y1 = Math.max(y1, t.y + t.h);
+    }
+    const pad = 14;
+    const k = Math.min((W - pad * 2) / (x1 - x0), (W - pad * 2) / (y1 - y0), 1);
+    const ox = (W - (x1 - x0) * k) / 2, oy = (W - (y1 - y0) * k) / 2;
+    for (const t of targets) {
+      t.x = ox + (t.x - x0) * k; t.y = oy + (t.y - y0) * k;
+      t.w *= k; t.h *= k;
+    }
+    cap.textContent = morph.LAYOUTS[key].label.toLowerCase();
+  };
+  retarget();
+
+  let last = performance.now();
+  function step(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (visible) {
+      held += dt;
+      if (held > 2.9) { held = 0; which = (which + 1) % ORDER.length; retarget(); }
+      ctx.fillStyle = '#05060b';
+      ctx.fillRect(0, 0, W, W);
+      tiles.forEach((t, i) => {
+        const g = targets[i];
+        const cfg = { stiffness: 190 * t.wobble, damping: 19, mass: 1 };
+        morph.stepSpring(t.sp.x, g.x, cfg, dt);
+        morph.stepSpring(t.sp.y, g.y, cfg, dt);
+        morph.stepSpring(t.sp.w, g.w, cfg, dt);
+        morph.stepSpring(t.sp.h, g.h, cfg, dt);
+        morph.stepSpring(t.sp.rot, g.rot || 0, cfg, dt);
+        const { x, y, w, h, rot } = t.sp;
+        ctx.save();
+        ctx.translate(x.value + w.value / 2, y.value + h.value / 2);
+        if (rot.value) ctx.rotate((rot.value * Math.PI) / 180);
+        ctx.fillStyle = t.tint;
+        ctx.globalAlpha = 0.92;
+        const r = Math.min(7, Math.abs(w.value) / 3, Math.abs(h.value) / 3);
+        ctx.beginPath();
+        ctx.roundRect(-w.value / 2, -h.value / 2, Math.max(1, w.value), Math.max(1, h.value), r);
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+    requestAnimationFrame(step);
+  }
+
+  new IntersectionObserver((entries) => {
+    for (const e of entries) visible = e.isIntersecting;
+  }, { rootMargin: '150px' }).observe(canvas);
+  requestAnimationFrame(step);
+}).catch(() => {
+  const cap = document.getElementById('morphCap');
+  if (cap) cap.textContent = 'open over http to see this run live';
 });
 
 /* ── the Portrait card ──────────────────────────────────────────────────────

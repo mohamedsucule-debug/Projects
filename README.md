@@ -1,6 +1,6 @@
 # Playground
 
-Thirteen things I built. All of them run in a browser — no install, no signup,
+Fourteen things I built. All of them run in a browser — no install, no signup,
 no video of someone else using it.
 
 **→ [Open the playground](https://mohamedsucule-debug.github.io/Projects/)**
@@ -8,6 +8,31 @@ no video of someone else using it.
 ---
 
 ## The big ones
+
+### [Morph](play/morph/) — seven layouts, no transitions anywhere
+
+One gallery, seven completely different layouts. Switch and every tile flies to
+its new place; switch again before they land and they bend into the new
+arrangement carrying the speed they already had. Drag to reorder and the rest
+flow around your finger. Click a tile and it grows into the detail view.
+
+**A CSS transition is a promise about the future** — get from here to there over
+300ms along this curve. Interrupt it and the browser throws that promise away
+and starts a new one from wherever the element is, at zero velocity. Things stop
+dead and set off again, and it is the most common single reason an interface
+feels cheap.
+
+A spring knows only its position, its velocity, and where it is being pulled.
+Change the target and nothing is discarded. That is why every gesture here can
+interrupt every other one.
+
+The part that surprised me: **there is no expand animation in the codebase.**
+Opening a tile writes one large target rectangle; closing writes the old one
+back. The shared-element transition falls out for free once every position is
+already a spring. Same for reordering.
+
+[Full write-up, including the stacking-context bug that took the longest to
+find](play/morph/README.md).
 
 ### [Portrait](play/portrait/) — drop in a photo, watch it get rebuilt
 
@@ -99,9 +124,9 @@ and — deliberately — what it does **not** do.
 HTML, CSS and JavaScript. The five toys are each a single self-contained file
 you can open by double-clicking it. Clone this in five years and it still runs.
 
-The front page, Portrait, Loom and the six serious tools load ES modules, which
-browsers refuse to serve from a `file://` address — run `npx http-server` for
-those. The
+The front page, Morph, Portrait, Loom and the six serious tools load ES
+modules, which browsers refuse to serve from a `file://` address — run
+`npx http-server` for those. The
 front page says so itself if you open it the wrong way, rather than rendering
 a blank section.
 
@@ -113,6 +138,9 @@ engine has to be *correct*; the interface has to be *understood*. Different jobs
 index.html              the front page, with a live preview on every card
 shared/briefings.js     the plain-English explanation of each serious tool
 play/<name>/index.html  a toy — one file, no imports
+play/morph/
+  engine.js             seven layout algorithms + a spring integrator, DOM-free
+  index.html            the interface
 play/portrait/
   engine.js             stippling, triangulation, dithering, palettes — DOM-free
   index.html            the interface
@@ -124,7 +152,7 @@ projects/<name>/
   engine.js             the algorithm, pure and DOM-free
   index.html            the interface
   README.md             the design problem, and the limits
-tests/run.mjs           130 tests, no framework, no install
+tests/run.mjs           159 tests, no framework, no install
 ```
 
 ```bash
@@ -154,6 +182,9 @@ change, which is how these got caught:
 - Portrait drew all six thousand of its dots at under one pixel across, because the radius
   was divided by the canvas scale that had already been applied. The data was right the
   whole time; it just could not be seen
+- Morph's expanded tile rendered *behind* its own backdrop, because the container carries
+  `perspective` for the 3D layouts — and `perspective` creates a stacking context, so no
+  `z-index` on a child can ever lift it above an element outside that context
 
 Every one of those was *technically working code*, and no test would have flagged a single
 one of them.
