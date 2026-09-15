@@ -439,7 +439,10 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-window.__game = game;   /* so a headless driver can play it for a screenshot */
+/* A deliberate seam: the run is reachable from the console so a headless
+   browser can play the real game and screenshot it. Every visual defect in
+   this game was found that way rather than by staring at the code. */
+window.tetherRun = game;
 fit();
 requestAnimationFrame(frame);
 </script>
