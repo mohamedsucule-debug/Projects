@@ -1,13 +1,37 @@
 # Playground
 
-Twelve things I built. All of them run in a browser — no install, no signup,
+Thirteen things I built. All of them run in a browser — no install, no signup,
 no video of someone else using it.
 
 **→ [Open the playground](https://mohamedsucule-debug.github.io/Projects/)**
 
 ---
 
-## The big one
+## The big ones
+
+### [Portrait](play/portrait/) — drop in a photo, watch it get rebuilt
+
+Four ways: thousands of dots, a mesh of triangles, tiles in colours the photo
+chose for itself, or one bit per pixel. Each one throws the photograph away and
+redraws it from a few thousand primitives, which is why they hold up close and
+a filter does not. Your photo never leaves your device.
+
+The dots are the point. Each one owns the patch of picture nearest to it and
+moves, every pass, to the darkness-weighted centre of that patch — so they
+drift towards dark areas and crowd where the picture needs more ink. They start
+at **random**, because starting them roughly where they belong converges in
+three passes and looks finished before you can see it happen.
+
+Doing that honestly means asking, for every pixel, which dot is nearest: at
+200,000 pixels and 4,000 dots, 800 million comparisons per pass. A uniform grid
+of cells about one dot apart brings that to roughly ten comparisons per pixel,
+which is the difference between an animation and a progress bar. There is a
+test that picks 250 random points and asserts the grid agrees with brute force
+exactly, because a fast answer that is occasionally wrong would corrupt the
+whole relaxation silently.
+
+[Full write-up, including the two bugs and what it deliberately does not
+do](play/portrait/README.md).
 
 ### [Loom](play/loom/) — build a picture by wiring boxes together
 
@@ -75,8 +99,9 @@ and — deliberately — what it does **not** do.
 HTML, CSS and JavaScript. The five toys are each a single self-contained file
 you can open by double-clicking it. Clone this in five years and it still runs.
 
-The front page, Loom and the six serious tools load ES modules, which browsers
-refuse to serve from a `file://` address — run `npx http-server` for those. The
+The front page, Portrait, Loom and the six serious tools load ES modules, which
+browsers refuse to serve from a `file://` address — run `npx http-server` for
+those. The
 front page says so itself if you open it the wrong way, rather than rendering
 a blank section.
 
@@ -88,6 +113,9 @@ engine has to be *correct*; the interface has to be *understood*. Different jobs
 index.html              the front page, with a live preview on every card
 shared/briefings.js     the plain-English explanation of each serious tool
 play/<name>/index.html  a toy — one file, no imports
+play/portrait/
+  engine.js             stippling, triangulation, dithering, palettes — DOM-free
+  index.html            the interface
 play/loom/
   engine.js             node types and the evaluator, pure and DOM-free
   presets.js            the six examples, and the auto-layout that places them
@@ -96,7 +124,7 @@ projects/<name>/
   engine.js             the algorithm, pure and DOM-free
   index.html            the interface
   README.md             the design problem, and the limits
-tests/run.mjs           106 tests, no framework, no install
+tests/run.mjs           130 tests, no framework, no install
 ```
 
 ```bash
@@ -123,6 +151,9 @@ change, which is how these got caught:
 - Loom's knob labelled "Contrast" was applying a gamma curve, so turning it up brightened
   the image (mean 0.501 → 0.587) instead of spreading it — doing exactly the opposite of
   what its own label promised
+- Portrait drew all six thousand of its dots at under one pixel across, because the radius
+  was divided by the canvas scale that had already been applied. The data was right the
+  whole time; it just could not be seen
 
 Every one of those was *technically working code*, and no test would have flagged a single
 one of them.

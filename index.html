@@ -5,18 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" href="favicon.svg" />
 <meta name="theme-color" content="#06070d" />
-<title>Playground — twelve things you can click</title>
-<meta name="description" content="Loom, a node-based image studio you can wire together in the browser — plus a sandbox you can set on fire, a drum machine with no sound files, an island generator, and six tools that make invisible software visible." />
-<meta property="og:title" content="Playground — twelve things you can click" />
-<meta property="og:description" content="A node-based image studio, five toys you can play with in three seconds each, and six serious tools underneath — each with a plain-English explanation." />
+<title>Playground — thirteen things you can click</title>
+<meta name="description" content="Drop in a photo and watch it rebuilt out of six thousand dots. Wire boxes together into a picture. Set a sandbox on fire. Thirteen things that all run in your browser, with nothing to install." />
+<meta property="og:title" content="Playground — thirteen things you can click" />
+<meta property="og:description" content="Drop in a photo and watch it rebuilt out of six thousand dots. Plus a node-based image studio, five toys, and six serious tools — each with a plain-English explanation." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://mohamedsucule-debug.github.io/Projects/" />
 <meta property="og:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Playground — twelve things you can click" />
-<meta name="twitter:description" content="A node-based image studio, a sandbox you can set on fire, a drum machine with no sound files in it, and an island generator. All running in the browser." />
+<meta name="twitter:title" content="Playground — thirteen things you can click" />
+<meta name="twitter:description" content="Drop in a photo and watch it rebuilt out of six thousand dots. Plus a node-based image studio, a sandbox you can set on fire, and a drum machine with no sound files in it." />
 <meta name="twitter:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <link rel="canonical" href="https://mohamedsucule-debug.github.io/Projects/" />
 <style>
@@ -287,7 +287,7 @@
   <header class="hero">
     <!-- ↓↓ YOUR NAME AND TITLE — edit these two lines ↓↓ -->
     <p class="eyebrow"><b>Mohamed Sucule</b> &middot; software engineer</p>
-    <h1>Twelve things I built. <em>All of them run right here.</em></h1>
+    <h1>Thirteen things I built. <em>All of them run right here.</em></h1>
     <p>
       No videos, no screenshots, no “request a demo”. Click any of them and it starts
       immediately — in your browser, on your phone, with nothing to install.
@@ -298,12 +298,36 @@
       you press the button.
     </p>
     <div class="cta">
-      <a class="btn primary" href="play/loom/index.html">Open Loom →</a>
+      <a class="btn primary" href="play/portrait/index.html">Rebuild your photo →</a>
       <a class="btn ghost" href="#toys">Or something smaller</a>
     </div>
   </header>
 
-  <h3 class="section" id="loom">The big one</h3>
+  <h3 class="section" id="loom">The big ones</h3>
+
+  <a class="feature" href="play/portrait/index.html" style="margin-bottom:16px">
+    <div class="fstage">
+      <canvas id="portraitCanvas"></canvas>
+      <span class="cap" id="portraitCap">settling…</span>
+    </div>
+    <div class="fmeta">
+      <span class="pill">image tool</span>
+      <h2>Portrait</h2>
+      <p>
+        Drop in <b>a photo of yourself</b> and watch it taken apart and rebuilt out of six
+        thousand dots. They start scattered at random and crawl into position over a couple of
+        seconds — and then it is unmistakably you, drawn in a way no camera could.
+      </p>
+      <ul>
+        <li>Four ways to rebuild it: dots, triangles, tiles, or pure black and white</li>
+        <li>Use your camera, drop a file, or just paste — it works on a phone too</li>
+        <li>Your photo never leaves your device; there is no server anywhere in it</li>
+        <li>Save the result as a PNG big enough to print</li>
+      </ul>
+      <span class="go">Try it on your face →</span>
+    </div>
+  </a>
+
   <a class="feature" href="play/loom/index.html">
     <div class="fstage">
       <canvas id="loomCanvas"></canvas>
@@ -395,8 +419,8 @@
     </div>
     <p class="colophon">
       No frameworks, no build step, no dependencies — every page here is plain HTML, CSS and
-      JavaScript, about 12,500 lines of it, with the engine behind Loom and each of the six
-      tools unit-tested: 106 tests, run in CI before anything is published.
+      JavaScript, about 14,000 lines of it, with the engine behind Portrait, Loom and each
+      of the six tools unit-tested: 130 tests, run in CI before anything is published.
       Written with Claude Code; the commit history is the full record.
     </p>
   </footer>
@@ -420,6 +444,7 @@ const loadModules = Promise.all([
   import('./shared/briefings.js'),
   import('./play/loom/engine.js'),
   import('./play/loom/presets.js'),
+  import('./play/portrait/engine.js'),
 ]);
 
 const TOYS = [
@@ -898,6 +923,85 @@ loadModules.then(([{ BRIEFINGS, BRIEFING_ORDER }]) => {
     This page reads its content from ES modules, which browsers refuse to load from a
     <code>file://</code> address. Run <b>npx http-server</b> in the repo and open it over
     localhost, or use the published site.</p>`;
+});
+
+/* ── the Portrait card ──────────────────────────────────────────────────────
+   This runs the real stippler on a real image, because the settling IS the
+   product and a still picture of it sells nothing. The source is one of Loom's
+   own presets — the two share this page, so there is no third thing to load.
+
+   It relaxes at 190x190 and draws at 380, which is the same trick the tool
+   itself uses: dot positions are continuous, so only the source needs pixels.
+   Then it holds the finished picture for a few seconds and starts again. */
+loadModules.then(([, loom, presets, portrait]) => {
+  const canvas = document.getElementById('portraitCanvas');
+  const cap = document.getElementById('portraitCap');
+  const ctx = canvas.getContext('2d', { alpha: false });
+  const SRC = 190, OUT = 380;
+  canvas.width = canvas.height = OUT;
+
+  // one Loom render, turned into the darkness map the dots chase
+  const g = loom.deserialize(structuredClone(presets.PRESETS[1].graph));   // Marble
+  const outNode = g.nodes.find((n) => n.type === 'output');
+  const img = loom.evaluate(g, outNode.id, SRC, SRC).image;
+  const rgba = loom.toRGBA(img);
+  const gray = portrait.luma(rgba, SRC, SRC);
+  const adjusted = portrait.adjust(gray, { contrast: 1.25 });
+  const weight = new Float32Array(adjusted.length);
+  for (let i = 0; i < weight.length; i++) weight[i] = 1 - adjusted[i];
+
+  const DOTS = 2600, PASSES = 34;
+  let stip = null, visible = false, holding = 0, seed = 5;
+
+  const reset = () => {
+    stip = new portrait.Stippler(weight, SRC, SRC, DOTS, seed, { start: 'uniform' });
+    holding = 0;
+  };
+  reset();
+
+  const paint = () => {
+    const s = OUT / SRC;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = '#f6f3ec';
+    ctx.fillRect(0, 0, OUT, OUT);
+    ctx.setTransform(s, 0, 0, s, 0, 0);
+    ctx.fillStyle = '#12141a';
+    const base = stip.spacing * 0.46;
+    for (let i = 0; i < stip.n; i++) {
+      const r = base * (0.18 + stip.weightAt(i) * 0.92);
+      ctx.beginPath();
+      ctx.arc(stip.pts[i * 2], stip.pts[i * 2 + 1], r, 0, 6.2832);
+      ctx.fill();
+    }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+  };
+
+  let last = performance.now();
+  function step(now) {
+    const dt = now - last; last = now;
+    if (visible) {
+      if (stip.passes < PASSES) {
+        stip.step();
+        paint();
+        cap.textContent = `settling · pass ${stip.passes}`;
+      } else {
+        holding += dt;
+        cap.textContent = `${DOTS.toLocaleString()} dots`;
+        if (holding > 4200) { seed = (seed * 7 + 13) % 9973; reset(); }
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  new IntersectionObserver((entries) => {
+    for (const e of entries) visible = e.isIntersecting;
+  }, { rootMargin: '150px' }).observe(canvas);
+
+  paint();
+  requestAnimationFrame(step);
+}).catch(() => {
+  const cap = document.getElementById('portraitCap');
+  if (cap) cap.textContent = 'open over http to see this run live';
 });
 
 /* ── the feature card ───────────────────────────────────────────────────────
