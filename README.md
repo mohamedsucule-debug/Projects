@@ -486,4 +486,4 @@ say, is part of building it.
 
 ---
 
-Written with [Claude Code](https://claude.ai/code); the commit history is the full record.
+The commit history is the full record.
