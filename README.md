@@ -5,9 +5,23 @@ no video of someone else using it.
 
 **→ [Open the playground](https://mohamedsucule-debug.github.io/Projects/)**
 
+| | | |
+|---|---|---:|
+| **I** | [Fiction](#i--fiction) — things to read | 3 |
+| **II** | [Physics you can touch](#ii--physics-you-can-touch) | 4 |
+| **III** | [Games](#iii--games) | 6 |
+| **IV** | [Instruments](#iv--instruments) | 6 |
+| **V** | [The serious ones](#v--the-serious-ones) — for engineers | 6 |
+
+Plain HTML, CSS and JavaScript. No framework, no build step, no dependencies.
+484 tests run in CI before anything here is published.
+
 ---
 
-## The big ones
+## I · Fiction
+
+Three things to **read** rather than play. Five minutes each, and each one is doing
+something with the browser that a book or a film cannot.
 
 ### [The Room](apps/room/) — a murder you solve by looking
 
@@ -125,6 +139,147 @@ text is what caught it. The ending has no trigger at all now.
 
 [Full write-up](apps/nightshift/README.md) — after you have read it.
 
+## II · Physics you can touch
+
+Nothing here is a recording. Every pixel is worked out from scratch while you watch,
+which is why you can put your finger in it and it responds properly instead of playing
+you a canned animation.
+
+### [Topple](apps/topple/) — a web page with weight
+
+A perfectly ordinary web page — until you swipe across it, and everything your
+finger passes through comes loose and falls. Cut the support out from under a
+paragraph and what was standing on it collapses on top. Then hit rebuild and
+watch the page assemble itself, one row at a time.
+
+Every element becomes a physics body the moment the page loads, but held in
+place: it collides and it holds things up until something releases it. That is
+what makes a swipe a cut rather than a button.
+
+**They stay real elements the whole time.** Nothing is drawn on a canvas and
+nothing is a picture — each element is moved with a transform, which changes
+where the browser paints it without changing where it thinks it is. The text is
+still text, still crisp, still selectable, lying in a heap on the floor. Putting
+it back is removing one style, and the headline returns to the exact pixel it
+started on.
+
+Underneath is a 2D rigid body engine written from scratch: separating-axis
+collision, contact points by face clipping, and sequential impulses. Four things
+separate a pile that stands from a pile that sags, and each was found by
+watching a stack fall over — contacts that remember their impulse between
+passes, overlap correction that never becomes real velocity, contacts recognised
+between frames (which took stable stacks from four boxes to eight), and sleeping
+bodies that look exactly like walls to the solver.
+
+Sleeping has to be done in groups. Stop one body on its own and the one resting
+against it gets a different answer, twitches, and wakes it straight back up —
+a pile of six oscillates between the two states for ever.
+
+[Full write-up](apps/topple/README.md), including where it gives up.
+
+### [Mercury](apps/mercury/) — liquid metal you can put your finger in
+
+A sheet of liquid metal under a sunset sky. Drag it and it ripples; drag the sky
+and you walk around it.
+
+**There is no 3D model in that page.** No mesh, no vertex data, no texture of
+anything, no library, no asset of any kind. The floating shape is four moving
+spheres blended by a formula, the metal is a flat plane whose height comes out
+of a physics simulation, and the sky is a gradient and a bright dot. Everything
+is worked out from those descriptions per pixel, sixty times a second.
+
+Nothing draws the distortion in the reflections. One pass solves a wave equation
+across a texture; the other fires a ray per pixel, and where it lands on metal it
+bounces off whatever tilt the waves left there and goes to see what is in the new
+direction. The ripples move the tilts, the tilts move the rays, and the
+reflection bends — the same way it does in the real world.
+
+The wave speed is 0.42 because the discrete wave equation is stable only while c²
+stays under a half, and past it the surface reaches infinity inside a second.
+There is a test that runs it at 0.69 and asserts it holds, then at 0.75 and
+asserts it comes apart — a test that only checked the working value would pass
+just as well if the number were meaningless.
+
+[Full write-up](apps/mercury/README.md), including the five things that looked
+wrong and why.
+
+### The rest of this chapter
+
+| | |
+|---|---|
+| **[Sandbox](play/sandbox/)** | Pour sand. Add water. Set it on fire and watch the smoke rise. Ten materials that all behave the way you'd expect — water puts out fire, oil floats, lava turns water to steam, acid eats through stone. |
+| **[Flow](play/flow/)** | Twenty thousand particles riding an invisible current. Push them around with your mouse, then save the result as a picture. |
+
+## III · Games
+
+No instructions, no tutorial, no menu. One control, and the first ten seconds teach you
+the rest.
+
+### [Ace](play/ace/) — tap to fly a paper plane through a canyon
+
+Don't hit the rocks. That's the whole game, and there is no menu, no difficulty
+select, no settings panel and no tutorial, because a game that has to be
+explained has already failed.
+
+The rules live in a DOM-free engine, which is what makes a game testable: a
+script can play a whole run and assert on the score. The world advances in
+fixed 1/120s slices however long the frame took — advancing by whatever `dt`
+arrived makes the game measurably easier on a 144Hz monitor, and a test plays an
+identical scripted run at 30, 60 and 144fps and asserts they match to six
+decimal places.
+
+That test failed twice before it passed, and **both times the test was wrong,
+not the engine** — once because the taps didn't land on a whole frame at all
+three rates, once because it checked the plane had fallen 0.5s after a flap when
+the arc doesn't come back down until 0.537s.
+
+The difficulty curve is tested by playing it: a bot that aims for the next
+opening scores 22–25 before dying at ~27 seconds, right about where the openings
+stop narrowing.
+
+[Full write-up](play/ace/README.md).
+
+### The rest of this chapter
+
+| | |
+|---|---|
+| **[Comet](play/orbit/)** | Move the mouse. Collect the gold. Don't touch the red. Fill the bar to clear a level, then again with mines and a spinning bar in the way. The levels never run out — the curve is authored by hand for the first eight and extrapolated after that, approaching a ceiling rather than climbing for ever. |
+| **[Stack](play/stack/)** | A block slides past. Tap. Whatever hangs over the edge of the block below is sliced off and falls away, so every sloppy drop makes the next one harder — the width of the top block *is* your remaining margin for error, drawn in the middle of the screen at all times. Land one dead centre and you lose nothing. |
+| **[Tether](play/tether/)** | You swing round a planet on a tether. Tap and you let go, flying off in a straight line — exactly the way you were already pointing, which is drawn on screen the whole time. If that line passes close enough to another planet it catches you; if it doesn't, you are in deep space. One button, one decision: when. |
+| **[Sumo](play/sumo/)** | Two players, one keyboard, one key each — or two thumbs on one phone. Hold your key and your arrow stops turning and you charge that way, so you are choosing a moment rather than steering. Knock the other one out of the ring before it closes under you. The physics was tuned by having two bots play a few thousand rounds and measuring how often a round was decided by a shove rather than by the ring; the first draft scored 9%. |
+| **[Tangle](play/tangle/)** | A daily connection puzzle. Turn the tiles until no connector is left dangling. The board is grown as a spanning tree and then scrambled, so it is provably solvable *before* you see it — the alternative is shipping an impossible board on day 46. Same board for everyone, every day, and a spoiler-free line to paste into a group chat at the end. |
+
+## IV · Instruments
+
+Things that make something and hand it back to you: a picture, a drum pattern, an
+island, an answer about your own data. You bring the input and they do the work.
+
+### [Sift](apps/sift/) — drop a CSV in and see what is actually in it
+
+Every column gets a type, a count of the gaps, a range and a shape. Then sort
+and filter a hundred thousand rows without it stuttering. Nothing is uploaded.
+
+**Splitting a line on commas is the single most common data bug in working
+software.** It silently truncates any row with a comma inside a quoted field,
+the row count still looks about right, and nobody notices until a customer asks
+where half their address went. So the parser is a character loop that handles
+the whole list — escaped quotes, embedded newlines, CRLF, a byte-order mark,
+ragged rows, and a trailing newline that must not invent a record that is not
+in the file. There is a test for each, because each is a bug I have seen ship.
+
+It also refuses to guess. `new Date('03/04/2025')` is March in the US and April
+almost everywhere else, so anything that is not ISO stays text rather than being
+silently wrong by up to eleven months.
+
+A hundred thousand rows across eleven columns is 1.1 million elements, and a
+browser handed that allocates for forty seconds and then scrolls at four frames
+a second. So it does not make them: a tall empty box keeps the scrollbar honest
+and only the ~36 rows actually on screen exist, recycled rather than rebuilt.
+Measured: **36 DOM rows at a hundred thousand, and 36 after scrolling to the
+bottom.**
+
+[Full write-up](apps/sift/README.md).
+
 ### [Morph](play/morph/) — seven layouts, no transitions anywhere
 
 One gallery, seven completely different layouts. Switch and every tile flies to
@@ -196,133 +351,14 @@ example: 5 boxes of 7 redrawn in 30ms, against 165ms for the whole graph cold.
 
 ---
 
-### [Topple](apps/topple/) — a web page with weight
-
-A perfectly ordinary web page — until you swipe across it, and everything your
-finger passes through comes loose and falls. Cut the support out from under a
-paragraph and what was standing on it collapses on top. Then hit rebuild and
-watch the page assemble itself, one row at a time.
-
-Every element becomes a physics body the moment the page loads, but held in
-place: it collides and it holds things up until something releases it. That is
-what makes a swipe a cut rather than a button.
-
-**They stay real elements the whole time.** Nothing is drawn on a canvas and
-nothing is a picture — each element is moved with a transform, which changes
-where the browser paints it without changing where it thinks it is. The text is
-still text, still crisp, still selectable, lying in a heap on the floor. Putting
-it back is removing one style, and the headline returns to the exact pixel it
-started on.
-
-Underneath is a 2D rigid body engine written from scratch: separating-axis
-collision, contact points by face clipping, and sequential impulses. Four things
-separate a pile that stands from a pile that sags, and each was found by
-watching a stack fall over — contacts that remember their impulse between
-passes, overlap correction that never becomes real velocity, contacts recognised
-between frames (which took stable stacks from four boxes to eight), and sleeping
-bodies that look exactly like walls to the solver.
-
-Sleeping has to be done in groups. Stop one body on its own and the one resting
-against it gets a different answer, twitches, and wakes it straight back up —
-a pile of six oscillates between the two states for ever.
-
-[Full write-up](apps/topple/README.md), including where it gives up.
-
-### [Mercury](apps/mercury/) — liquid metal you can put your finger in
-
-A sheet of liquid metal under a sunset sky. Drag it and it ripples; drag the sky
-and you walk around it.
-
-**There is no 3D model in that page.** No mesh, no vertex data, no texture of
-anything, no library, no asset of any kind. The floating shape is four moving
-spheres blended by a formula, the metal is a flat plane whose height comes out
-of a physics simulation, and the sky is a gradient and a bright dot. Everything
-is worked out from those descriptions per pixel, sixty times a second.
-
-Nothing draws the distortion in the reflections. One pass solves a wave equation
-across a texture; the other fires a ray per pixel, and where it lands on metal it
-bounces off whatever tilt the waves left there and goes to see what is in the new
-direction. The ripples move the tilts, the tilts move the rays, and the
-reflection bends — the same way it does in the real world.
-
-The wave speed is 0.42 because the discrete wave equation is stable only while c²
-stays under a half, and past it the surface reaches infinity inside a second.
-There is a test that runs it at 0.69 and asserts it holds, then at 0.75 and
-asserts it comes apart — a test that only checked the working value would pass
-just as well if the number were meaningless.
-
-[Full write-up](apps/mercury/README.md), including the five things that looked
-wrong and why.
-
-### [Sift](apps/sift/) — drop a CSV in and see what is actually in it
-
-Every column gets a type, a count of the gaps, a range and a shape. Then sort
-and filter a hundred thousand rows without it stuttering. Nothing is uploaded.
-
-**Splitting a line on commas is the single most common data bug in working
-software.** It silently truncates any row with a comma inside a quoted field,
-the row count still looks about right, and nobody notices until a customer asks
-where half their address went. So the parser is a character loop that handles
-the whole list — escaped quotes, embedded newlines, CRLF, a byte-order mark,
-ragged rows, and a trailing newline that must not invent a record that is not
-in the file. There is a test for each, because each is a bug I have seen ship.
-
-It also refuses to guess. `new Date('03/04/2025')` is March in the US and April
-almost everywhere else, so anything that is not ISO stays text rather than being
-silently wrong by up to eleven months.
-
-A hundred thousand rows across eleven columns is 1.1 million elements, and a
-browser handed that allocates for forty seconds and then scrolls at four frames
-a second. So it does not make them: a tall empty box keeps the scrollbar honest
-and only the ~36 rows actually on screen exist, recycled rather than rebuilt.
-Measured: **36 DOM rows at a hundred thousand, and 36 after scrolling to the
-bottom.**
-
-[Full write-up](apps/sift/README.md).
-
-## The game
-
-### [Ace](play/ace/) — tap to fly a paper plane through a canyon
-
-Don't hit the rocks. That's the whole game, and there is no menu, no difficulty
-select, no settings panel and no tutorial, because a game that has to be
-explained has already failed.
-
-The rules live in a DOM-free engine, which is what makes a game testable: a
-script can play a whole run and assert on the score. The world advances in
-fixed 1/120s slices however long the frame took — advancing by whatever `dt`
-arrived makes the game measurably easier on a 144Hz monitor, and a test plays an
-identical scripted run at 30, 60 and 144fps and asserts they match to six
-decimal places.
-
-That test failed twice before it passed, and **both times the test was wrong,
-not the engine** — once because the taps didn't land on a whole frame at all
-three rates, once because it checked the plane had fallen 0.5s after a flap when
-the arc doesn't come back down until 0.537s.
-
-The difficulty curve is tested by playing it: a bot that aims for the next
-opening scores 22–25 before dying at ~27 seconds, right about where the openings
-stop narrowing.
-
-[Full write-up](play/ace/README.md).
-
-## The toys
-
-Click any of these and they start immediately.
+### The rest of this chapter
 
 | | |
 |---|---|
-| **[Sumo](play/sumo/)** | Two players, one keyboard, one key each — or two thumbs on one phone. Hold your key and your arrow stops turning and you charge that way, so you are choosing a moment rather than steering. Knock the other one out of the ring before it closes under you. The physics was tuned by having two bots play a few thousand rounds and measuring how often a round was decided by a shove rather than by the ring; the first draft scored 9%. |
-| **[Tangle](play/tangle/)** | A daily connection puzzle. Turn the tiles until no connector is left dangling. The board is grown as a spanning tree and then scrambled, so it is provably solvable *before* you see it — the alternative is shipping an impossible board on day 46. Same board for everyone, every day, and a spoiler-free line to paste into a group chat at the end. |
-| **[Tether](play/tether/)** | You swing round a planet on a tether. Tap and you let go, flying off in a straight line — exactly the way you were already pointing, which is drawn on screen the whole time. If that line passes close enough to another planet it catches you; if it doesn't, you are in deep space. One button, one decision: when. |
-| **[Stack](play/stack/)** | A block slides past. Tap. Whatever hangs over the edge of the block below is sliced off and falls away, so every sloppy drop makes the next one harder — the width of the top block *is* your remaining margin for error, drawn in the middle of the screen at all times. Land one dead centre and you lose nothing. |
-| **[Sandbox](play/sandbox/)** | Pour sand. Add water. Set it on fire and watch the smoke rise. Ten materials that all behave the way you'd expect — water puts out fire, oil floats, lava turns water to steam, acid eats through stone. |
 | **[Beat Lab](play/beats/)** | A drum machine with no sound files in it. Every kick, snare and hat is generated from scratch by the browser. Tap squares, press play, make something. |
 | **[Islandsmith](play/island/)** | Press the button and a new world appears: coastline, mountains, forests, rivers, snow and a name. Every island comes from a single random number. |
-| **[Flow](play/flow/)** | Twenty thousand particles riding an invisible current. Push them around with your mouse, then save the result as a picture. |
-| **[Comet](play/orbit/)** | Move the mouse. Collect the gold. Don't touch the red. Fill the bar to clear a level, then again with mines and a spinning bar in the way. The levels never run out — the curve is authored by hand for the first eight and extrapolated after that, approaching a ceiling rather than climbing for ever. |
 
-## The serious ones
+## V · The serious ones
 
 Same approach, harder subjects — each one takes something normally invisible and
 puts it on screen.
