@@ -6,9 +6,9 @@
 <link rel="icon" href="favicon.svg" />
 <meta name="theme-color" content="#06070d" />
 <title>Playground — twenty-six things you can click</title>
-<meta name="description" content="A working restaurant booking system you drop into mid-service. A murder you solve by looking at things. A ghost story that uses your browser as its stage. A paper-plane arcade game you understand in one second. A photo rebuilt out of six thousand dots. Twenty-six things that all run in your browser, with nothing to install." />
+<meta name="description" content="Scroll a lighthouse through one night in a gale. Solve a locked-room murder by looking at nineteen things. Fly a paper plane through a canyon, rebuild your photo out of six thousand dots, or drop into a restaurant mid-service and sort out a double-booked table. Twenty-six things that all run in your browser, with nothing to install." />
 <meta property="og:title" content="Playground — twenty-six things you can click" />
-<meta property="og:description" content="Tap to fly a paper plane through a canyon. Then: a photo rebuilt out of six thousand dots, a gallery that morphs on springs, a node-based image studio, and six serious tools with plain-English explanations." />
+<meta property="og:description" content="Opens on two of them already running: a lighthouse keeper’s last night, and a locked-room murder. Below that, seventeen games, toys and instruments, and seven serious tools with plain-English explanations." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://mohamedsucule-debug.github.io/Projects/" />
 <meta property="og:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
@@ -16,7 +16,7 @@
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Playground — twenty-six things you can click" />
-<meta name="twitter:description" content="Tap to fly a paper plane through a canyon, rebuild your photo out of six thousand dots, or wire boxes together into a picture. All running in the browser." />
+<meta name="twitter:description" content="A lighthouse in a gale, a locked-room murder, a paper plane in a canyon, and your photo rebuilt out of six thousand dots. All running in the browser, nothing to install." />
 <meta name="twitter:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <link rel="canonical" href="https://mohamedsucule-debug.github.io/Projects/" />
 <style>
@@ -60,93 +60,196 @@
   nav.top a.ghost { color: var(--dim); text-decoration: none; font-weight: 500; }
   nav.top a.ghost:hover { color: var(--fg); }
 
-  /* ── hero ──────────────────────────────────────────────── */
-  /* Two columns: the argument on the left, the contents on the right. The
-     right third of this page used to be nine hundred pixels of nothing, and a
-     page organised in chapters ought to say so at the top — the contents is
-     the one thing that both fills the space and earns it. */
-  .hero {
-    padding: 52px 0 46px; position: relative;
-    display: grid; grid-template-columns: minmax(0, 1fr) 272px; gap: 20px 56px;
-    align-items: start;
-  }
-  .hero > .col { min-width: 0; }
+  /* ── the front door ────────────────────────────────────────
+     The page used to open with an argument and a contents list. Nobody reads
+     either. It opens now with two of the pieces already running at the size
+     they deserve — a lighthouse in a gale and a study with a body in it — and
+     the only instruction on the screen is which way is down.
 
-  .toc { border-top: 1px solid var(--line2); padding-top: 14px; }
-  .toc a.lead { background: rgba(90,169,255,.07); border-radius: 8px 8px 0 0;
-    padding-left: 8px; padding-right: 8px; }
-  .toc a.lead .t { font-weight: 700; }
-  .toc a {
-    display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 12px;
-    text-decoration: none; padding: 10px 2px;
-    border-bottom: 1px solid var(--line);
-    transition: background .14s, padding .14s;
+     The whole thing is one viewport tall on purpose: whatever else a landing
+     page does, it has to say "there is more below this" without saying it. */
+  .door {
+    min-height: min(100svh, 940px);
+    display: grid; grid-template-rows: auto auto minmax(300px, 1fr) auto;
+    padding: 0 20px 26px;
+    /* Everything inside the door lifts and fades as it leaves, driven by one
+       scroll handler writing a single number. It is the difference between a
+       page that begins and a page that just starts. */
+    --sd: 0;
   }
-  .toc a:hover { background: rgba(255,255,255,.035); padding-left: 8px; padding-right: 8px; }
-  .toc .n { font: 700 10.5px/1 var(--mono); letter-spacing: .14em; color: rgb(var(--accent)); }
-  .toc .t { font-size: 14.5px; font-weight: 600; letter-spacing: -.01em; }
-  .toc .c { font: 600 12.5px/1 var(--mono); color: var(--mute); }
-  .toc a:hover .c { color: var(--fg); }
-  .toc .total {
-    display: flex; justify-content: space-between; align-items: baseline;
-    padding: 14px 2px 0;
-    font: 700 10.5px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase;
-    color: var(--mute);
+  /* min-width: 0 matters more than it looks. A grid item's automatic minimum
+     size is its min-content, so one child that will not wrap — the nav, whose
+     links are told not to break — quietly widened the door's single column and
+     pushed the heading, the copy and both panes past the right edge with it.
+     One stubborn row should not get to set the width of the page. */
+  .door > * { width: 100%; min-width: 0; max-width: 1180px; margin-inline: auto; }
+  .door .say, .door .panes, .door .cue {
+    opacity: calc(1 - var(--sd) * 1.15);
+    transform: translateY(calc(var(--sd) * -34px));
   }
-  .toc .total b { color: var(--fg); font-size: 13px; letter-spacing: .1em; }
-  /* The column would otherwise stop halfway down and leave the same void the
-     contents was put here to fill. This is the one claim a technical reader
-     wants before they click anything, so it belongs at the top rather than
-     only in the footer. */
-  .toc .terms {
-    margin: 22px 0 0; font-size: 13px; line-height: 1.65; color: var(--mute);
-    border-top: 1px solid var(--line); padding-top: 16px;
-  }
-  .toc .terms b { color: var(--dim); font-weight: 600; }
-
-  @media (max-width: 940px) {
-    .hero { grid-template-columns: 1fr; gap: 34px; }
-    .toc { max-width: 420px; }
-  }
+  .door .say { padding: clamp(16px, 4vw, 40px) 0 clamp(18px, 3vw, 30px); }
   .eyebrow {
     font-size: 14px; font-weight: 500; color: var(--dim);
-    margin: 0 0 20px; letter-spacing: .01em;
+    margin: 0 0 18px; letter-spacing: .01em;
     display: inline-flex; align-items: center; gap: 8px;
     border: 1px solid var(--line); border-radius: 99px; padding: 8px 15px;
   }
   .eyebrow b { color: var(--fg); font-weight: 650; }
-  .hero h1 {
-    font-size: clamp(38px, 7.4vw, 78px);
-    line-height: 1.02; letter-spacing: -.045em; font-weight: 700;
-    margin: 0 0 22px; max-width: 15ch;
+  .door h1 {
+    font-size: clamp(34px, 5.6vw, 64px);
+    line-height: 1.03; letter-spacing: -.045em; font-weight: 700;
+    margin: 0 0 16px; max-width: 20ch;
   }
-  .hero h1 em {
+  .door h1 em {
     font-style: normal;
     background: linear-gradient(102deg, #ffd166, #ff4d8d 42%, #7dd3fc 88%);
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
-  .hero p {
-    font-size: clamp(16px, 2.1vw, 19px); line-height: 1.62; color: var(--dim);
-    max-width: 60ch; margin: 0 0 14px;
+  .door .sub {
+    font-size: clamp(15.5px, 1.7vw, 18px); line-height: 1.6; color: var(--dim);
+    max-width: 58ch; margin: 0;
   }
-  .hero .cta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 28px; }
-  .btn {
-    display: inline-flex; align-items: center; gap: 8px;
-    font-size: 15px; font-weight: 650; text-decoration: none;
-    padding: 14px 22px; border-radius: 13px; border: 1px solid transparent;
-    transition: transform .14s, box-shadow .14s, background .14s;
+  .door .sub b { color: var(--fg); font-weight: 650; }
+  /* The one claim a technical reader wants before they click anything, so it
+     goes above the fold rather than only in the colophon at the bottom. */
+  .door .facts {
+    margin: 16px 0 0; color: var(--mute); font-size: 13px; line-height: 1.6;
+    max-width: 96ch;
   }
-  .btn.primary { background: #ffd166; color: #140f02; box-shadow: 0 14px 40px -14px rgba(255,209,102,.8); }
-  .btn.primary:hover { transform: translateY(-2px); box-shadow: 0 20px 48px -14px rgba(255,209,102,.9); }
-  .btn.ghost { border-color: var(--line2); color: var(--fg); }
-  .btn.ghost:hover { background: rgba(255,255,255,.06); transform: translateY(-2px); }
+  .door .facts b { color: var(--dim); font-weight: 600; }
 
-  /* ── the headline piece ────────────────────────────────────
-     One thing above the chapters, at twice the size, because a grid where
-     everything is a card says everything took about the same amount of work.
-     This one did not. */
+  /* ── the two panes ─────────────────────────────────────────
+     Two live scenes, and the one you point at takes the room. Animating
+     grid-template-columns is the only way to do this that keeps both canvases
+     at their natural aspect instead of stretching them, which a transform
+     would. Browsers that will not interpolate it simply snap — the layout is
+     correct either way. */
+  .panes {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    transition: grid-template-columns .5s cubic-bezier(.2,.75,.25,1);
+    min-height: 0;
+  }
+  .panes:has(.pane:first-child:hover) { grid-template-columns: 1.34fr .66fr; }
+  .panes:has(.pane:last-child:hover) { grid-template-columns: .66fr 1.34fr; }
+
+  .pane {
+    position: relative; overflow: hidden; min-width: 0;
+    border: 1px solid var(--line2); border-radius: 22px;
+    background: #05060b; text-decoration: none; color: inherit;
+    display: flex; align-items: flex-end;
+    transition: border-color .3s, box-shadow .3s;
+  }
+  .pane canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  /* The scrim is what makes white text on a moving picture legible at every
+     moment of the animation rather than most of them — and how much scrim it
+     takes depends entirely on the picture. The lighthouse is a night sky and
+     needs almost none. The Room is a pencil drawing on cream paper, and the
+     same gradient left the heading white-on-white and the amber kicker gone
+     altogether. So the four stops are variables and the light one turns them
+     up, rather than both panes settling for whatever suits neither. */
+  .pane::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(to top,
+      rgba(4,5,9,var(--k1,.94)) 0%,
+      rgba(4,5,9,var(--k2,.76)) 30%,
+      rgba(4,5,9,var(--k3,.12)) 62%,
+      rgba(4,5,9,var(--k4,0)) 100%);
+  }
+  .pane.light { --k1: .97; --k2: .93; --k3: .56; --k4: .12; }
+  .pane .edge { position: relative; z-index: 2; padding: 22px 24px 24px; }
+  .pane .k {
+    display: inline-block; font: 700 10.5px/1 var(--mono); letter-spacing: .2em;
+    text-transform: uppercase; color: rgb(var(--accent)); margin-bottom: 11px;
+  }
+  .pane h2 { margin: 0 0 8px; font-size: clamp(24px, 2.7vw, 33px); letter-spacing: -.032em; }
+  .pane p {
+    margin: 0; color: var(--dim); font-size: 14.5px; line-height: 1.58;
+    max-width: 44ch;
+  }
+  .pane p b { color: var(--fg); font-weight: 650; }
+  .pane .go {
+    display: inline-block; margin-top: 15px;
+    font: 700 11.5px/1 var(--mono); letter-spacing: .13em; color: rgb(var(--accent));
+    border: 1px solid rgba(var(--accent), .4); border-radius: 99px; padding: 9px 15px;
+    transition: background .2s;
+  }
+  .pane:hover { border-color: rgba(var(--accent), .55);
+    box-shadow: 0 40px 90px -40px rgba(0,0,0,1), 0 0 0 1px rgba(var(--accent), .13); }
+  .pane:hover .go { background: rgba(var(--accent), .14); }
+  /* Whichever one you are not looking at steps back. Without this the pair
+     compete and neither wins. */
+  .panes:has(.pane:hover) .pane:not(:hover) canvas { opacity: .52; }
+  .pane canvas { transition: opacity .4s; }
+
+  /* ── the way down ──────────────────────────────────────────
+     A landing page's single most important job. It says how much is left, so
+     it is a sentence and a count rather than a naked chevron. */
+  .cue {
+    display: flex; align-items: center; justify-content: center; gap: 11px;
+    margin-top: 20px; padding: 6px;
+    text-decoration: none; color: var(--mute);
+    font: 600 12.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase;
+    transition: color .2s;
+  }
+  .cue:hover { color: var(--fg); }
+  .cue i { font-style: normal; animation: nudge 2.1s ease-in-out infinite; }
+  @keyframes nudge {
+    0%, 62%, 100% { transform: translateY(0); opacity: .55; }
+    80% { transform: translateY(5px); opacity: 1; }
+  }
+  @media (max-width: 560px) { .cue { font-size: 11px; letter-spacing: .07em; } }
+
+  /* On a phone the two panes stack, and a scene at half a viewport each plus
+     the copy is three screens of preamble before the first card. The panes get
+     short and the second one is a strip — enough to see it is alive and worth
+     a tap, which is all a pane has to do. */
+  @media (max-width: 760px) {
+    .door { min-height: 0; grid-template-rows: auto auto auto auto; }
+    .panes { grid-template-columns: 1fr; gap: 12px; }
+    .panes:has(.pane:hover) { grid-template-columns: 1fr; }
+    .pane { min-height: clamp(420px, 66svh, 540px); }
+    .pane + .pane { min-height: clamp(400px, 60svh, 500px); }
+    .panes:has(.pane:hover) .pane:not(:hover) canvas { opacity: 1; }
+  }
+
+  /* ── the scroll rail ───────────────────────────────────────
+     Two pixels down the left edge. It is the only thing on the page that
+     answers "how far in am I" at a glance, and it costs one scroll listener
+     that was already there for the door. */
+  .rail {
+    position: fixed; left: 0; top: 0; bottom: 0; width: 2px; z-index: 40;
+    background: rgba(255,255,255,.05); pointer-events: none;
+  }
+  .rail i {
+    display: block; width: 100%; height: 0%;
+    background: linear-gradient(180deg, #ffd166, #ff4d8d 46%, #7dd3fc);
+  }
+
+  /* ── reveals ───────────────────────────────────────────────
+     Cards arrive as you reach them, staggered a little across each row. This
+     is the part the page lost when it was reorganised into chapters, and the
+     part that made scrolling it feel like something rather than like paging
+     through a spreadsheet. */
+  .reveal { opacity: 0; transform: translateY(22px); }
+  .reveal.in {
+    opacity: 1; transform: none;
+    transition: opacity .62s cubic-bezier(.2,.7,.3,1) var(--d, 0s),
+                transform .62s cubic-bezier(.2,.7,.3,1) var(--d, 0s);
+  }
+  @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; } }
+  /* ── the big one ───────────────────────────────────────────
+     This was the front door for a while and it should not have been. It is a
+     working tool for people who already know what a covers book is — it
+     rewards twenty minutes and punishes ninety seconds, which is the wrong way
+     round for the first thing a stranger sees. So it sits down here at the
+     head of the serious section, at twice the size of a card, because a grid
+     where everything is the same size says everything took the same effort. */
+  /* The picture column used to be 1.35fr, and the floor plan letterboxes to
+     the room's own proportions inside it — so the taller the text column got,
+     the more empty floor there was above and below the plan. Widening the text
+     shortens it, and the picture follows it down. */
   .headline {
-    margin-top: 58px; display: grid; grid-template-columns: 1.35fr 1fr; gap: 0;
+    display: grid; grid-template-columns: 1.06fr 1fr; gap: 0;
     background: var(--card); border: 1px solid var(--line2); border-radius: 22px;
     overflow: hidden; text-decoration: none; color: inherit;
     transition: border-color .18s, box-shadow .18s, transform .18s;
@@ -158,12 +261,19 @@
   .headline .said { padding: 30px 32px 32px; display: flex; flex-direction: column; }
   .headline .kicker { font: 700 10.5px/1 var(--mono); letter-spacing: .2em; text-transform: uppercase;
     color: #5aa9ff; margin: 0 0 12px; }
-  .headline h2 { margin: 0 0 12px; font-size: clamp(27px, 3.1vw, 36px); letter-spacing: -.03em; }
+  .headline h2 { margin: 0 0 12px; font-size: clamp(25px, 2.5vw, 31px); letter-spacing: -.03em; }
   .headline p { margin: 0 0 13px; color: var(--dim); font-size: 15.5px; line-height: 1.62; }
   .headline p b { color: var(--fg); font-weight: 650; }
   .headline ul { margin: 4px 0 0; padding: 0; list-style: none; display: grid; gap: 7px; }
-  .headline li { color: var(--dim); font-size: 13.5px; display: flex; gap: 9px; align-items: baseline; }
-  .headline li::before { content: '→'; color: #5aa9ff; font-size: 12px; }
+  /* Not display:flex. Flex makes a separate flex item of every child ELEMENT,
+     so the bolded lead-in of the first bullet stopped being part of the
+     sentence and became a 90px column of its own with the rest of the line
+     stacked beside it. The marker is positioned instead and the text stays one
+     run of text. */
+  .headline li { color: var(--dim); font-size: 13.5px; line-height: 1.5;
+    position: relative; padding-left: 21px; }
+  .headline li::before { content: '→'; position: absolute; left: 0; top: 0;
+    color: #5aa9ff; font-size: 12px; }
   .headline .go { margin-top: auto; padding-top: 18px; font: 700 12px/1 var(--mono);
     letter-spacing: .1em; color: #5aa9ff; }
   @media (max-width: 860px) {
@@ -172,23 +282,17 @@
     .headline .said { padding: 22px 20px 24px; }
   }
 
-  /* ── chapters ──────────────────────────────────────────────
-     Nineteen things in one undifferentiated run is a catalogue. Broken into
-     named chapters, each with its own column count and its own accent, the
-     page gets a rhythm: the reader knows where they are, roughly how much is
-     left, and — the part that actually matters — what KIND of thing they are
-     looking at before they read a word of the card. */
-  .chapter { margin-top: 104px; }
-  .chapter:first-of-type { margin-top: 58px; }
+  /* ── sections ──────────────────────────────────────────────
+     There were five numbered chapters here, each with its own accent and its
+     own column count. It was tidy and it read as a filing system: by the time
+     you had been told what KIND of thing you were about to look at, you had
+     stopped wanting to look at it. Three sections now — the door, the run, the
+     serious ones — and each one is a thin rule and a sentence rather than a
+     lid. The mixing happens inside the run instead, by order. */
+  .chapter { margin-top: 96px; }
+  .chapter:first-of-type { margin-top: 74px; }
   .chapter > header { margin-bottom: 26px; }
   .chapter .tier { display: flex; align-items: center; gap: 13px; }
-  .chapter .num {
-    font: 700 12.5px/1 var(--mono); letter-spacing: .2em;
-    color: rgb(var(--accent)); flex: none;
-  }
-  /* A short solid rule between the numeral and the name, then the long fading
-     one after it. Without the first the numeral reads as a stray letter at the
-     start of the heading rather than as a chapter mark. */
   .chapter .tick { width: 22px; height: 1px; background: rgb(var(--accent)); opacity: .75; flex: none; }
   /* Scoped to the chapter's OWN header. Unscoped, `.chapter h2` reached every
      card title inside the chapter too, and set nineteen product names in
@@ -209,8 +313,8 @@
     margin: 13px 0 0; color: var(--dim); font-size: 16px; line-height: 1.62; max-width: 64ch;
   }
   .chapter .note b { color: var(--fg); font-weight: 650; }
-  /* An aside carries no numeral: it is a note about the work rather than more
-     of the work, and numbering it would make the contents a lie. */
+  /* An aside is a note about the work rather than more of the work, so its
+     heading is dimmed and it carries no accent rule of its own. */
   .chapter.aside > header h2 { color: var(--dim); }
 
   /* ── cards ─────────────────────────────────────────────── */
@@ -223,8 +327,13 @@
     grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--min, 340px)), 1fr));
   }
 
+  /* A column, so the picture can take up whatever height the row gives the card
+     beyond what its words need. Grid stretches every card in a row to the
+     tallest; as a block that surplus came out as dead space under the last
+     line of the blurb, which on a row led by a wide card was a hundred pixels
+     of nothing. The scene simply draws itself bigger instead. */
   a.card {
-    display: block; text-decoration: none; color: inherit;
+    display: flex; flex-direction: column; text-decoration: none; color: inherit;
     background: var(--card); border: 1px solid var(--line);
     border-radius: 20px; overflow: hidden; position: relative;
     transition: transform .18s cubic-bezier(.2,.7,.3,1), border-color .18s, box-shadow .18s;
@@ -234,22 +343,27 @@
     border-color: rgba(var(--accent, 255,255,255), .38);
     box-shadow: 0 26px 60px -28px rgba(0,0,0,.95), 0 0 0 1px rgba(var(--accent, 255,255,255), .10);
   }
-  a.card .stage { position: relative; aspect-ratio: 16 / 9; background: #05060b; overflow: hidden; }
-  /* The three pieces of fiction are the only things here that are ABOUT
-     something, so they get the taller frame and the larger type. A grid where
-     everything is the same size says everything is equally important, which
-     is never true and is the main reason portfolio grids read as inventory. */
-  /* Three across or one across, never two-and-an-orphan. auto-fill is right
-     for the chapters of six, where a short last row looks intentional; with
-     three cards it drops to 2+1 somewhere around a tablet and leaves the third
-     stranded beside an empty half-row. Full width is also the better look for
-     these three on a tablet — they read as book covers. */
-  .chapter[data-lead] .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  @media (max-width: 900px) { .chapter[data-lead] .grid { grid-template-columns: 1fr; } }
-  .chapter[data-lead] a.card .stage { aspect-ratio: 3 / 2; }
-  .chapter[data-lead] a.card .meta { padding: 20px 22px 24px; }
-  .chapter[data-lead] a.card h2 { font-size: 23px; margin-bottom: 7px; }
-  .chapter[data-lead] a.card p { font-size: 15px; }
+  a.card .stage { position: relative; aspect-ratio: 16 / 9; flex: 1 1 auto; background: #05060b; overflow: hidden; }
+  /* Some cards take two columns. Seventeen identical rectangles is a table of
+     contents with pictures; a few doubled up gives the run a shape, and the
+     ones that earn it are the ones whose pictures are worth the width.
+
+     dense flow is what keeps it from leaving holes: a single-width card later
+     in the list will back-fill the gap a wide one left beside it, so the
+     mosaic closes up instead of going gap-toothed at awkward widths. */
+  .grid { grid-auto-flow: dense; }
+  a.card.wide { grid-column: span 2; }
+  a.card.wide .stage { aspect-ratio: 2.3 / 1; }
+  a.card.wide .meta { padding: 20px 22px 24px; }
+  a.card.wide h2 { font-size: 23px; margin-bottom: 7px; }
+  a.card.wide p { font-size: 15px; max-width: 62ch; }
+  /* Below this the grid itself is down to one column, and a card spanning two
+     of one would push a second column into existence and hang off the side of
+     the page. The breakpoint is above where that happens, not at it. */
+  @media (max-width: 720px) {
+    a.card.wide { grid-column: auto; }
+    a.card.wide .stage { aspect-ratio: 16 / 9; }
+  }
   a.card canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   a.card .play {
     position: absolute; right: 14px; bottom: 14px; z-index: 2;
@@ -262,19 +376,20 @@
   a.card .meta { padding: 16px 18px 18px; }
   a.card h2 { margin: 0 0 5px; font-size: 19px; letter-spacing: -.02em; }
   a.card p { margin: 0; color: var(--dim); font-size: 14px; line-height: 1.55; }
+  /* The pill takes the colour of the card's kind, which is set per card rather
+     than per section. Running an eye down the page, the colour changing every
+     card is the mixing made visible — it says "these are different sorts of
+     thing" before a single word is read. */
   a.card .tag {
     position: absolute; left: 14px; top: 14px; z-index: 2;
-    background: rgba(8,10,16,.66); backdrop-filter: blur(10px);
-    border: 1px solid var(--line); border-radius: 99px;
-    padding: 6px 11px; font: 600 11px/1 var(--mono); letter-spacing: .04em; color: var(--fg);
+    background: rgba(8,10,16,.72); backdrop-filter: blur(10px);
+    border: 1px solid rgba(var(--accent, 255,255,255), .32); border-radius: 99px;
+    padding: 6px 11px; font: 600 11px/1 var(--mono); letter-spacing: .04em;
+    color: rgb(var(--accent, 255,255,255));
   }
 
-  /* ── sections ──────────────────────────────────────────── */
-  h3.section {
-    font-size: 13px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
-    color: var(--mute); margin: 74px 0 18px;
-  }
-  .chapter + .chapter { margin-top: 104px; }
+  /* ── odds and ends ─────────────────────────────────────── */
+  .chapter + .chapter { margin-top: 96px; }
   .lead { font-size: 17px; line-height: 1.65; color: var(--dim); max-width: 68ch; margin: 0 0 26px; }
   .lead b { color: var(--fg); font-weight: 650; }
 
@@ -295,15 +410,29 @@
      — a state machine stepping through its input, which is what half of these
      six are about — gives it the same visual anchor the others get from their
      cards, at a fifth of the height. */
+  /* The ratio changes with the width; it does NOT get a min-height. This strip
+     had `min-height: 88px` next to `aspect-ratio: 11/1`, and on a phone the
+     height won and the width was derived back from it — a 968px box inside a
+     350px column, cropped in silence by the `overflow-x: hidden` on the body.
+     Two rules that both want to decide one box's size, and the page only had
+     to be looked at on a phone for the loser to show. */
   .plate {
-    position: relative; aspect-ratio: 11 / 1; min-height: 88px;
+    position: relative; aspect-ratio: 11 / 1;
     border: 1px solid var(--line); border-radius: 16px;
     overflow: hidden; margin-bottom: 14px; background: #080a12;
   }
+  @media (max-width: 900px) { .plate { aspect-ratio: 6 / 1; } }
+  @media (max-width: 560px) { .plate { aspect-ratio: 3.2 / 1; } }
   .plate canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
   /* ── deep cuts ─────────────────────────────────────────── */
-  .deep { display: grid; gap: 13px; grid-template-columns: repeat(auto-fill, minmax(345px, 1fr)); }
+  /* min() against 100%, the same as the card grid. A bare 345px minimum is a
+     345px column whatever the page is, so below about a 360px phone the six
+     rows hung off the side — invisible, because the body hides the sideways
+     scroll. A minimum that cannot exceed the space available has no such
+     width to go wrong at. */
+  .deep { display: grid; gap: 13px;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 345px), 1fr)); }
   a.row {
     display: flex; align-items: center; gap: 14px; text-decoration: none;
     background: var(--card); border: 1px solid var(--line);
@@ -349,81 +478,134 @@
     .chapter:first-of-type { margin-top: 46px; }
     nav.top { font-size: 12.5px; gap: 8px; }
     nav.top a.ghost { white-space: nowrap; }
-    nav.top a.ghost:first-of-type { display: none; }
+    /* Something has to go at this width. It used to be the first link, which is
+       now the one that goes to the work — so it is the last one, which goes to
+       a paragraph about how I work, that goes instead. */
+    nav.top a.ghost:last-of-type { display: none; }
+  }
+  /* And on the narrowest phones still in use, only the link to the work. */
+  @media (max-width: 400px) {
+    nav.top a.ghost:nth-of-type(2) { display: none; }
   }
 
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
-<div class="page">
+
+<div class="rail" aria-hidden="true"><i id="railFill"></i></div>
+
+<!-- ── the front door ──────────────────────────────────────────────────────
+     Two of the pieces, running, at the size they were drawn for. Point at one
+     and it takes the room. -->
+<section class="door" id="door">
 
   <nav class="top">
     <span class="logo"></span>
     <b>Playground</b>
     <span class="spacer"></span>
+    <a class="ghost" href="#run">everything</a>
+    <a class="ghost" href="#deep">the serious ones</a>
     <a class="ghost" href="#how">how I work</a>
-    <a class="ghost" href="#deep">the serious stuff</a>
   </nav>
 
-  <header class="hero">
-    <div class="col">
+  <div class="say">
     <!-- ↓↓ YOUR NAME AND TITLE — edit these two lines ↓↓ -->
     <p class="eyebrow"><b>Mohamed Sucule</b> &middot; software engineer</p>
     <h1>Twenty-six things I built. <em>All of them run right here.</em></h1>
-    <p>
-      No videos, no screenshots, no “request a demo”. Click any of them and it starts
-      immediately — in your browser, on your phone, with nothing to install.
+    <p class="sub">
+      No videos, no screenshots, no &ldquo;request a demo&rdquo;. Both of these are live on
+      this page right now &mdash; <b>click either one and you are in it.</b> Then keep going:
+      there are twenty-four more below.
     </p>
-    <p>
-      Every card on this page is the real thing running, live, not a picture of it.
-      The one at the top is the big one.
+    <p class="facts">
+      Plain HTML, CSS and JavaScript &middot; <b>no framework, no build step, no dependencies</b>
+      &middot; 551 tests run in CI
     </p>
-    <div class="cta">
-      <a class="btn primary" href="#fiction">Start at the top →</a>
-      <a class="btn ghost" href="#how">How I work</a>
-    </div>
-    </div>
-    <nav class="toc" id="toc" aria-label="Contents"></nav>
-  </header>
+  </div>
 
-  <a class="headline" id="headline" href="apps/covers/index.html">
-    <div class="shot"><canvas></canvas></div>
-    <div class="said">
-      <p class="kicker">The one that took the longest</p>
-      <h2>Covers — a restaurant floor and booking system</h2>
-      <p>
-        You arrive at <b>19:42 on a Saturday</b>. Thirty-one bookings are in the book, eleven
-        parties are eating, three groups are waiting at the bar, and there is a double-booking
-        on table 2 that somebody needs to sort out before half past eight.
-      </p>
-      <p>
-        Drag a party onto a table and it tells you whether they fit — and when they do not,
-        <b>why not, and what to do instead.</b>
-      </p>
-      <ul>
-        <li><b>&ldquo;Yes — if one booking moves.&rdquo;</b> It searches the night for a rearrangement that turns a no into a table, and shows you exactly who it would shift</li>
-        <li>Re-plan the whole evening in one click, see what it buys before anything happens, then watch the moves fly across the floor</li>
-        <li>Open it in two windows and they stay in step — because a restaurant has more than one screen</li>
-        <li>Press play and the rest of the night runs: parties arrive, eat, pay and leave</li>
-        <li>No backend, no database, no signup — and sixty-seven tests on the rules alone</li>
-      </ul>
-      <div class="go">OPEN IT →</div>
-    </div>
-  </a>
+  <div class="panes">
+    <a class="pane" href="apps/lamplighter/index.html" style="--accent: 255,209,102">
+      <canvas id="paneLamp"></canvas>
+      <div class="edge">
+        <span class="k">a short story &middot; five minutes</span>
+        <h2>The Lamplighter</h2>
+        <p>
+          One night, and a keeper about to be replaced by a machine. <b>Scroll and the sun
+          goes down</b>, the gale gets up, the rain comes sideways, and the light keeps
+          turning. Not a photograph in it &mdash; the sea and the sky are worked out from scratch.
+        </p>
+        <span class="go">READ IT →</span>
+      </div>
+    </a>
+    <a class="pane light" href="apps/room/index.html" style="--accent: 224,177,100">
+      <canvas id="paneRoom"></canvas>
+      <div class="edge">
+        <span class="k">a murder &middot; ten minutes</span>
+        <h2>The Room</h2>
+        <p>
+          Edmund Harkness is dead at his desk and the door was locked from inside.
+          <b>Look at nineteen things</b>, question four people, and the notebook works out
+          for itself which two of them cannot both be true. Then name somebody.
+        </p>
+        <span class="go">SOLVE IT →</span>
+      </div>
+    </a>
+  </div>
 
-  <div id="toys"></div>
+  <a class="cue" href="#run">seventeen more games and toys below <i>↓</i></a>
+</section>
 
-  <section class="chapter" id="deep" style="--accent: 154,165,184">
+<div class="page">
+
+  <section class="chapter" id="run" style="--accent: 255,77,141">
     <header>
-      <div class="tier"><span class="num">V</span><span class="tick"></span><h2>The serious ones</h2><span class="rule"></span></div>
+      <div class="tier"><span class="tick"></span><h2>Everything else</h2><span class="rule"></span></div>
       <p class="note">
-        Same approach, harder subjects. Each one takes something normally invisible — what a
-        database is thinking, why servers disagree, where a slow page actually spends its time —
-        and puts it on screen so you can poke it. <b>You do not need to know the subject:
-        every one opens with a plain-English explanation of what you are looking at.</b>
+        Games, physics you can put your finger in, instruments that make you something,
+        and one horror story. <b>Shuffled on purpose</b> — two of a kind in a row gets
+        boring, so there never are two. Nothing here has a menu or a tutorial: the first
+        ten seconds teach you the rest.
       </p>
     </header>
+    <div class="grid" id="toys" style="--min:330px"></div>
+  </section>
+
+  <section class="chapter" id="deep" style="--accent: 90,169,255">
+    <header>
+      <div class="tier"><span class="tick"></span><h2>The serious ones</h2><span class="rule"></span></div>
+      <p class="note">
+        Same approach, harder subjects, and these take longer than ten seconds to get into.
+        Each one puts something normally invisible on screen — a night's bookings, what a
+        database is thinking, why servers disagree — and lets you poke it. <b>You do not need
+        to know the subject: every one opens by explaining what you are looking at.</b>
+      </p>
+    </header>
+
+    <a class="headline" id="headline" href="apps/covers/index.html">
+      <div class="shot"><canvas></canvas></div>
+      <div class="said">
+        <p class="kicker">The longest thing here, by a distance</p>
+        <h2>Covers — a restaurant floor and booking system</h2>
+        <p>
+          You arrive at <b>19:42 on a Saturday</b>. Thirty-one bookings are in the book, eleven
+          parties are eating, three groups are waiting at the bar, and there is a double-booking
+          on table 2 that somebody needs to sort out before half past eight.
+        </p>
+        <p>
+          Drag a party onto a table and it tells you whether they fit — and when they do not,
+          <b>why not, and what to do instead.</b>
+        </p>
+        <ul>
+          <li><b>&ldquo;Yes — if one booking moves.&rdquo;</b> It searches the night for a rearrangement that turns a no into a table, and shows you exactly who it would shift</li>
+          <li>Re-plan the whole evening in one click, see what it buys before anything happens, then watch the moves fly across the floor</li>
+          <li>Open it in two windows and they stay in step — because a restaurant has more than one screen</li>
+          <li>No backend, no database, no signup — and sixty-seven tests on the rules alone</li>
+        </ul>
+        <div class="go">OPEN IT →</div>
+      </div>
+    </a>
+
     <div class="plate"><canvas id="machine"></canvas></div>
     <div class="deep" id="deepList"></div>
   </section>
@@ -516,324 +698,166 @@ const loadModules = Promise.all([
   import('./play/morph/engine.js'),
 ]);
 
-/* The three pieces of fiction first — a murder, a story and a haunting. They
-   are the only cards on this grid where somebody who does not write software
-   calls a friend over, and the only ones that are about anything. After them,
-   never more than two of a kind in a row — six games together are good, but they are the same kind
-   of good, and a grid that opens with six of them says this is a person who
-   makes arcade games. */
+/* ── the run ─────────────────────────────────────────────────────────────────
+   One order, hand-picked, and the rule behind it is that no two neighbours are
+   the same kind of thing. Five games in a row are five good things and one
+   monotonous stretch of page: by the third you have stopped reading the words
+   and started scrolling past pictures. Mixed, every card is a change of
+   subject, and the reader keeps going because they cannot guess what is next.
+
+   `kind` is only here to keep that promise honest — it is checked below rather
+   than trusted, because this list gets reordered by hand and an accidental pair
+   is invisible until somebody scrolls past it and feels bored without knowing
+   why.
+
+   The Lamplighter and The Room are not in this list: they are the two panes of
+   the front door. Putting them here as well would be the same thing twice. */
 const TOYS = [
   {
-    href: 'apps/nightshift/index.html', tag: 'read it alone',
-    title: 'Nightshift',
-    chapter: 'fiction',
-    blurb: 'A coastal watch log from one night in 1987, transcribed from the original daybook. It opens with the weather and the shipping and it does not stay there. Read it to the end — it is reading you back.',
-    preview: nightshiftPreview,
-  },
-  {
-    href: 'apps/room/index.html', tag: 'a murder',
-    title: 'The Room',
-    chapter: 'fiction',
-    blurb: 'Edmund Harkness is dead at his desk and the door was locked from the inside. Look at nineteen things, question four people, and the notebook works out for itself which two of them cannot both be true. Then name somebody — and find out whether you could prove it.',
-    preview: roomPreview,
-  },
-  {
-    href: 'apps/lamplighter/index.html', tag: 'a short story',
-    title: 'The Lamplighter',
-    chapter: 'fiction',
-    blurb: 'Five minutes, one night, and a keeper who is about to be replaced by a machine. Scroll and the sun goes down, the gale gets up, the rain comes sideways and the light keeps turning. There is not a photograph in it — the sea and the sky are worked out from scratch.',
-    preview: lamplighterPreview,
-  },
-  {
-    href: 'apps/topple/index.html', tag: 'knock it over', gl: false,
-    title: 'Topple',
-    chapter: 'physics',
-    blurb: 'A perfectly ordinary web page — until you swipe across it, and everything your finger touches comes loose and falls. Cut the legs out and watch the rest collapse on top. Then hit rebuild and watch it put itself back together, one row at a time.',
-    preview: topplePreview,
-  },
-  {
-    href: 'play/ace/index.html', tag: 'game',
+    href: 'play/ace/index.html', tag: 'game', kind: 'game', wide: true,
     title: 'Ace',
-    chapter: 'games',
     blurb: 'Tap to fly a paper plane through a canyon. Do not hit the rocks. That is the whole game, and you will understand it before you have finished reading this.',
     preview: acePreview,
   },
   {
-    href: 'play/orbit/index.html', tag: 'game',
-    title: 'Comet',
-    chapter: 'games',
-    blurb: 'Move the mouse. Collect the gold. Do not touch the red. Fill the bar to clear a level, then do it again with mines and a spinning bar in the way. The levels never run out.',
-    preview: cometPreview,
+    href: 'apps/nightshift/index.html', tag: 'read it alone', kind: 'story',
+    title: 'Nightshift',
+    blurb: 'A coastal watch log from one night in 1987, transcribed from the original daybook. It opens with the weather and the shipping and it does not stay there. Read it to the end — it is reading you back.',
+    preview: nightshiftPreview,
   },
   {
-    href: 'apps/sift/index.html', tag: 'your data',
-    title: 'Sift',
-    chapter: 'instruments',
-    blurb: 'Drop a spreadsheet in and it tells you what is actually in it: what each column holds, where the gaps are, what the numbers look like. Then sort and filter a hundred thousand rows without it stuttering. Nothing is uploaded.',
-    preview: siftPreview,
+    href: 'apps/topple/index.html', tag: 'knock it over', kind: 'physics',
+    title: 'Topple',
+    blurb: 'A perfectly ordinary web page — until you swipe across it, and everything your finger touches comes loose and falls. Cut the legs out and watch the rest collapse on top. Then hit rebuild and watch it put itself back together, one row at a time.',
+    preview: topplePreview,
   },
   {
-    href: 'apps/mercury/index.html', tag: 'touch it', gl: true,
-    title: 'Mercury',
-    chapter: 'physics',
-    blurb: 'A sheet of liquid metal under a sunset sky. Drag it and it ripples, and the ripples bend the reflections as they spread. There is no 3D model and no texture in it — every pixel is worked out from scratch, sixty times a second.',
-    preview: mercuryPreview,
-  },
-  {
-    href: 'play/stack/index.html', tag: 'game',
-    title: 'Stack',
-    chapter: 'games',
-    blurb: 'A block slides past. Tap. Whatever hangs over the edge is sliced off and falls away, so every sloppy drop makes the next one harder. Land it dead centre and you lose nothing.',
-    preview: stackPreview,
-  },
-  {
-    href: 'play/flow/index.html', tag: 'toy',
-    title: 'Flow',
-    chapter: 'physics',
-    blurb: 'Twenty thousand particles riding an invisible current. Push them around with your mouse and save the result as a picture.',
-    preview: flowPreview,
-  },
-  {
-    href: 'play/sumo/index.html', tag: 'two players',
-    title: 'Sumo',
-    chapter: 'games',
-    blurb: 'Two people, one keyboard, one key each. Hold it: your arrow stops turning and you charge that way. Knock the other one out of the ring before it closes under you. There is a bot if you are on your own.',
-    preview: sumoPreview,
-  },
-  {
-    href: 'play/tangle/index.html', tag: 'daily puzzle',
-    title: 'Tangle',
-    chapter: 'games',
-    blurb: 'Tap a tile to turn it. The board is solved when no connector is left dangling. Everybody in the world gets the same board each day, and finishing gives you a line you can paste into a group chat.',
-    preview: tanglePreview,
-  },
-  {
-    href: 'play/sandbox/index.html', tag: 'sandbox',
-    title: 'Sandbox',
-    chapter: 'physics',
-    blurb: 'Pour sand. Add water. Set it on fire and watch the smoke rise. Ten materials that all behave the way you would expect them to, which is the whole trick.',
-    preview: sandPreview,
-  },
-  {
-    href: 'play/tether/index.html', tag: 'game',
-    title: 'Tether',
-    chapter: 'games',
-    blurb: 'You swing round a planet on a tether. Tap and you let go, flying off exactly the way you were already pointing. If the line passes close enough to another planet, it catches you. One decision: when.',
-    preview: tetherPreview,
-  },
-  {
-    href: 'play/beats/index.html', tag: 'music',
-    title: 'Beat Lab',
-    chapter: 'instruments',
-    blurb: 'A drum machine with no sound files in it — every kick and snare is generated from scratch. Press play, tap the squares, make something.',
-    preview: beatsPreview,
-  },
-  {
-    href: 'play/island/index.html', tag: 'generator',
-    title: 'Islandsmith',
-    chapter: 'instruments',
-    blurb: 'Press the button, get a brand new world: coastline, mountains, forests, rivers and a name. Every island comes from a single random number.',
-    preview: islandPreview,
-  },
-  {
-    href: 'play/portrait/index.html', tag: 'your photo',
+    href: 'play/portrait/index.html', tag: 'your photo', kind: 'instrument', wide: true,
     title: 'Portrait',
-    chapter: 'instruments',
     blurb: 'Drop in a photo of your face and watch six thousand dots crawl out of random noise until it is unmistakably you. It never leaves your device.',
     preview: portraitPreview,
   },
   {
-    href: 'play/morph/index.html', tag: 'interface',
+    href: 'play/orbit/index.html', tag: 'game', kind: 'game',
+    title: 'Comet',
+    blurb: 'Move the mouse. Collect the gold. Do not touch the red. Fill the bar to clear a level, then do it again with mines and a spinning bar in the way. The levels never run out.',
+    preview: cometPreview,
+  },
+  {
+    href: 'play/sandbox/index.html', tag: 'sandbox', kind: 'physics',
+    title: 'Sandbox',
+    blurb: 'Pour sand. Add water. Set it on fire and watch the smoke rise. Ten materials that all behave the way you would expect them to, which is the whole trick.',
+    preview: sandPreview,
+  },
+  {
+    href: 'play/beats/index.html', tag: 'music', kind: 'instrument',
+    title: 'Beat Lab',
+    blurb: 'A drum machine with no sound files in it — every kick and snare is generated from scratch. Press play, tap the squares, make something.',
+    preview: beatsPreview,
+  },
+  {
+    href: 'play/stack/index.html', tag: 'game', kind: 'game',
+    title: 'Stack',
+    blurb: 'A block slides past. Tap. Whatever hangs over the edge is sliced off and falls away, so every sloppy drop makes the next one harder. Land it dead centre and you lose nothing.',
+    preview: stackPreview,
+  },
+  {
+    href: 'apps/mercury/index.html', tag: 'touch it', kind: 'physics', gl: true, wide: true,
+    title: 'Mercury',
+    blurb: 'A sheet of liquid metal under a sunset sky. Drag it and it ripples, and the ripples bend the reflections as they spread. There is no 3D model and no texture in it — every pixel is worked out from scratch, sixty times a second.',
+    preview: mercuryPreview,
+  },
+  {
+    href: 'play/island/index.html', tag: 'generator', kind: 'instrument',
+    title: 'Islandsmith',
+    blurb: 'Press the button, get a brand new world: coastline, mountains, forests, rivers and a name. Every island comes from a single random number.',
+    preview: islandPreview,
+  },
+  {
+    href: 'play/tangle/index.html', tag: 'daily puzzle', kind: 'game',
+    title: 'Tangle',
+    blurb: 'Tap a tile to turn it. The board is solved when no connector is left dangling. Everybody in the world gets the same board each day, and finishing gives you a line you can paste into a group chat.',
+    preview: tanglePreview,
+  },
+  {
+    href: 'play/loom/index.html', tag: 'node editor', kind: 'instrument', wide: true,
+    title: 'Loom',
+    blurb: 'Make a picture by wiring boxes together. One makes fog, one bends whatever it is given, one swaps grey for colour. The last box is the picture.',
+    preview: loomPreview,
+  },
+  {
+    href: 'play/tether/index.html', tag: 'game', kind: 'game',
+    title: 'Tether',
+    blurb: 'You swing round a planet on a tether. Tap and you let go, flying off exactly the way you were already pointing. If the line passes close enough to another planet, it catches you. One decision: when.',
+    preview: tetherPreview,
+  },
+  {
+    href: 'play/flow/index.html', tag: 'toy', kind: 'physics',
+    title: 'Flow',
+    blurb: 'Twenty thousand particles riding an invisible current. Push them around with your mouse and save the result as a picture.',
+    preview: flowPreview,
+  },
+  {
+    href: 'play/morph/index.html', tag: 'interface', kind: 'instrument',
     title: 'Morph',
-    chapter: 'instruments',
     blurb: 'One gallery, seven layouts, and not one CSS transition. Switch again before the tiles land and they bend into the new arrangement mid-flight.',
     preview: morphPreview,
   },
   {
-    href: 'play/loom/index.html', tag: 'node editor',
-    title: 'Loom',
-    chapter: 'instruments',
-    blurb: 'Make a picture by wiring boxes together. One makes fog, one bends whatever it is given, one swaps grey for colour. The last box is the picture.',
-    preview: loomPreview,
+    href: 'play/sumo/index.html', tag: 'two players', kind: 'game',
+    title: 'Sumo',
+    blurb: 'Two people, one keyboard, one key each. Hold it: your arrow stops turning and you charge that way. Knock the other one out of the ring before it closes under you. There is a bot if you are on your own.',
+    preview: sumoPreview,
+  },
+  {
+    href: 'apps/sift/index.html', tag: 'your data', kind: 'instrument',
+    title: 'Sift',
+    blurb: 'Drop a spreadsheet in and it tells you what is actually in it: what each column holds, where the gaps are, what the numbers look like. Then sort and filter a hundred thousand rows without it stuttering. Nothing is uploaded.',
+    preview: siftPreview,
   },
 ];
 
-/* ── the chapters ────────────────────────────────────────────────────────────
-   Order, name, note, accent and rhythm. `min` is the narrowest a card in that
-   chapter is allowed to get, which is what decides how many fit across — so
-   each chapter keeps its own column count at full width and every one of them
-   still reflows to a phone without a breakpoint each.
+/* The one rule the order exists to keep, checked rather than remembered. */
+for (let i = 1; i < TOYS.length; i++) {
+  if (TOYS[i].kind === TOYS[i - 1].kind) {
+    console.warn(`${TOYS[i - 1].title} and ${TOYS[i].title} are both "${TOYS[i].kind}" and sit next to each other`);
+  }
+}
 
-   The order is an argument, not a filing system: the three things that are
-   ABOUT something come first, then the things that are startling to touch,
-   then the things that are fun, then the things that make something, then the
-   ones that need you to write software to care. It descends from "anyone" to
-   "engineers", so the further somebody scrolls the more specific it gets —
-   and nobody has to scroll past six arcade games to find out whether there is
-   anything here for them. */
-const CHAPTERS = [
-  {
-    id: 'fiction', num: 'I', name: 'Fiction', accent: '255,209,102', min: 360, lead: true,
-    note: 'Three things to <b>read</b> rather than play. Five minutes each, and each one is '
-        + 'doing something with the browser that a book or a film cannot. Best alone, with sound.',
-  },
-  {
-    id: 'physics', num: 'II', name: 'Physics you can touch', accent: '125,211,252', min: 262,
-    note: 'Nothing here is a recording or a video. Every pixel is worked out from scratch while '
-        + 'you watch, sixty times a second — which is why you can put your finger in it and it '
-        + '<b>responds properly</b> instead of playing you a canned animation.',
-  },
-  {
-    id: 'games', num: 'III', name: 'Games', accent: '255,77,141', min: 340,
-    note: 'You will understand each of these before you have finished reading its description. '
-        + 'That is the whole design brief: <b>no instructions, no tutorial, no menu</b> — one '
-        + 'control, and the first ten seconds teach you the rest.',
-  },
-  {
-    id: 'instruments', num: 'IV', name: 'Instruments', accent: '163,230,53', min: 340,
-    note: 'Things that make something and hand it back to you: a picture, a drum pattern, an '
-        + 'island, an answer about your own data. <b>You bring the input and they do the work.</b>',
-  },
-];
-
-/* The six serious ones are described in shared/briefings.js, which is also
-   what each of those pages shows in its own "what is this?" panel. One copy of
-   an explanation cannot drift out of step with another copy of it. */
-
-/* ── card construction ──────────────────────────────────────────────────── */
-const toysHost = document.getElementById('toys');
+/* ── one canvas, one live miniature ──────────────────────────────────────────
+   Four different things on this page hang a live scene on a canvas: the two
+   panes of the front door, the seventeen cards in the run, the Covers picture
+   and the strip above the serious ones. Every one of them wants the same four
+   things — size itself to its box at the device's pixel ratio, resize when the
+   box does, run only while it is on screen, and never ask a canvas for a
+   second kind of context. That was written out four times, which is three
+   places for the next change to it to be forgotten. */
 const running = new Set();
 
-/* Built chapter by chapter, and a card whose chapter does not exist is left
-   out rather than silently dropped into the first one — a typo in a chapter
-   name should lose a card loudly in the console, not shuffle it quietly into
-   the wrong section where it looks like a judgement call. */
-const grids = new Map();
-for (const ch of CHAPTERS) {
-  const section = document.createElement('section');
-  section.className = 'chapter';
-  section.id = ch.id;
-  section.style.setProperty('--accent', ch.accent);
-  if (ch.lead) section.dataset.lead = '';
-  section.innerHTML = `
-    <header>
-      <div class="tier"><span class="num">${ch.num}</span><span class="tick"></span><h2>${ch.name}</h2><span class="rule"></span></div>
-      <p class="note">${ch.note}</p>
-    </header>
-    <div class="grid" style="--min:${ch.min}px"></div>`;
-  toysHost.append(section);
-  grids.set(ch.id, section.querySelector('.grid'));
-}
-
-/* ── the contents ────────────────────────────────────────────────────────────
-   Counted from the data rather than typed, so the numbers in the contents and
-   the number of cards on the page cannot disagree — which is the sort of thing
-   nobody checks and everybody notices. */
-{
-  const toc = document.getElementById('toc');
-  const rows = [
-    { id: 'headline', num: '★', name: 'Covers', accent: '90,169,255', count: 1, lead: true },
-    ...CHAPTERS.map((ch) => ({ ...ch, count: TOYS.filter((t) => t.chapter === ch.id).length })),
-    { id: 'deep', num: 'V', name: 'The serious ones', accent: '154,165,184', count: 6 },
-  ];
-  for (const r of rows) {
-    const a = document.createElement('a');
-    if (r.lead) a.className = 'lead';
-    a.href = `#${r.id}`;
-    a.style.setProperty('--accent', r.accent);
-    a.innerHTML = `<span class="n">${r.num}</span><span class="t">${r.name}</span><span class="c">${r.count}</span>`;
-    toc.append(a);
-  }
-  const total = rows.reduce((n, r) => n + r.count, 0);
-  const foot = document.createElement('div');
-  foot.className = 'total';
-  foot.innerHTML = `<span>In total</span><b>${total}</b>`;
-  toc.append(foot);
-
-  const terms = document.createElement('p');
-  terms.className = 'terms';
-  terms.innerHTML = 'Plain HTML, CSS and JavaScript. <b>No framework, no build step, '
-    + 'no dependencies.</b> 551 tests run in CI before anything here is published.';
-  toc.append(terms);
-}
-
-for (const toy of TOYS) {
-  const grid = grids.get(toy.chapter);
-  if (!grid) { console.error(`${toy.title} is in chapter "${toy.chapter}", which does not exist`); continue; }
-  const a = document.createElement('a');
-  a.className = 'card';
-  a.href = toy.href;
-  a.innerHTML = `
-    <div class="stage"><canvas></canvas></div>
-    <span class="tag">${toy.tag}</span>
-    <span class="play">open →</span>
-    <div class="meta"><h2>${toy.title}</h2><p>${toy.blurb}</p></div>`;
-  grid.append(a);
-
-  const canvas = a.querySelector('canvas');
+function mount(canvas, preview, { gl = false, margin = '120px' } = {}) {
   /* A canvas gets exactly one kind of context for its whole life, so asking
-     for a 2d one here would quietly stop the card that wants WebGL from ever
-     getting it — getContext just returns null and the card stays black. */
-  const api = { canvas, ctx: toy.gl ? null : canvas.getContext('2d'), w: 0, h: 0, t: 0, alive: false };
+     for a 2d one here would quietly stop the scene that wants WebGL from ever
+     getting it — getContext just returns null and the panel stays black. */
+  const api = { canvas, ctx: gl ? null : canvas.getContext('2d'), w: 0, h: 0, t: 0, alive: false };
   const fit = () => {
     const r = canvas.getBoundingClientRect();
-    const dpr = toy.gl ? 1 : Math.min(2, devicePixelRatio || 1);
-    canvas.width = Math.max(1, Math.round(r.width * dpr * (toy.gl ? 0.5 : 1)));
-    canvas.height = Math.max(1, Math.round(r.height * dpr * (toy.gl ? 0.5 : 1)));
+    const dpr = gl ? 1 : Math.min(2, devicePixelRatio || 1);
+    canvas.width = Math.max(1, Math.round(r.width * dpr * (gl ? 0.5 : 1)));
+    canvas.height = Math.max(1, Math.round(r.height * dpr * (gl ? 0.5 : 1)));
     api.ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
     api.w = r.width; api.h = r.height;
     api.reset?.();
   };
   new ResizeObserver(fit).observe(canvas);
-  toy.preview(api);
+  preview(api);
   fit();
-
   new IntersectionObserver((entries) => {
     for (const e of entries) {
       api.alive = e.isIntersecting;
       if (e.isIntersecting) running.add(api); else running.delete(api);
     }
-  }, { rootMargin: '120px' }).observe(canvas);
-}
-
-/* The headline and chapter V's plate run on the same loop and the same
-   visibility rule as the cards, so they cost nothing while off screen. */
-{
-  const canvas = document.querySelector('#headline canvas');
-  const api = { canvas, ctx: canvas.getContext('2d'), w: 0, h: 0, t: 0, alive: false };
-  const fit = () => {
-    const r = canvas.getBoundingClientRect();
-    const dpr = Math.min(2, devicePixelRatio || 1);
-    canvas.width = Math.max(1, Math.round(r.width * dpr));
-    canvas.height = Math.max(1, Math.round(r.height * dpr));
-    api.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    api.w = r.width; api.h = r.height;
-  };
-  new ResizeObserver(fit).observe(canvas);
-  coversPreview(api);
-  fit();
-  new IntersectionObserver((entries) => {
-    for (const e of entries) { if (e.isIntersecting) running.add(api); else running.delete(api); }
-  }, { rootMargin: '160px' }).observe(canvas);
-}
-
-{
-  const canvas = document.getElementById('machine');
-  const api = { canvas, ctx: canvas.getContext('2d'), w: 0, h: 0, t: 0, alive: false };
-  const fit = () => {
-    const r = canvas.getBoundingClientRect();
-    const dpr = Math.min(2, devicePixelRatio || 1);
-    canvas.width = Math.max(1, Math.round(r.width * dpr));
-    canvas.height = Math.max(1, Math.round(r.height * dpr));
-    api.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    api.w = r.width; api.h = r.height;
-  };
-  new ResizeObserver(fit).observe(canvas);
-  machinePreview(api);
-  fit();
-  new IntersectionObserver((entries) => {
-    for (const e of entries) { if (e.isIntersecting) running.add(api); else running.delete(api); }
-  }, { rootMargin: '120px' }).observe(canvas);
+  }, { rootMargin: margin }).observe(canvas);
+  return api;
 }
 
 function tick() {
@@ -841,6 +865,107 @@ function tick() {
   requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
+
+/* ── reveals ─────────────────────────────────────────────────────────────────
+   Things arrive as you reach them. Cards are built here and the six serious
+   ones are appended later from a dynamic import, so this takes a root and gets
+   called twice rather than running once over a page that is not finished yet.
+
+   If the browser has no IntersectionObserver the class goes straight on: a
+   missing animation is a shrug, and a page whose content never becomes visible
+   is not. */
+const revealIO = 'IntersectionObserver' in window
+  ? new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        e.target.classList.add('in');
+        revealIO.unobserve(e.target);
+      }
+    }, { rootMargin: '0px 0px -11% 0px' })
+  : null;
+
+function watchReveals(root = document) {
+  for (const el of root.querySelectorAll('.reveal')) {
+    if (revealIO) revealIO.observe(el); else el.classList.add('in');
+  }
+}
+
+/* ── the front door ──────────────────────────────────────────────────────────
+   The two panes are the real scenes from the two pieces, not stills of them —
+   the same scene.js the story scrolls through, and the same plate the murder
+   is drawn on. A picture of a thing that runs is a worse advertisement for it
+   than the thing running. */
+mount(document.getElementById('paneLamp'), lamplighterPreview, { margin: '0px' });
+mount(document.getElementById('paneRoom'), roomPreview, { margin: '0px' });
+
+/* ── the run ─────────────────────────────────────────────────────────────────
+   Each card carries the accent of its kind rather than of a section it has
+   been filed under, which is what makes the mixing visible: scrolling the run
+   you see the colour change every card, and that IS the argument — these are
+   different kinds of thing, not seventeen variations on one. */
+const ACCENT = {
+  game: '255,77,141',
+  story: '255,209,102',
+  physics: '125,211,252',
+  instrument: '163,230,53',
+};
+
+const toysHost = document.getElementById('toys');
+for (const [i, toy] of TOYS.entries()) {
+  const a = document.createElement('a');
+  a.className = toy.wide ? 'card wide reveal' : 'card reveal';
+  a.href = toy.href;
+  a.style.setProperty('--accent', ACCENT[toy.kind] ?? '255,255,255');
+  /* Staggered across the row, not down the list: a delay proportional to the
+     index would have the last card waiting a second and a half after it is
+     already on screen. */
+  a.style.setProperty('--d', `${(i % 3) * 70}ms`);
+  a.innerHTML = `
+    <div class="stage"><canvas></canvas></div>
+    <span class="tag">${toy.tag}</span>
+    <span class="play">open →</span>
+    <div class="meta"><h2>${toy.title}</h2><p>${toy.blurb}</p></div>`;
+  toysHost.append(a);
+  mount(a.querySelector('canvas'), toy.preview, { gl: toy.gl });
+}
+
+/* Covers and the strip above the serious ones. */
+mount(document.querySelector('#headline canvas'), coversPreview, { margin: '160px' });
+mount(document.getElementById('machine'), machinePreview);
+
+for (const el of document.querySelectorAll('.chapter > header, #headline, .plate, .how > div, .card-me')) {
+  el.classList.add('reveal');
+}
+watchReveals();
+
+/* ── the rail, and the door on its way out ───────────────────────────────────
+   One scroll listener, rAF-throttled, writing two numbers: how far down the
+   page you are, and how far the door has gone. Everything either of them does
+   is done in CSS from those numbers. */
+{
+  const rail = document.getElementById('railFill');
+  const door = document.getElementById('door');
+  const panes = door.querySelector('.panes');
+  let queued = false;
+  const paint = () => {
+    queued = false;
+    const max = document.documentElement.scrollHeight - innerHeight;
+    rail.style.height = `${max > 0 ? Math.min(1, scrollY / max) * 100 : 0}%`;
+    const sd = Math.min(1, scrollY / Math.max(1, door.offsetHeight * 0.85));
+    door.style.setProperty('--sd', sd.toFixed(3));
+    /* Faded to nothing is still clickable, and the bottom of the door is still
+       on screen at that point — so a pane you cannot see would eat the click
+       meant for the first card. */
+    panes.style.pointerEvents = sd > 0.8 ? 'none' : '';
+  };
+  addEventListener('scroll', () => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(paint);
+  }, { passive: true });
+  addEventListener('resize', paint, { passive: true });
+  paint();
+}
 
 /* ── previews ───────────────────────────────────────────────────────────── */
 
@@ -2349,7 +2474,7 @@ loadModules.then(([{ BRIEFINGS, BRIEFING_ORDER }]) => {
   for (const key of BRIEFING_ORDER) {
     const b = BRIEFINGS[key];
     const a = document.createElement('a');
-    a.className = 'row';
+    a.className = 'row reveal';
     a.href = b.href;
     /* One line each, not a paragraph. The full explanation lives inside each
        tool now, where somebody who has decided to open it will actually read
@@ -2360,6 +2485,7 @@ loadModules.then(([{ BRIEFINGS, BRIEFING_ORDER }]) => {
       <span class="arrow">→</span>`;
     deep.append(a);
   }
+  watchReveals(deep);
 }).catch(() => {
   deep.innerHTML = `<p class="lead" style="margin:0">
     This page reads its content from ES modules, which browsers refuse to load from a

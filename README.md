@@ -5,71 +5,22 @@ no video of someone else using it.
 
 **→ [Open the playground](https://mohamedsucule-debug.github.io/Projects/)**
 
+The site opens on two of them already running — **The Lamplighter** and **The
+Room** — and everything else is below that, mixed rather than filed: no two
+neighbours are the same kind of thing. The longest single piece, **Covers**, is
+at the end with the other serious ones, because it is a working tool that repays
+twenty minutes and is the wrong thing to meet a stranger with.
+
 | | | |
 |---|---|---:|
-| **★** | [**Covers**](#-covers--a-restaurant-floor-and-booking-system) — a restaurant booking system | 1 |
-| **I** | [Fiction](#i--fiction) — things to read | 3 |
+| **I** | [Fiction](#i--fiction) — things to read, and the two the site opens on | 3 |
 | **II** | [Physics you can touch](#ii--physics-you-can-touch) | 4 |
 | **III** | [Games](#iii--games) | 6 |
 | **IV** | [Instruments](#iv--instruments) | 6 |
-| **V** | [The serious ones](#v--the-serious-ones) — for engineers | 6 |
+| **V** | [The serious ones](#v--the-serious-ones) — Covers, and six tools for engineers | 7 |
 
 Plain HTML, CSS and JavaScript. No framework, no build step, no dependencies.
 551 tests run in CI before anything here is published.
-
----
-
-## ★ Covers — a restaurant floor and booking system
-
-**[Open it](apps/covers/)** · You arrive at **19:42 on a Saturday**. Thirty-one
-bookings are in the book, eleven parties are eating, four are due in the next
-twenty minutes, one is twenty-five minutes late and not answering, three groups
-are waiting at the bar, and there is a double-booking on table 2 that somebody
-needs to sort out before half past eight.
-
-Drag a party onto a table and it tells you whether they fit — and when they
-don't, **why not, and what to do instead**.
-
-**Every table-management demo ever built opens on an empty grid with an "Add
-your first booking" button, and all of them are boring.** Not because the design
-is bad: an empty restaurant is not a restaurant, and nobody can tell whether an
-empty system is any good. So this one opens in the middle of service with the
-job already half done and going wrong in the ordinary ways. Everything else
-follows from that.
-
-The rules live in a module with no DOM in it, and the interesting part is what
-happens when the answer is no. *"Cannot seat"* is a dead end. This says
-`Table 1 seats 2. This is a party of 6. → 30 is free at 20:30`. Every refusal is
-a sentence a head waiter could say out loud and carries the way forward —
-another table at the same time if there is one, a different time if there is
-not. A lateral move applies on release; **a move that changes the time does
-not**, because that is a decision made with the guest on the phone.
-
-A booking holds a table for the meal *plus* the fifteen minutes to clear and
-re-lay it. Tables push together the way the room allows — `10 + 12` is not a
-join, because table 11 is between them — and two fours seats **nine**, not
-eight, because you gain the two ends that were nobody's seat. A test asserts the
-drawing agrees: at one point the floor plan drew eight chairs round a run the
-scheduler would happily sell to nine people.
-
-**The one conflict it ships with was not planted.** The night was hand-written
-to look fine, and `conflicts()` found it.
-
-Press play and the rest of the evening runs in about half a minute — parties
-arrive, sit when their table is clear and not before, work through their
-courses, pay and leave.
-
-**"Yes — if one booking moves."** When the answer is no, it searches the night
-for a rearrangement that makes it a yes — *"moving Bianchi from 20 to 11 gets
-them in at 20:42, half an hour sooner"* — and it will never move somebody who
-has already sat down. One click re-plans the whole evening, shows what that buys
-before anything happens, and then the moves fly across the floor plan. **Open it
-in two windows and they stay in step**, because a restaurant has more than one
-screen.
-
-[Full write-up](apps/covers/README.md), including the bug where pressing play
-reset the restaurant sixty times a second, and the one where the system offered
-a time it would then refuse.
 
 ---
 
@@ -416,7 +367,62 @@ example: 5 boxes of 7 redrawn in 30ms, against 165ms for the whole graph cold.
 ## V · The serious ones
 
 Same approach, harder subjects — each one takes something normally invisible and
-puts it on screen.
+puts it on screen. These are the ones that take longer than ten seconds to get
+into, which is why they are at the end rather than at the front.
+
+### [Covers](apps/covers/) — a restaurant floor and booking system
+
+**[Open it](apps/covers/)** · The longest thing here by a distance. You arrive
+at **19:42 on a Saturday**. Thirty-one bookings are in the book, eleven parties are eating, four are due in the next
+twenty minutes, one is twenty-five minutes late and not answering, three groups
+are waiting at the bar, and there is a double-booking on table 2 that somebody
+needs to sort out before half past eight.
+
+Drag a party onto a table and it tells you whether they fit — and when they
+don't, **why not, and what to do instead**.
+
+**Every table-management demo ever built opens on an empty grid with an "Add
+your first booking" button, and all of them are boring.** Not because the design
+is bad: an empty restaurant is not a restaurant, and nobody can tell whether an
+empty system is any good. So this one opens in the middle of service with the
+job already half done and going wrong in the ordinary ways. Everything else
+follows from that.
+
+The rules live in a module with no DOM in it, and the interesting part is what
+happens when the answer is no. *"Cannot seat"* is a dead end. This says
+`Table 1 seats 2. This is a party of 6. → 30 is free at 20:30`. Every refusal is
+a sentence a head waiter could say out loud and carries the way forward —
+another table at the same time if there is one, a different time if there is
+not. A lateral move applies on release; **a move that changes the time does
+not**, because that is a decision made with the guest on the phone.
+
+A booking holds a table for the meal *plus* the fifteen minutes to clear and
+re-lay it. Tables push together the way the room allows — `10 + 12` is not a
+join, because table 11 is between them — and two fours seats **nine**, not
+eight, because you gain the two ends that were nobody's seat. A test asserts the
+drawing agrees: at one point the floor plan drew eight chairs round a run the
+scheduler would happily sell to nine people.
+
+**The one conflict it ships with was not planted.** The night was hand-written
+to look fine, and `conflicts()` found it.
+
+Press play and the rest of the evening runs in about half a minute — parties
+arrive, sit when their table is clear and not before, work through their
+courses, pay and leave.
+
+**"Yes — if one booking moves."** When the answer is no, it searches the night
+for a rearrangement that makes it a yes — *"moving Bianchi from 20 to 11 gets
+them in at 20:42, half an hour sooner"* — and it will never move somebody who
+has already sat down. One click re-plans the whole evening, shows what that buys
+before anything happens, and then the moves fly across the floor plan. **Open it
+in two windows and they stay in step**, because a restaurant has more than one
+screen.
+
+[Full write-up](apps/covers/README.md), including the bug where pressing play
+reset the restaurant sixty times a second, and the one where the system offered
+a time it would then refuse.
+
+### Six more, for engineers
 
 **You do not need to know the subject.** Every one of these opens with a
 plain-English briefing: what it is, what is on screen, why anyone cares, and
