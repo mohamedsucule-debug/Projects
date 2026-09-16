@@ -64,6 +64,81 @@ fails if any of them is a bare code, or offers something that doesn't work.
 The system may re-seat you; it may not re-time you without asking, because that
 is a decision made with the guest on the phone.
 
+## Yes — if one booking moves
+
+Somebody rings up wanting a table for four at half eight and the answer is no.
+A good host doesn't stop there. They look at the book and see that if Bianchi
+went on table 11 instead of 20, the four could have 20 at 20:42 — half an hour
+sooner than anything else in the night.
+
+That is a search over rearrangements, and it is the most valuable thing a
+booking system can do, because every one it finds is a table's worth of revenue
+that would otherwise have walked down the road.
+
+```
+Yes — if one booking moves
+Aslan, party of 4. Table 20 at 20:42.
+
+As things stand the earliest is 21:12. Moving one booking gets them
+in at 20:42 — 30 minutes sooner.
+
+  Bianchi  4 · 21:00 · not arrived      20 → 11
+```
+
+Breadth-first, at most two moves deep — not because it couldn't go further but
+because a suggestion nobody can hold in their head is a suggestion nobody will
+take. *"Move three parties so this party can sit"* is not advice, it's a demand.
+**Nobody who has sat down is ever moved**, and there's a test for it: you cannot
+ask a table halfway through their main to shift, and a system that suggests it
+will never be trusted again.
+
+The people at the bar get the same treatment, quoted **in sequence** rather than
+in parallel. Costing all three independently gave all three the same answer —
+the same table, at the same time, by moving the same booking — which is a plan
+that works exactly once.
+
+## Re-plan the night
+
+The same idea over the whole evening. Take everything that hasn't sat down, lay
+it out again from scratch, and show what that buys before anything happens:
+
+| Covers | Seats spare | Joins | Conflicts |
+|---|---|---|---|
+| 88 · no change | 3 · **+2** | 2 · no change | 0 · **−1** |
+
+Greedy, biggest party first — a ten is the hardest thing in the book to place
+and leaving it till last is how you end up unable to seat it at all — then a
+local improvement pass. It is not optimal; table assignment with joins is
+bin-packing and optimal isn't on the table for a page that has to answer in a
+frame. It is reliably better than a book filled in by hand one phone call at a
+time, which is the thing it's actually competing with.
+
+Three rules it will not break:
+
+- **It proposes, it never applies.** A system that silently rearranges
+  somebody's evening is not a tool, it's a hazard.
+- **It won't offer a plan that is merely different.** Moving eleven bookings to
+  end up with the same number of covers is work, not improvement. `isImprovement`
+  rejects it and the dialog says so.
+- **It never loses a booking to make a number look better.** Anything it can't
+  place goes back where it was.
+
+The moves then *fly* across the floor plan, one after another, so the room
+visibly reorganises rather than blinking into a different arrangement.
+
+## The other station
+
+A restaurant has more than one screen: the host stand by the door, the pass, the
+manager's laptop. **Open this page in a second window.** Move a booking in one
+and watch it move in the other; the header shows `● 2 stations`.
+
+There's no server, and there doesn't need to be one for this — tabs on the same
+origin can talk to each other directly. It is honest about what it is:
+same-browser, not same-building. A real deployment puts a websocket where the
+channel is and changes nothing else in that file, because everything around it
+already treats an arriving change as something that happened somewhere it does
+not control.
+
 ## Turn times, and the fifteen minutes everybody forgets
 
 A booking does not occupy a table for the length of the meal. It occupies it for
@@ -189,8 +264,10 @@ one tap away.
 node tests/run.mjs covers
 ```
 
-53 of them, over the room, the turn times, the joins, the refusals, the night
-itself and the drawing. The ones worth reading:
+67 of them, over the room, the turn times, the joins, the refusals, the night
+itself, the drawing and the planner. The planner has the most, because it is the
+one part of this system that can make things worse — every failure mode below is
+one an optimiser reaches for on its own. The ones worth reading:
 
 ```
 ✓ a table is held for the meal and the turnaround, not just the meal
@@ -202,6 +279,13 @@ itself and the drawing. The ones worth reading:
 ✓ a time is never offered that the validator would then refuse
 ✓ nothing is ever offered in the past
 ✓ a refusal never suggests the table the party is already on
+✓ nothing that has sat down is ever moved
+✓ a replan is proposed, never applied
+✓ a replan never seats fewer people or strands anybody
+✓ a replan that is not better is not offered
+✓ a replan gives the same answer every time
+✓ a make-room plan works when you actually apply it
+✓ the bar is quoted in sequence, not three times for the same table
 ```
 
 ## Files
@@ -212,7 +296,8 @@ schedule.js  the rules — turn times, clashes, and why something is a no
 book.js      a Saturday night, already half underway
 service.js   what the room does while the clock runs
 plan.js      geometry — metres to pixels, and where the chairs go
+optimise.js  turning a no into a yes, and re-planning the night
 index.html   the only file that has ever heard of a pixel
 ```
 
-No dependencies, no build step, no backend. About 2,300 lines.
+No dependencies, no build step, no backend. About 3,000 lines.

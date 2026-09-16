@@ -69,6 +69,10 @@
   .chip.primary:hover { background: #ffc44d; }
   .chip.icon { padding: 0 9px; }
   .bar .grow { flex: 1; }
+  #stations { background: rgba(62,207,142,.14); border-color: rgba(62,207,142,.45);
+    color: #a8f0cf; cursor: default; }
+  #stations i { width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+    animation: blip 2s ease-in-out infinite; }
   .kbd { font: 600 10.5px/1 var(--mono); border: 1px solid var(--line2); border-radius: 5px;
     padding: 3px 5px; color: var(--mute); }
 
@@ -296,6 +300,58 @@
   .cmd-row em { font-style: normal; color: var(--mute); margin-left: auto; font-size: 11.5px;
     font-family: var(--mono); }
 
+  /* ── the replan ────────────────────────────────────────────────────────── */
+  .ledger { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+    background: var(--line); border: 1px solid var(--line); border-radius: 11px;
+    overflow: hidden; margin-bottom: 15px; }
+  .ledger div { background: var(--panel2); padding: 12px 13px; }
+  .ledger .k { font: 700 9.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase;
+    color: var(--mute); margin-bottom: 7px; }
+  .ledger .v { font: 700 21px/1 var(--mono); font-variant-numeric: tabular-nums; }
+  .ledger .d { font-size: 11.5px; margin-top: 5px; color: var(--mute); }
+  /* The delta is coloured by whether the change is GOOD, not by its sign.
+     Two more spare seats is not a win, and a green "+2" next to "seats spare"
+     is a dashboard lying to you in its own house style. */
+  .ledger .good .d { color: var(--green); }
+  .ledger .bad .d { color: var(--red); }
+  .ledger .flat .d { color: var(--mute); }
+  /* Four across is right on a laptop and clips the fourth column on a phone,
+     which is where the conflict count lives — the one number in the row
+     somebody actually needs to see. */
+  @media (max-width: 560px) { .ledger { grid-template-columns: repeat(2, 1fr); } }
+
+  .move { display: grid; grid-template-columns: 1fr auto auto auto; gap: 10px;
+    align-items: center; padding: 8px 11px; border-radius: 8px; background: var(--panel2);
+    border: 1px solid var(--line); margin-bottom: 4px; font-size: 13px; }
+  .move .who b { font-weight: 650; }
+  .move .who i { font-style: normal; color: var(--mute); font-size: 11.5px; margin-left: 6px; }
+  .move .was { font: 600 12px/1 var(--mono); color: var(--mute); text-decoration: line-through; }
+  .move .arr { color: var(--mute); }
+  .move .now { font: 700 12px/1 var(--mono); color: var(--green); }
+
+  /* A booking that has just moved flies from where it was to where it is, so
+     the room visibly reorganises instead of blinking into a new arrangement. */
+  .flyer { position: fixed; z-index: 65; pointer-events: none;
+    padding: 5px 9px; border-radius: 7px; font: 700 11.5px/1 var(--sans);
+    background: var(--green); color: #05130c; white-space: nowrap;
+    box-shadow: 0 10px 28px -8px rgba(0,0,0,.8); }
+  .tbl.landed .top { animation: land .9s ease-out; }
+  @keyframes land {
+    0% { stroke: var(--green); stroke-width: 4; }
+    100% { stroke-width: 1.5; }
+  }
+
+  .waitrow { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;
+    width: 100%; text-align: left; padding: 8px 9px; margin-bottom: 4px; border-radius: 9px;
+    background: var(--panel2); border: 1px solid var(--line); }
+  .waitrow:hover { border-color: var(--line2); background: #1b202b; }
+  .waitrow .nm { font-weight: 650; font-size: 13.5px; }
+  .waitrow .sub { color: var(--mute); font-size: 11.5px; margin-top: 2px; }
+  .waitrow .win { text-align: right; }
+  .waitrow .q { font: 700 13px/1 var(--mono); }
+  .waitrow .saves { font: 700 10px/1 var(--mono); color: var(--green); margin-top: 4px; }
+  .waitrow.none .q { color: var(--mute); }
+
   .toast { position: fixed; left: 50%; bottom: 62px; transform: translateX(-50%); z-index: 70;
     background: #151a24; border: 1px solid var(--line2); border-radius: 10px;
     padding: 10px 15px; font-size: 13px; box-shadow: 0 20px 50px -18px rgba(0,0,0,.9);
@@ -349,6 +405,7 @@
     <div class="brand"><b>COVERS</b><span>Bartlett &amp; Vine</span></div>
     <div class="sep"></div>
     <div class="when" id="when"></div>
+    <span class="chip" id="stations" hidden></span>
     <div class="clock">
       <button class="chip icon" id="back15" title="Back fifteen minutes">&minus;15</button>
       <div class="t num" id="clock">19:42</div>
@@ -357,6 +414,7 @@
     </div>
     <div class="grow"></div>
     <button class="chip warnish" id="alert" hidden></button>
+    <button class="chip" id="planBtn" title="Re-plan the rest of the night">◇ Re-plan</button>
     <button class="chip" id="cmdBtn">Search <span class="kbd">⌘K</span></button>
     <button class="chip primary" id="newBtn">+ Booking</button>
   </header>
@@ -418,6 +476,7 @@ import {
 } from './schedule.js';
 import { freshBook, freshWaitlist, NOW, SERVICE_DATE, STATUS, MENU_NOTES } from './book.js';
 import { tick, summary, offerTimes, waitFor, courseAt } from './service.js';
+import { replan, makeRoom, barPlan, applyMoves, value, isImprovement } from './optimise.js';
 import { scaleFor, chairs, groupChairs, outline, tableAt } from './plan.js';
 
 const $ = (id) => document.getElementById(id);
@@ -552,19 +611,23 @@ function renderRail() {
   section(rail, 'In house', inHouse.length, inHouse.map((b) => bookingRow(b)),
     'Empty room.');
 
-  const wl = waitlist.map((w) => {
-    const row = el('button', 'party');
-    row.append(el('div', 'pt num', `${now - w.since}m`));
-    const mid = el('div');
-    mid.append(el('div', 'nm', w.name));
-    const sub = el('div', 'sub');
-    sub.append(el('i', 'dot t-warn'));
-    sub.append(el('span', null, `${w.party} · quoted ${w.quoted}m`));
-    mid.append(sub);
-    row.append(mid);
-    const wait = waitFor(w.party, state);
-    row.append(el('div', 'tb num', wait ? hhmm(wait.at) : '—'));
-    row.addEventListener('click', () => seatWalkIn(w));
+  /* Not a list of names — a plan. Each party gets the time they can be given
+     as things stand, and the earlier time they could be given if the system is
+     allowed to move somebody who has not arrived yet. The gap between those
+     two numbers is a table you would otherwise lose. */
+  const quotes = barPlan(waitlist, book, { now });
+  const wl = quotes.map((q) => {
+    const row = el('button', 'waitrow' + (q.withMoves ? '' : ' none'));
+    const left = el('div');
+    left.append(el('div', 'nm', q.name));
+    left.append(el('div', 'sub', `${q.party} covers · ${now - q.since} min at the bar`));
+    row.append(left);
+    const win = el('div', 'win');
+    win.append(el('div', 'q num', q.withMoves ? hhmm(q.withMoves.at) : '—'));
+    if (q.saving) win.append(el('div', 'saves', `${q.saving} MIN SOONER`));
+    else if (q.withMoves && q.withMoves.at <= now + 5) win.append(el('div', 'saves', 'SEAT NOW'));
+    row.append(win);
+    row.addEventListener('click', () => quoteWalkIn(q));
     return row;
   });
   section(rail, 'At the bar', state.waitlist.length, wl, 'Nobody waiting.');
@@ -1021,6 +1084,7 @@ function announce(text) {
   state.feed = state.feed.slice(0, 40);
   toast(text);
   render();
+  window.__coversBroadcast?.();
 }
 
 let toastTimer = null;
@@ -1237,8 +1301,10 @@ function onFloorPointerDown(e) {
 
 /* ── walk-ins ────────────────────────────────────────────────────────────── */
 
-function seatWalkIn(w) {
-  const hit = findTables(w.party, state.now, state.book, { limit: 1 })[0];
+function seatWalkIn(w, tableIds = null) {
+  const hit = tableIds
+    ? { tableIds, label: tableIds.join(' + ') }
+    : findTables(w.party, state.now, state.book, { limit: 1 })[0];
   if (!hit) {
     const wait = waitFor(w.party, state);
     return toast(wait
@@ -1356,6 +1422,198 @@ function newBooking() {
   });
 }
 
+/* ── re-planning the night ───────────────────────────────────────────────────
+   The showpiece. Take everything that has not sat down and lay it out again
+   from scratch, then show what that buys before anything happens. */
+
+function showPlan() {
+  const plan = replan(state.book, { now: state.now });
+
+  if (!plan.moves.length || !isImprovement(plan.before, plan.after)) {
+    return openModal({
+      title: 'Tonight is already laid out well',
+      sub: `${plan.before.covers} covers on the book, ${plan.before.waste} seats going spare.`,
+      body: (pad) => {
+        pad.append(el('p', null,
+          'The planner re-seated every party that has not arrived yet and could not find an '
+          + 'arrangement that fits more people in, wastes fewer seats or clears a conflict. '
+          + 'Nothing has been changed.'));
+        pad.append(el('p', 'sub',
+          'It will not offer a plan that is merely different. Moving eleven bookings to end up '
+          + 'with the same number of covers is work, not improvement.'));
+      },
+    });
+  }
+
+  openModal({
+    title: `Re-plan: ${plan.moves.length} move${plan.moves.length === 1 ? '' : 's'}`,
+    sub: 'Nobody who has sat down is touched. Nothing happens until you say so.',
+    body: (pad) => {
+      const led = el('div', 'ledger');
+      const cell = (k, v, delta, moreIsBetter) => {
+        const better = delta > 0 === moreIsBetter;
+        const d = el('div', delta === 0 ? 'flat' : better ? 'good' : 'bad');
+        d.append(el('div', 'k', k));
+        d.append(el('div', 'v num', String(v)));
+        d.append(el('div', 'd', delta === 0 ? 'no change' : `${delta > 0 ? '+' : ''}${delta}`));
+        led.append(d);
+      };
+      cell('Covers', plan.after.covers, plan.after.covers - plan.before.covers, true);
+      cell('Seats spare', plan.after.waste, plan.after.waste - plan.before.waste, false);
+      cell('Joins', plan.after.joins, plan.after.joins - plan.before.joins, false);
+      cell('Conflicts', plan.after.conflicts, plan.after.conflicts - plan.before.conflicts, false);
+      pad.append(led);
+
+      for (const m of plan.moves) {
+        const row = el('div', 'move');
+        const who = el('div', 'who');
+        who.append(el('b', null, m.name));
+        who.append(el('i', null, `${m.party} · ${hhmm(m.at)}`));
+        row.append(who);
+        row.append(el('div', 'was num', m.fromLabel));
+        row.append(el('div', 'arr', '→'));
+        row.append(el('div', 'now num', m.toLabel));
+        pad.append(row);
+      }
+
+      if (plan.unplaced.length) {
+        pad.append(el('p', 'sub', `Could not place: ${plan.unplaced.join(', ')}. They keep their table.`));
+      }
+    },
+    footer: (foot) => {
+      const go = el('button', 'chip primary', `Apply ${plan.moves.length} moves`);
+      go.addEventListener('click', () => {
+        const from = new Map(plan.moves.map((m) => [m.id, m.from]));
+        applyMoves(state.book, plan.moves);
+        closeModal();
+        setView('floor');
+        render();
+        flyMoves(plan.moves, from);
+        announce(`Re-planned — ${plan.moves.length} moves, `
+          + `${plan.after.waste} seats spare, ${plan.after.conflicts} conflicts`);
+      });
+      foot.append(go);
+    },
+  });
+}
+
+/**
+ * Show the moves happening on the floor plan.
+ *
+ * A booking that has moved flies from the table it was on to the table it is
+ * on now. Without it the room simply blinks into a different arrangement and
+ * the most interesting thing the system does is invisible.
+ */
+function flyMoves(moves, fromMap) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const centre = (ids) => {
+    const g = [...document.querySelectorAll('.tbl')].find((n) =>
+      (n.dataset.tables || '').split(',').map(Number).some((id) => ids.includes(id)));
+    if (!g) return null;
+    const r = g.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2, node: g };
+  };
+
+  moves.forEach((m, i) => {
+    const a = centre(fromMap.get(m.id) || m.from);
+    const b = centre(m.to);
+    if (!a || !b) return;
+    setTimeout(() => {
+      const chip = el('div', 'flyer', `${m.name} ${m.party}`);
+      chip.style.left = a.x + 'px';
+      chip.style.top = a.y + 'px';
+      chip.style.transform = 'translate(-50%, -50%)';
+      chip.style.transition = 'left .55s cubic-bezier(.4,0,.2,1), top .55s cubic-bezier(.4,0,.2,1), opacity .3s .45s';
+      document.body.append(chip);
+      requestAnimationFrame(() => {
+        chip.style.left = b.x + 'px';
+        chip.style.top = b.y + 'px';
+      });
+      setTimeout(() => {
+        chip.remove();
+        b.node.classList.add('landed');
+        setTimeout(() => b.node.classList.remove('landed'), 900);
+      }, 620);
+    }, i * 120);
+  });
+}
+
+/* ── seating somebody from the bar, moving a booking if that is what it takes ── */
+
+function quoteWalkIn(q) {
+  if (!q.withMoves) {
+    return toast(`Nothing for a party of ${q.party} in the next two hours.`, true);
+  }
+  const { at, plan } = q.withMoves;
+  const seatNow = at <= state.now + 1;
+
+  if (!plan.moves.length) {
+    if (seatNow) return seatWalkIn(q, plan.tableIds);
+    return openModal({
+      title: `${q.name}, party of ${q.party}`,
+      sub: `Table ${plan.label} at ${hhmm(at)} — nothing needs moving.`,
+      body: (pad) => {
+        pad.append(el('p', null, `They have been at the bar ${state.now - q.since} minutes. `
+          + `Quote them ${hhmm(at)} and put them in the book.`));
+      },
+      footer: (foot) => {
+        const go = el('button', 'chip primary', `Book them at ${hhmm(at)}`);
+        go.addEventListener('click', () => { bookFromBar(q, at, plan.tableIds); closeModal(); });
+        foot.append(go);
+      },
+    });
+  }
+
+  openModal({
+    title: `Yes — if one booking moves`,
+    sub: `${q.name}, party of ${q.party}. Table ${plan.label} at ${hhmm(at)}.`,
+    body: (pad) => {
+      pad.append(el('p', null,
+        q.plain != null
+          ? `As things stand the earliest is ${hhmm(q.plain)}. Moving ${plan.moves.length === 1 ? 'one booking' : `${plan.moves.length} bookings`} `
+            + `gets them in at ${hhmm(at)} — ${q.saving} minutes sooner.`
+          : `There is nothing for them at all as things stand. Moving `
+            + `${plan.moves.length === 1 ? 'one booking' : `${plan.moves.length} bookings`} gets them a table at ${hhmm(at)}.`));
+      for (const m of plan.moves) {
+        const row = el('div', 'move');
+        const who = el('div', 'who');
+        who.append(el('b', null, m.name));
+        who.append(el('i', null, `${m.party} · ${hhmm(m.at)} · not arrived`));
+        row.append(who);
+        row.append(el('div', 'was num', m.fromLabel));
+        row.append(el('div', 'arr', '→'));
+        row.append(el('div', 'now num', m.toLabel));
+        pad.append(row);
+      }
+    },
+    footer: (foot) => {
+      const go = el('button', 'chip primary', seatNow ? 'Move and seat them' : `Move and book ${hhmm(at)}`);
+      go.addEventListener('click', () => {
+        const from = new Map(plan.moves.map((m) => [m.id, m.from]));
+        applyMoves(state.book, plan.moves);
+        closeModal();
+        setView('floor');
+        if (seatNow) seatWalkIn(q, plan.tableIds);
+        else bookFromBar(q, at, plan.tableIds);
+        flyMoves(plan.moves, from);
+      });
+      foot.append(go);
+    },
+  });
+}
+
+function bookFromBar(q, at, tableIds) {
+  const b = {
+    id: 'b' + (++state.seq), name: q.name, party: q.party, at,
+    tableIds: [...tableIds], status: 'confirmed', phone: q.phone,
+    note: `Waited at the bar from ${hhmm(q.since)}.`, tag: 'from the bar', edited: true,
+  };
+  state.book.push(b);
+  state.waitlist = state.waitlist.filter((x) => x.id !== q.id);
+  state.selected = b.id;
+  announce(`${q.name} booked at ${hhmm(at)} on ${tableIds.join(' + ')}`);
+}
+
 /* ── the command palette ─────────────────────────────────────────────────── */
 
 function palette() {
@@ -1377,6 +1635,7 @@ function palette() {
   const actions = [
     { label: 'Run the service', hint: 'space', run: () => play(true) },
     { label: 'Take a booking', hint: '⌘N', run: newBooking },
+    { label: 'Re-plan the night', hint: '', run: showPlan },
     { label: 'Floor plan', hint: '1', run: () => setView('floor') },
     { label: 'Timeline', hint: '2', run: () => setView('timeline') },
     { label: 'Diary', hint: '3', run: () => setView('diary') },
@@ -1470,6 +1729,7 @@ const nudge = (by) => setNow(Math.round((state.now + by) / 15) * 15);
 $('fwd15').addEventListener('click', () => nudge(15));
 $('back15').addEventListener('click', () => nudge(-15));
 $('newBtn').addEventListener('click', newBooking);
+$('planBtn').addEventListener('click', showPlan);
 $('cmdBtn').addEventListener('click', palette);
 $('veil').addEventListener('click', (e) => { if (e.target === $('veil')) closeModal(); });
 
@@ -1502,6 +1762,90 @@ render();
 
 /* A handle for driving it from a script, which is how every screen in this
    thing was checked. */
+/* ── the other station ───────────────────────────────────────────────────────
+   A restaurant has more than one screen: the host stand by the door, the pass,
+   the manager's laptop in the office. They all show the same service, and a
+   change on one appears on the others — which is the single hardest thing to
+   fake in a demo and the first thing anyone asks about.
+
+   There is no server here and there does not need to be one for this: tabs on
+   the same origin can talk to each other directly. Open this page in a second
+   window, move a booking in one, and watch it move in the other.
+
+   Honest about what it is: this is same-browser, not same-building. A real
+   deployment puts a websocket where the channel is and changes nothing else in
+   this file, because everything below already treats an arriving change as
+   something that happened somewhere it does not control. */
+
+const STATION = Math.random().toString(36).slice(2, 8);
+let bus = null;
+const peers = new Map();
+
+try { bus = new BroadcastChannel('covers.service'); } catch { /* no channel, no sync */ }
+
+if (bus) {
+  bus.onmessage = (e) => {
+    const msg = e.data;
+    if (!msg || msg.from === STATION) return;
+    peers.set(msg.from, Date.now());
+
+    if (msg.kind === 'hello') {
+      /* Somebody just opened a second window. Tell them what the night looks
+         like, so they do not start from the seed while this one is at 21:15. */
+      post('state');
+      showStations();
+      return;
+    }
+    if (msg.kind === 'ping') { showStations(); return; }
+    if (msg.kind === 'state') {
+      applyRemote(msg);
+      toast(`Updated from station ${msg.from}`);
+      return;
+    }
+  };
+
+  const post = (kind) => {
+    if (!bus) return;
+    try {
+      bus.postMessage(kind === 'state'
+        ? { kind, from: STATION, book: state.book, waitlist: state.waitlist, now: state.now, seq: state.seq }
+        : { kind, from: STATION });
+    } catch { /* a book with something unclonable in it is not worth crashing over */ }
+  };
+
+  /* Structured-clone the whole book on every change. It is thirty-odd objects;
+     a diff would be faster and would also be a source of drift between two
+     screens that must agree, which is the one thing this cannot get wrong. */
+  window.__coversBroadcast = () => post('state');
+
+  const applyRemote = (msg) => {
+    play(false);
+    state.book = msg.book.map((b) => ({ ...b, tableIds: [...b.tableIds] }));
+    state.waitlist = msg.waitlist.map((w) => ({ ...w }));
+    state.now = msg.now;
+    state.seq = Math.max(state.seq, msg.seq || 0);
+    if (state.selected && !state.book.some((b) => b.id === state.selected)) state.selected = null;
+    render();
+  };
+
+  const showStations = () => {
+    const cutoff = Date.now() - 9000;
+    for (const [id, seen] of peers) if (seen < cutoff) peers.delete(id);
+    const n = peers.size + 1;
+    const chip = $('stations');
+    chip.hidden = n < 2;
+    chip.replaceChildren();
+    if (n >= 2) {
+      chip.append(el('i'));
+      chip.append(document.createTextNode(`${n} stations`));
+    }
+  };
+
+  post('hello');
+  setInterval(() => { post('ping'); showStations(); }, 3000);
+  addEventListener('beforeunload', () => { try { bus.close(); } catch { /* going anyway */ } });
+}
+
 window.covers = {
   state, setNow, play, select, render,
   summary: () => summary(state),

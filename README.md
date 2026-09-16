@@ -15,7 +15,7 @@ no video of someone else using it.
 | **V** | [The serious ones](#v--the-serious-ones) — for engineers | 6 |
 
 Plain HTML, CSS and JavaScript. No framework, no build step, no dependencies.
-537 tests run in CI before anything here is published.
+551 tests run in CI before anything here is published.
 
 ---
 
@@ -58,6 +58,14 @@ to look fine, and `conflicts()` found it.
 Press play and the rest of the evening runs in about half a minute — parties
 arrive, sit when their table is clear and not before, work through their
 courses, pay and leave.
+
+**"Yes — if one booking moves."** When the answer is no, it searches the night
+for a rearrangement that makes it a yes — *"moving Bianchi from 20 to 11 gets
+them in at 20:42, half an hour sooner"* — and it will never move somebody who
+has already sat down. One click re-plans the whole evening, shows what that buys
+before anything happens, and then the moves fly across the floor plan. **Open it
+in two windows and they stay in step**, because a restaurant has more than one
+screen.
 
 [Full write-up](apps/covers/README.md), including the bug where pressing play
 reset the restaurant sixty times a second, and the one where the system offered
@@ -469,6 +477,7 @@ play/loom/
   index.html            the editor
 apps/covers/
   floor.js              the room — tables, where they are, what can join what
+  optimise.js           turning a no into a yes, and re-planning the night
   schedule.js           the rules — turn times, clashes, and why something is a no
   book.js               a Saturday night, already half underway
   service.js            what the room does while the clock runs

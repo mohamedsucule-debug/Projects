@@ -7,6 +7,7 @@ import {
   hhmm, parseTime, LIVE, IN_HOUSE, holderOf, fitsInService, wayForward,
 } from '../apps/covers/schedule.js';
 import { freshBook, freshWaitlist, PLANTED_CONFLICT, NOW, STATUS, PROGRESSION } from '../apps/covers/book.js';
+import { replan, makeRoom, barPlan, applyMoves, value, isImprovement, isPinned } from '../apps/covers/optimise.js';
 
 const at = (h, m = 0) => h * 60 + m;
 
@@ -527,4 +528,181 @@ test('nothing is ever offered in the past', () => {
   const sandhu = book.find((x) => x.name === 'Sandhu');
   const r = canSeat(sandhu, [1], book, { now: NOW });
   assert.ok(r.suggestion.at == null || r.suggestion.at >= NOW, 'and neither does a refusal');
+});
+
+/* ── turning a no into a yes ─────────────────────────────────────────────────
+   The optimiser is the one part of this system that can make things worse, so
+   it is the part with the most tests. Every failure mode below is one an
+   optimiser reaches for on its own: moving somebody who is eating, losing a
+   booking to make a number look better, or producing a plan that does not work
+   when you apply it. */
+
+test('nothing that has sat down is ever moved', () => {
+  /* You cannot ask a table halfway through their main to move, and a system
+     that suggests it will never be trusted again. */
+  const book = freshBook();
+  const eating = book.filter((b) => IN_HOUSE.has(b.status)).map((b) => [b.id, b.tableIds.join()]);
+  assert.ok(eating.length >= 8, 'the test needs people in the room');
+  const { moves } = replan(book, { now: NOW });
+  for (const m of moves) {
+    assert.ok(!eating.some(([id]) => id === m.id), `${m.name} is eating and was moved`);
+  }
+  for (const [id, tables] of eating) {
+    assert.equal(book.find((b) => b.id === id).tableIds.join(), tables, 'and the book is untouched');
+  }
+});
+
+test('a replan is proposed, never applied', () => {
+  /* Silently rearranging somebody's evening is not a tool, it is a hazard. */
+  const book = freshBook();
+  const snapshot = book.map((b) => `${b.id}:${b.tableIds.join()}@${b.at}`).join('|');
+  replan(book, { now: NOW });
+  assert.equal(book.map((b) => `${b.id}:${b.tableIds.join()}@${b.at}`).join('|'), snapshot);
+});
+
+test('applying a replan leaves a book with no conflicts', () => {
+  const book = freshBook();
+  const { moves, after } = replan(book, { now: NOW });
+  assert.ok(moves.length > 0, 'tonight has room to improve');
+  applyMoves(book, moves);
+  assert.deep(conflicts(book), []);
+  assert.equal(value(book).conflicts, after.conflicts);
+});
+
+test('a replan never seats fewer people or strands anybody', () => {
+  const book = freshBook();
+  const { before, after } = replan(book, { now: NOW });
+  assert.ok(after.covers >= before.covers, `${before.covers} covers became ${after.covers}`);
+  assert.ok(after.unseated <= before.unseated, 'somebody lost their table');
+  assert.ok(after.conflicts <= before.conflicts);
+});
+
+test('a replan that is not better is not offered', () => {
+  assert.ok(!isImprovement({ covers: 80, waste: 4, joins: 2, unseated: 0, conflicts: 0 },
+                           { covers: 74, waste: 0, joins: 0, unseated: 0, conflicts: 0 }),
+    'fewer covers is not an improvement however tidy the tables look');
+  assert.ok(!isImprovement({ covers: 80, waste: 4, joins: 2, unseated: 0, conflicts: 0 },
+                           { covers: 80, waste: 4, joins: 2, unseated: 1, conflicts: 0 }),
+    'stranding a booking is not an improvement');
+  assert.ok(!isImprovement({ covers: 80, waste: 4, joins: 2, unseated: 0, conflicts: 0 },
+                           { covers: 82, waste: 2, joins: 1, unseated: 0, conflicts: 1 }),
+    'nor is buying covers with a double-booking');
+  assert.ok(!isImprovement({ covers: 80, waste: 4, joins: 2, unseated: 0, conflicts: 0 },
+                           { covers: 80, waste: 4, joins: 2, unseated: 0, conflicts: 0 }),
+    'and neither is doing nothing');
+  assert.ok(isImprovement({ covers: 80, waste: 6, joins: 2, unseated: 0, conflicts: 1 },
+                          { covers: 80, waste: 4, joins: 2, unseated: 0, conflicts: 0 }));
+});
+
+test('a replan gives the same answer every time', () => {
+  /* A host who runs it twice and gets two different nights will run it zero
+     more times. */
+  const a = replan(freshBook(), { now: NOW }).moves.map((m) => `${m.id}→${m.toLabel}`).join('|');
+  const b = replan(freshBook(), { now: NOW }).moves.map((m) => `${m.id}→${m.toLabel}`).join('|');
+  assert.equal(a, b);
+});
+
+test('make-room finds the rearrangement that turns a no into a yes', () => {
+  const book = freshBook();
+  assert.deep(findTables(4, at(20, 30), book), [], 'nothing is free at 20:30 as things stand');
+  const plans = makeRoom(4, at(20, 30), book, { now: NOW });
+  assert.ok(plans.length > 0, 'but the room can be rearranged');
+  const best = plans[0];
+  assert.ok(best.moves.length >= 1 && best.moves.length <= 2);
+  for (const m of best.moves) assert.ok(m.from.length && m.to.length && m.fromLabel !== m.toLabel);
+});
+
+test('a make-room plan works when you actually apply it', () => {
+  /* The failure mode of every planner: a confident answer that falls apart on
+     contact with the thing it was planning. */
+  const book = freshBook();
+  /* The night ships with one conflict on purpose, so the bar is "no NEW
+     conflicts" rather than "no conflicts" — an absolute count here fails
+     against data that is deliberately imperfect, which is the test's fault
+     and not the planner's. */
+  const baseline = conflicts(book).length;
+  for (const party of [2, 4, 6]) {
+    for (const t of [at(20, 30), at(21), at(21, 30), at(22)]) {
+      const plan = makeRoom(party, t, book, { now: NOW })[0];
+      if (!plan) continue;
+      const trial = book.map((b) => ({ ...b, tableIds: [...b.tableIds] }));
+      applyMoves(trial, plan.moves);
+      const probe = { id: 'probe', name: 'Probe', party, at: t };
+      const check = canSeat(probe, plan.tableIds, trial, { now: NOW });
+      assert.ok(check.ok, `plan for ${party} at ${hhmm(t)} failed on application: ${check.message}`);
+      trial.push({ ...probe, tableIds: plan.tableIds, status: 'booked' });
+      assert.ok(conflicts(trial).length <= baseline,
+        `plan for ${party} at ${hhmm(t)} created a conflict: `
+        + conflicts(trial).map((c) => `${c.a.name}/${c.b.name}`).join(', '));
+    }
+  }
+});
+
+test('make-room will not move somebody who is eating', () => {
+  const book = freshBook();
+  const pinned = new Set(book.filter((b) => isPinned(b, NOW)).map((b) => b.id));
+  for (const party of [2, 4, 6, 8]) {
+    for (const t of [at(20), at(20, 30), at(21)]) {
+      for (const plan of makeRoom(party, t, book, { now: NOW })) {
+        for (const m of plan.moves) assert.ok(!pinned.has(m.id), `${m.name} is pinned`);
+      }
+    }
+  }
+});
+
+test('make-room respects how many people it is allowed to disturb', () => {
+  const book = freshBook();
+  for (const max of [1, 2]) {
+    for (const plan of makeRoom(6, at(21, 30), book, { now: NOW, maxMoves: max })) {
+      assert.ok(plan.moves.length <= max, `${plan.moves.length} moves with a limit of ${max}`);
+    }
+  }
+});
+
+test('make-room prefers disturbing nobody, then as few people as possible', () => {
+  const book = freshBook();
+  const plans = makeRoom(2, at(22), book, { now: NOW, limit: 5 });
+  assert.ok(plans.length > 0);
+  assert.equal(plans[0].moves.length, 0, 'there is a free table at 22:00, so nothing should move');
+  const counts = plans.map((p) => p.moves.length);
+  assert.deep(counts, [...counts].sort((a, b) => a - b), 'cheapest first');
+});
+
+test('the bar is quoted in sequence, not three times for the same table', () => {
+  /* Costing each waiting party independently gave all three the same answer:
+     the same table, at the same time, by moving the same booking — a plan that
+     works exactly once. */
+  const book = freshBook();
+  const quoted = barPlan(freshWaitlist(), book, { now: NOW }).filter((r) => r.withMoves);
+  assert.ok(quoted.length >= 2, 'at least two of them can be given a time');
+  const slots = quoted.map((r) => `${r.withMoves.at}:${r.withMoves.plan.label}`);
+  assert.equal(new Set(slots).size, slots.length, `two parties were promised ${slots}`);
+  assert.ok(quoted[0].party >= quoted[quoted.length - 1].party, 'biggest party quoted first');
+});
+
+test('the bar plan never quotes a time it could not honour', () => {
+  const book = freshBook();
+  const trial = book.map((b) => ({ ...b, tableIds: [...b.tableIds] }));
+  for (const r of barPlan(freshWaitlist(), book, { now: NOW })) {
+    if (!r.withMoves) continue;
+    assert.ok(r.withMoves.at >= NOW, 'and never one in the past');
+    applyMoves(trial, r.withMoves.plan.moves);
+    const probe = { id: `p${r.id}`, name: r.name, party: r.party, at: r.withMoves.at };
+    assert.ok(canSeat(probe, r.withMoves.plan.tableIds, trial, { now: NOW }).ok,
+      `${r.name} was quoted ${hhmm(r.withMoves.at)} on ${r.withMoves.plan.label}, which does not work`);
+    trial.push({ ...probe, tableIds: r.withMoves.plan.tableIds, status: 'booked' });
+  }
+});
+
+test('value counts what a layout is worth', () => {
+  const v = value([
+    { id: 'a', party: 4, tableIds: [10], status: 'seated' },
+    { id: 'b', party: 2, tableIds: [31], status: 'booked' },
+    { id: 'c', party: 2, tableIds: [], status: 'booked' },
+    { id: 'd', party: 9, tableIds: [10, 11], status: 'cancelled' },
+  ]);
+  assert.equal(v.covers, 6, 'a cancellation is not a cover');
+  assert.equal(v.waste, 8, 'two people on the ten-top wastes eight seats');
+  assert.equal(v.unseated, 1);
+  assert.equal(v.joins, 0);
 });
