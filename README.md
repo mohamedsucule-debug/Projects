@@ -1,12 +1,13 @@
 # Playground
 
-Twenty-five things I built. All of them run in a browser — no install, no signup,
+Twenty-six things I built. All of them run in a browser — no install, no signup,
 no video of someone else using it.
 
 **→ [Open the playground](https://mohamedsucule-debug.github.io/Projects/)**
 
 | | | |
 |---|---|---:|
+| **★** | [**Covers**](#-covers--a-restaurant-floor-and-booking-system) — a restaurant booking system | 1 |
 | **I** | [Fiction](#i--fiction) — things to read | 3 |
 | **II** | [Physics you can touch](#ii--physics-you-can-touch) | 4 |
 | **III** | [Games](#iii--games) | 6 |
@@ -14,7 +15,53 @@ no video of someone else using it.
 | **V** | [The serious ones](#v--the-serious-ones) — for engineers | 6 |
 
 Plain HTML, CSS and JavaScript. No framework, no build step, no dependencies.
-484 tests run in CI before anything here is published.
+537 tests run in CI before anything here is published.
+
+---
+
+## ★ Covers — a restaurant floor and booking system
+
+**[Open it](apps/covers/)** · You arrive at **19:42 on a Saturday**. Thirty-one
+bookings are in the book, eleven parties are eating, four are due in the next
+twenty minutes, one is twenty-five minutes late and not answering, three groups
+are waiting at the bar, and there is a double-booking on table 2 that somebody
+needs to sort out before half past eight.
+
+Drag a party onto a table and it tells you whether they fit — and when they
+don't, **why not, and what to do instead**.
+
+**Every table-management demo ever built opens on an empty grid with an "Add
+your first booking" button, and all of them are boring.** Not because the design
+is bad: an empty restaurant is not a restaurant, and nobody can tell whether an
+empty system is any good. So this one opens in the middle of service with the
+job already half done and going wrong in the ordinary ways. Everything else
+follows from that.
+
+The rules live in a module with no DOM in it, and the interesting part is what
+happens when the answer is no. *"Cannot seat"* is a dead end. This says
+`Table 1 seats 2. This is a party of 6. → 30 is free at 20:30`. Every refusal is
+a sentence a head waiter could say out loud and carries the way forward —
+another table at the same time if there is one, a different time if there is
+not. A lateral move applies on release; **a move that changes the time does
+not**, because that is a decision made with the guest on the phone.
+
+A booking holds a table for the meal *plus* the fifteen minutes to clear and
+re-lay it. Tables push together the way the room allows — `10 + 12` is not a
+join, because table 11 is between them — and two fours seats **nine**, not
+eight, because you gain the two ends that were nobody's seat. A test asserts the
+drawing agrees: at one point the floor plan drew eight chairs round a run the
+scheduler would happily sell to nine people.
+
+**The one conflict it ships with was not planted.** The night was hand-written
+to look fine, and `conflicts()` found it.
+
+Press play and the rest of the evening runs in about half a minute — parties
+arrive, sit when their table is clear and not before, work through their
+courses, pay and leave.
+
+[Full write-up](apps/covers/README.md), including the bug where pressing play
+reset the restaurant sixty times a second, and the one where the system offered
+a time it would then refuse.
 
 ---
 
@@ -420,6 +467,12 @@ play/loom/
   engine.js             node types and the evaluator, pure and DOM-free
   presets.js            the six examples, and the auto-layout that places them
   index.html            the editor
+apps/covers/
+  floor.js              the room — tables, where they are, what can join what
+  schedule.js           the rules — turn times, clashes, and why something is a no
+  book.js               a Saturday night, already half underway
+  service.js            what the room does while the clock runs
+  plan.js               geometry — metres to pixels, and where the chairs go
 apps/room/
   case.js               the study, the people, what can be true, and the answer
   engine.js             what you have found, and what in it disagrees with itself

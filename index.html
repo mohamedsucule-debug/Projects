@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" href="favicon.svg" />
 <meta name="theme-color" content="#06070d" />
-<title>Playground — twenty-five things you can click</title>
-<meta name="description" content="A murder you solve by looking at things. A ghost story that uses your browser as its stage. A paper-plane arcade game you understand in one second. A photo rebuilt out of six thousand dots. Twenty-five things that all run in your browser, with nothing to install." />
-<meta property="og:title" content="Playground — twenty-five things you can click" />
+<title>Playground — twenty-six things you can click</title>
+<meta name="description" content="A working restaurant booking system you drop into mid-service. A murder you solve by looking at things. A ghost story that uses your browser as its stage. A paper-plane arcade game you understand in one second. A photo rebuilt out of six thousand dots. Twenty-six things that all run in your browser, with nothing to install." />
+<meta property="og:title" content="Playground — twenty-six things you can click" />
 <meta property="og:description" content="Tap to fly a paper plane through a canyon. Then: a photo rebuilt out of six thousand dots, a gallery that morphs on springs, a node-based image studio, and six serious tools with plain-English explanations." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://mohamedsucule-debug.github.io/Projects/" />
@@ -15,7 +15,7 @@
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Playground — twenty-five things you can click" />
+<meta name="twitter:title" content="Playground — twenty-six things you can click" />
 <meta name="twitter:description" content="Tap to fly a paper plane through a canyon, rebuild your photo out of six thousand dots, or wire boxes together into a picture. All running in the browser." />
 <meta name="twitter:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <link rel="canonical" href="https://mohamedsucule-debug.github.io/Projects/" />
@@ -73,6 +73,9 @@
   .hero > .col { min-width: 0; }
 
   .toc { border-top: 1px solid var(--line2); padding-top: 14px; }
+  .toc a.lead { background: rgba(90,169,255,.07); border-radius: 8px 8px 0 0;
+    padding-left: 8px; padding-right: 8px; }
+  .toc a.lead .t { font-weight: 700; }
   .toc a {
     display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 12px;
     text-decoration: none; padding: 10px 2px;
@@ -137,6 +140,37 @@
   .btn.primary:hover { transform: translateY(-2px); box-shadow: 0 20px 48px -14px rgba(255,209,102,.9); }
   .btn.ghost { border-color: var(--line2); color: var(--fg); }
   .btn.ghost:hover { background: rgba(255,255,255,.06); transform: translateY(-2px); }
+
+  /* ── the headline piece ────────────────────────────────────
+     One thing above the chapters, at twice the size, because a grid where
+     everything is a card says everything took about the same amount of work.
+     This one did not. */
+  .headline {
+    margin-top: 58px; display: grid; grid-template-columns: 1.35fr 1fr; gap: 0;
+    background: var(--card); border: 1px solid var(--line2); border-radius: 22px;
+    overflow: hidden; text-decoration: none; color: inherit;
+    transition: border-color .18s, box-shadow .18s, transform .18s;
+  }
+  .headline:hover { border-color: rgba(90,169,255,.45); transform: translateY(-3px);
+    box-shadow: 0 34px 80px -34px rgba(0,0,0,.95); }
+  .headline .shot { position: relative; background: #0a0c10; min-height: 340px; overflow: hidden; }
+  .headline .shot canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .headline .said { padding: 30px 32px 32px; display: flex; flex-direction: column; }
+  .headline .kicker { font: 700 10.5px/1 var(--mono); letter-spacing: .2em; text-transform: uppercase;
+    color: #5aa9ff; margin: 0 0 12px; }
+  .headline h2 { margin: 0 0 12px; font-size: clamp(27px, 3.1vw, 36px); letter-spacing: -.03em; }
+  .headline p { margin: 0 0 13px; color: var(--dim); font-size: 15.5px; line-height: 1.62; }
+  .headline p b { color: var(--fg); font-weight: 650; }
+  .headline ul { margin: 4px 0 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+  .headline li { color: var(--dim); font-size: 13.5px; display: flex; gap: 9px; align-items: baseline; }
+  .headline li::before { content: '→'; color: #5aa9ff; font-size: 12px; }
+  .headline .go { margin-top: auto; padding-top: 18px; font: 700 12px/1 var(--mono);
+    letter-spacing: .1em; color: #5aa9ff; }
+  @media (max-width: 860px) {
+    .headline { grid-template-columns: 1fr; }
+    .headline .shot { min-height: 220px; }
+    .headline .said { padding: 22px 20px 24px; }
+  }
 
   /* ── chapters ──────────────────────────────────────────────
      Nineteen things in one undifferentiated run is a catalogue. Broken into
@@ -336,13 +370,14 @@
     <div class="col">
     <!-- ↓↓ YOUR NAME AND TITLE — edit these two lines ↓↓ -->
     <p class="eyebrow"><b>Mohamed Sucule</b> &middot; software engineer</p>
-    <h1>Twenty-five things I built. <em>All of them run right here.</em></h1>
+    <h1>Twenty-six things I built. <em>All of them run right here.</em></h1>
     <p>
       No videos, no screenshots, no “request a demo”. Click any of them and it starts
       immediately — in your browser, on your phone, with nothing to install.
     </p>
     <p>
       Every card on this page is the real thing running, live, not a picture of it.
+      The one at the top is the big one.
     </p>
     <div class="cta">
       <a class="btn primary" href="#fiction">Start at the top →</a>
@@ -351,6 +386,30 @@
     </div>
     <nav class="toc" id="toc" aria-label="Contents"></nav>
   </header>
+
+  <a class="headline" id="headline" href="apps/covers/index.html">
+    <div class="shot"><canvas></canvas></div>
+    <div class="said">
+      <p class="kicker">The one that took the longest</p>
+      <h2>Covers — a restaurant floor and booking system</h2>
+      <p>
+        You arrive at <b>19:42 on a Saturday</b>. Thirty-one bookings are in the book, eleven
+        parties are eating, three groups are waiting at the bar, and there is a double-booking
+        on table 2 that somebody needs to sort out before half past eight.
+      </p>
+      <p>
+        Drag a party onto a table and it tells you whether they fit — and when they do not,
+        <b>why not, and what to do instead.</b>
+      </p>
+      <ul>
+        <li>Real turn times, including the fifteen minutes to clear and re-lay that most systems forget</li>
+        <li>Tables push together the way the room allows — and two fours seats nine, not eight</li>
+        <li>Press play and the rest of the night runs: parties arrive, eat, pay and leave</li>
+        <li>No backend, no database, no signup — and fifty-three tests on the rules alone</li>
+      </ul>
+      <div class="go">OPEN IT →</div>
+    </div>
+  </a>
 
   <div id="toys"></div>
 
@@ -427,8 +486,8 @@
     </div>
     <p class="colophon">
       No frameworks, no build step, no dependencies — every page here is plain HTML, CSS and
-      JavaScript, about 18,000 lines of it, with the engine behind Ace, Morph, Portrait, Loom,
-      Nightshift, The Room and each of the tools unit-tested: 484 tests, run in CI before anything
+      JavaScript, about 20,000 lines of it, with the engine behind Ace, Morph, Portrait, Loom,
+      Nightshift, The Room, Covers and each of the tools unit-tested: 537 tests, run in CI before anything
       is published. The commit history is the full record.
     </p>
   </footer>
@@ -672,11 +731,13 @@ for (const ch of CHAPTERS) {
 {
   const toc = document.getElementById('toc');
   const rows = [
+    { id: 'headline', num: '★', name: 'Covers', accent: '90,169,255', count: 1, lead: true },
     ...CHAPTERS.map((ch) => ({ ...ch, count: TOYS.filter((t) => t.chapter === ch.id).length })),
     { id: 'deep', num: 'V', name: 'The serious ones', accent: '154,165,184', count: 6 },
   ];
   for (const r of rows) {
     const a = document.createElement('a');
+    if (r.lead) a.className = 'lead';
     a.href = `#${r.id}`;
     a.style.setProperty('--accent', r.accent);
     a.innerHTML = `<span class="n">${r.num}</span><span class="t">${r.name}</span><span class="c">${r.count}</span>`;
@@ -691,7 +752,7 @@ for (const ch of CHAPTERS) {
   const terms = document.createElement('p');
   terms.className = 'terms';
   terms.innerHTML = 'Plain HTML, CSS and JavaScript. <b>No framework, no build step, '
-    + 'no dependencies.</b> 484 tests run in CI before anything here is published.';
+    + 'no dependencies.</b> 537 tests run in CI before anything here is published.';
   toc.append(terms);
 }
 
@@ -734,8 +795,27 @@ for (const toy of TOYS) {
   }, { rootMargin: '120px' }).observe(canvas);
 }
 
-/* Chapter V's plate runs on the same loop and the same visibility rule as the
-   cards, so it costs nothing while it is off screen. */
+/* The headline and chapter V's plate run on the same loop and the same
+   visibility rule as the cards, so they cost nothing while off screen. */
+{
+  const canvas = document.querySelector('#headline canvas');
+  const api = { canvas, ctx: canvas.getContext('2d'), w: 0, h: 0, t: 0, alive: false };
+  const fit = () => {
+    const r = canvas.getBoundingClientRect();
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    canvas.width = Math.max(1, Math.round(r.width * dpr));
+    canvas.height = Math.max(1, Math.round(r.height * dpr));
+    api.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    api.w = r.width; api.h = r.height;
+  };
+  new ResizeObserver(fit).observe(canvas);
+  coversPreview(api);
+  fit();
+  new IntersectionObserver((entries) => {
+    for (const e of entries) { if (e.isIntersecting) running.add(api); else running.delete(api); }
+  }, { rootMargin: '160px' }).observe(canvas);
+}
+
 {
   const canvas = document.getElementById('machine');
   const api = { canvas, ctx: canvas.getContext('2d'), w: 0, h: 0, t: 0, alive: false };
@@ -1391,6 +1471,103 @@ function mercuryPreview(api) {
 /** Topple, in miniature: the real physics engine, knocking over a tiny page.
     The shapes are drawn rather than being DOM, but every position and angle
     comes from the same solver the real one uses. */
+/* The headline runs the real floor plan, sharing floor.js and plan.js with the
+   app itself, so the card can never show a restaurant the product does not
+   have. The clock is wound forward faster than real time and looped, which
+   makes the card do the one thing a screenshot cannot: fill the room up. */
+function coversPreview(api) {
+  let M = null;
+  Promise.all([
+    import('./apps/covers/floor.js'), import('./apps/covers/plan.js'),
+    import('./apps/covers/book.js'), import('./apps/covers/schedule.js'),
+  ]).then(([floor, plan, book, sched]) => {
+    M = { floor, plan, book, sched, seed: book.freshBook() };
+  }).catch(() => null);
+
+  let t = 0;
+  const TONE = {
+    quiet: ['#1b2230', 'rgba(255,255,255,.15)'],
+    warn:  ['rgba(240,180,41,.3)', 'rgba(240,180,41,.8)'],
+    live:  ['rgba(62,207,142,.26)', 'rgba(62,207,142,.75)'],
+    turn:  ['rgba(90,169,255,.26)', 'rgba(90,169,255,.75)'],
+    done:  ['#141820', 'rgba(255,255,255,.08)'],
+    bad:   ['rgba(255,107,107,.24)', 'rgba(255,107,107,.75)'],
+  };
+
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    ctx.fillStyle = '#0a0c10';
+    ctx.fillRect(0, 0, w, h);
+    if (!M) return;
+
+    t += 1 / 60;
+    /* Seventeen seconds of service per loop, from the quiet before the seven
+       o'clock sitting to the last table turning. */
+    const span = M.sched.SERVICE.lastOrders - (18 * 60 + 30);
+    const now = 18 * 60 + 30 + ((t * 26) % (span + 90));
+
+    const sc = M.plan.scaleFor(w, h, 0.35);
+    const ox = (w - sc.width) / 2, oy = (h - sc.height) / 2;
+    const X = (m) => ox + sc.x(m), Y = (m) => oy + sc.y(m);
+
+    ctx.strokeStyle = 'rgba(255,255,255,.1)';
+    ctx.lineWidth = 1.4;
+    roundRect(ctx, X(0), Y(0), sc.len(M.floor.ROOM.w), sc.len(M.floor.ROOM.h), sc.len(0.16));
+    ctx.fillStyle = '#0d1016';
+    ctx.fill(); ctx.stroke();
+
+    for (const f of M.floor.FIXTURES) {
+      ctx.fillStyle = f.kind === 'kitchen' ? '#0b0e13'
+        : f.kind === 'door' ? 'rgba(240,180,41,.3)'
+        : f.kind === 'wall' ? 'rgba(255,255,255,.1)' : '#171c26';
+      roundRect(ctx, X(f.x), Y(f.y), sc.len(f.w), sc.len(f.h), sc.len(0.05));
+      ctx.fill();
+    }
+
+    /* Who is on what, worked out by the same window() the product uses. */
+    const held = new Map();
+    for (const b of M.seed) {
+      if (!M.sched.LIVE.has(b.status)) continue;
+      const win = M.sched.window_(b);
+      if (now < b.at - 20 || now >= win.to) continue;
+      const through = (now - b.at) / (win.to - b.at);
+      const tone = now < b.at ? 'quiet' : through < 0.2 ? 'warn' : through < 0.8 ? 'live' : 'turn';
+      for (const id of b.tableIds) held.set(id, { b, tone });
+    }
+
+    const drawn = new Set();
+    for (const tbl of M.floor.TABLES) {
+      if (drawn.has(tbl.id)) continue;
+      const hit = held.get(tbl.id);
+      const ids = hit && hit.b.tableIds.length > 1 ? hit.b.tableIds : [tbl.id];
+      for (const id of ids) drawn.add(id);
+      const o = M.plan.outline(ids);
+      const [fill, edge] = TONE[hit ? hit.tone : 'quiet'];
+
+      ctx.fillStyle = '#1e2532';
+      for (const c of M.plan.groupChairs(ids)) {
+        roundRect(ctx, X(c.x - 0.2), Y(c.y - 0.18), sc.len(0.4), sc.len(0.36), sc.len(0.08));
+        ctx.fill();
+      }
+      ctx.fillStyle = fill;
+      ctx.strokeStyle = edge;
+      ctx.lineWidth = 1.2;
+      roundRect(ctx, X(o.x), Y(o.y), sc.len(o.w), sc.len(o.h), sc.len(o.r));
+      ctx.fill(); ctx.stroke();
+    }
+
+    const covers = [...new Set([...held.values()].map((v) => v.b))]
+      .filter((b) => now >= b.at).reduce((n, b) => n + b.party, 0);
+    ctx.textAlign = 'right';
+    ctx.font = '650 10px ui-monospace, "SF Mono", Menlo, monospace';
+    ctx.fillStyle = 'rgba(233,237,245,.5)';
+    ctx.fillText(M.sched.hhmm(now), w - 13, 21);
+    ctx.fillStyle = '#5aa9ff';
+    ctx.fillText(`${covers} COVERS`, w - 13, 35);
+    ctx.textAlign = 'left';
+  };
+}
+
 /* The card is the plate itself, small, with the clues lighting one at a time
    and the contradiction count climbing — because the pitch is not "a mystery
    game", it is "the page works out for itself which two things cannot both be

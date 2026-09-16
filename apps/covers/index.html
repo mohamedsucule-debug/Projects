@@ -1,0 +1,1513 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="icon" href="../../favicon.svg" />
+<meta name="theme-color" content="#0b0d11" />
+<title>Covers — table management for a restaurant</title>
+<meta name="description" content="A working restaurant floor and booking system. You arrive at 19:42 on a Saturday with 31 bookings in the book, eleven parties eating, three groups waiting at the bar and one double-booking to sort out. Drag a party onto a table and it tells you whether it fits, and why not." />
+<meta property="og:title" content="Covers — table management for a restaurant" />
+<meta property="og:description" content="Drop into the middle of a Saturday service. Real turn times, real table joins, and a system that refuses in sentences instead of error codes." />
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --bg: #0a0c10; --panel: #11141b; --panel2: #161a23; --sunk: #080a0e;
+    --line: rgba(255,255,255,.07); --line2: rgba(255,255,255,.14);
+    --fg: #e9edf5; --dim: #8b95a8; --mute: #616c80;
+    --amber: #f0b429; --green: #3ecf8e; --blue: #5aa9ff; --red: #ff6b6b;
+    --violet: #b08bff;
+    --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --rail: 268px; --insp: 316px;
+  }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 14px/1.5 var(--sans); -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; background: none; border: 0; }
+  .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  /* max-width rather than width: everything in the bar is nowrap, and without
+     a cap the grid simply grew to fit it and took the floor plan off the side
+     of a phone. */
+  .app { display: grid; grid-template-rows: auto 1fr auto; height: 100%;
+    max-width: 100vw; overflow: hidden; }
+
+  /* ── the top bar ───────────────────────────────────────────────────────── */
+  .bar {
+    display: flex; align-items: center; gap: 14px; padding: 0 14px;
+    height: 54px; background: var(--panel); border-bottom: 1px solid var(--line);
+    min-width: 0;
+  }
+  .bar > * { flex: none; }
+  .brand { display: flex; align-items: baseline; gap: 9px; }
+  .brand b { font-size: 15px; font-weight: 800; letter-spacing: .12em; }
+  .brand span { color: var(--mute); font-size: 12px; letter-spacing: .04em; }
+  .bar .sep { width: 1px; height: 24px; background: var(--line); }
+  .when { color: var(--dim); font-size: 13px; }
+
+  .clock { display: flex; align-items: center; gap: 8px; }
+  .clock .t {
+    font: 700 22px/1 var(--mono); letter-spacing: -.01em; font-variant-numeric: tabular-nums;
+    min-width: 5ch; text-align: center;
+  }
+  .clock .t.running { color: var(--green); }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 11px;
+    border-radius: 8px; border: 1px solid var(--line2); background: rgba(255,255,255,.04);
+    font-size: 12.5px; font-weight: 600; white-space: nowrap;
+    transition: background .12s, border-color .12s;
+  }
+  .chip:hover { background: rgba(255,255,255,.09); }
+  .chip.on { background: rgba(62,207,142,.16); border-color: rgba(62,207,142,.5); color: #b7f0d6; }
+  .chip.warnish { background: rgba(255,107,107,.13); border-color: rgba(255,107,107,.45); color: #ffc4c4; }
+  .chip.primary { background: var(--amber); border-color: var(--amber); color: #1a1200; }
+  .chip.primary:hover { background: #ffc44d; }
+  .chip.icon { padding: 0 9px; }
+  .bar .grow { flex: 1; }
+  .kbd { font: 600 10.5px/1 var(--mono); border: 1px solid var(--line2); border-radius: 5px;
+    padding: 3px 5px; color: var(--mute); }
+
+  /* ── the three columns ─────────────────────────────────────────────────── */
+  .body { display: grid; grid-template-columns: var(--rail) 1fr var(--insp); min-height: 0; min-width: 0; }
+  .rail, .inspector { background: var(--panel); min-height: 0; overflow-y: auto; }
+  .rail { border-right: 1px solid var(--line); }
+  .inspector { border-left: 1px solid var(--line); }
+  .rail::-webkit-scrollbar, .inspector::-webkit-scrollbar, .scroll::-webkit-scrollbar { width: 9px; }
+  .rail::-webkit-scrollbar-thumb, .inspector::-webkit-scrollbar-thumb, .scroll::-webkit-scrollbar-thumb {
+    background: #2a3140; border-radius: 9px; }
+
+  .sect { padding: 13px 14px 6px; }
+  .sect h3 {
+    margin: 0 0 9px; font: 700 10px/1 var(--mono); letter-spacing: .17em;
+    text-transform: uppercase; color: var(--mute);
+    display: flex; align-items: center; gap: 7px;
+  }
+  .sect h3 b { color: var(--fg); font-size: 11px; letter-spacing: .06em; }
+  .sect h3::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+  .sect .none { color: var(--mute); font-size: 12.5px; font-style: italic; padding: 2px 0 8px; }
+
+  /* ── a party, as it appears in a list ──────────────────────────────────── */
+  .party {
+    display: grid; grid-template-columns: 34px 1fr auto; gap: 9px; align-items: center;
+    width: 100%; text-align: left; padding: 8px 9px; margin-bottom: 4px;
+    border-radius: 9px; border: 1px solid transparent; background: var(--panel2);
+    transition: background .12s, border-color .12s, transform .12s;
+  }
+  .party:hover { background: #1b202b; border-color: var(--line2); }
+  .party.sel { border-color: var(--amber); background: rgba(240,180,41,.10); }
+  .party.dragging { opacity: .35; }
+  .party .pt { font: 700 12px/1 var(--mono); color: var(--dim); }
+  .party .nm { font-weight: 650; font-size: 13.5px; letter-spacing: -.01em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .party .sub { color: var(--mute); font-size: 11.5px; margin-top: 1px;
+    display: flex; gap: 6px; align-items: center; }
+  .party .tb {
+    font: 700 11px/1 var(--mono); padding: 4px 6px; border-radius: 6px;
+    background: rgba(255,255,255,.07); color: var(--dim); white-space: nowrap;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; display: inline-block; }
+  .t-quiet { background: #55617a; } .t-warn { background: var(--amber); }
+  .t-live  { background: var(--green); } .t-turn { background: var(--blue); }
+  .t-done  { background: #3a4356; } .t-bad  { background: var(--red); }
+  .flag { font-size: 10.5px; font-weight: 700; letter-spacing: .04em; padding: 2px 5px;
+    border-radius: 4px; }
+  .flag.vip { background: rgba(176,139,255,.18); color: #d6c2ff; }
+  .flag.alg { background: rgba(255,107,107,.18); color: #ffc4c4; }
+  .flag.acc { background: rgba(90,169,255,.18); color: #bcdcff; }
+
+  /* ── the stage ─────────────────────────────────────────────────────────── */
+  main { display: grid; grid-template-rows: auto 1fr; min-height: 0; min-width: 0; background: var(--sunk); }
+  .views { display: flex; align-items: center; gap: 2px; padding: 8px 12px;
+    border-bottom: 1px solid var(--line); background: var(--panel); }
+  .views button {
+    padding: 7px 13px; border-radius: 8px; font: 700 11px/1 var(--mono);
+    letter-spacing: .12em; color: var(--mute);
+  }
+  .views button[aria-selected="true"] { background: rgba(255,255,255,.08); color: var(--fg); }
+  .views .grow { flex: 1; }
+  .views .legend { display: flex; gap: 12px; font-size: 11px; color: var(--mute); }
+  .views .legend span { display: flex; align-items: center; gap: 5px; }
+  .stage { position: relative; min-height: 0; min-width: 0; overflow: hidden; }
+  .scroll { position: absolute; inset: 0; overflow: auto; }
+
+  /* ── the floor plan ────────────────────────────────────────────────────── */
+  #floor { display: block; width: 100%; height: 100%; touch-action: none; }
+  .tbl { cursor: grab; }
+  .tbl:active { cursor: grabbing; }
+  .tbl .top { transition: fill .25s, stroke .15s; }
+  .tbl.hit .top { stroke: var(--amber); stroke-width: 2.5; }
+  .tbl.bad .top { stroke: var(--red); stroke-width: 2.5; }
+  .tbl.ok  .top { stroke: var(--green); stroke-width: 2.5; }
+  .tbl.sel .top { stroke: var(--amber); stroke-width: 2; }
+  .tbl.dim { opacity: .3; }
+  .chair { fill: #232a37; }
+  .tbl.occupied .chair { fill: #2e3748; }
+
+  .drophint {
+    position: absolute; z-index: 40; pointer-events: none; max-width: 300px;
+    background: #151a24; border: 1px solid var(--line2); border-radius: 10px;
+    padding: 9px 11px; box-shadow: 0 18px 44px -14px rgba(0,0,0,.9);
+    font-size: 12.5px; line-height: 1.45;
+  }
+  .drophint.no { border-color: rgba(255,107,107,.55); }
+  .drophint.yes { border-color: rgba(62,207,142,.55); }
+  .drophint.maybe { border-color: rgba(240,180,41,.55); }
+  .drophint b { display: block; font-size: 11px; font-family: var(--mono); letter-spacing: .1em;
+    text-transform: uppercase; margin-bottom: 4px; }
+  .drophint.no b { color: var(--red); } .drophint.yes b { color: var(--green); }
+  .drophint.maybe b { color: var(--amber); }
+  .drophint i { display: block; font-style: normal; color: var(--dim); margin-top: 5px; font-size: 12px; }
+
+  .ghost {
+    position: fixed; z-index: 60; pointer-events: none; padding: 7px 11px;
+    background: var(--amber); color: #1a1200; border-radius: 8px;
+    font-weight: 700; font-size: 12.5px; box-shadow: 0 14px 34px -10px rgba(0,0,0,.8);
+    transform: translate(-50%, -140%);
+  }
+
+  /* ── the timeline ──────────────────────────────────────────────────────── */
+  .tl { position: relative; min-width: 940px; }
+  .tl-head { position: sticky; top: 0; z-index: 3; background: var(--sunk);
+    border-bottom: 1px solid var(--line2); height: 30px; }
+  .tl-row { position: relative; height: 30px; border-bottom: 1px solid rgba(255,255,255,.045); }
+  .tl-row.zone-start { border-top: 1px solid var(--line2); }
+  .tl-lbl { position: absolute; left: 0; top: 0; width: 76px; height: 100%;
+    display: flex; align-items: center; gap: 7px; padding-left: 12px;
+    font: 700 11.5px/1 var(--mono); color: var(--dim); z-index: 2;
+    background: linear-gradient(90deg, var(--sunk) 78%, transparent); }
+  .tl-lbl em { font-style: normal; font-size: 10px; color: var(--mute); }
+  .tl-grid { position: absolute; left: 76px; right: 12px; top: 0; bottom: 0; }
+  .tl-hour { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,.07); }
+  .tl-hour.half { background: rgba(255,255,255,.035); }
+  .tl-now { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--amber); z-index: 5;
+    box-shadow: 0 0 14px rgba(240,180,41,.8); }
+  .tl-time { position: absolute; top: 8px; font: 700 10.5px/1 var(--mono); color: var(--mute);
+    transform: translateX(-50%); }
+  .blk {
+    position: absolute; top: 3px; height: 24px; border-radius: 6px; overflow: hidden;
+    display: flex; align-items: center; gap: 5px; padding: 0 7px; cursor: grab;
+    font-size: 11.5px; font-weight: 650; white-space: nowrap;
+    border: 1px solid; transition: filter .12s, transform .12s;
+  }
+  .blk:hover { filter: brightness(1.25); }
+  .blk.sel { outline: 2px solid var(--amber); outline-offset: 1px; }
+  .blk .turn { position: absolute; right: 0; top: 0; bottom: 0; width: var(--turn, 0px);
+    background: repeating-linear-gradient(115deg, rgba(255,255,255,.14) 0 3px, transparent 3px 7px); }
+  .blk.clash { border-color: var(--red) !important; box-shadow: 0 0 0 1px var(--red), 0 0 18px rgba(255,107,107,.5); }
+  .b-quiet { background: #232b3a; border-color: #35405480; color: #c2cbdb; }
+  .b-warn  { background: rgba(240,180,41,.22); border-color: rgba(240,180,41,.6); color: #ffdd9a; }
+  .b-live  { background: rgba(62,207,142,.20); border-color: rgba(62,207,142,.55); color: #a8f0cf; }
+  .b-turn  { background: rgba(90,169,255,.20); border-color: rgba(90,169,255,.55); color: #bcdcff; }
+  .b-done  { background: #191d26; border-color: #262d3a; color: #5c6678; }
+  .b-bad   { background: rgba(255,107,107,.16); border-color: rgba(255,107,107,.5); color: #ffbdbd; }
+
+  /* ── the diary ─────────────────────────────────────────────────────────── */
+  table.diary { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.diary th {
+    position: sticky; top: 0; background: var(--sunk); text-align: left; z-index: 2;
+    font: 700 10px/1 var(--mono); letter-spacing: .15em; text-transform: uppercase;
+    color: var(--mute); padding: 11px 12px; border-bottom: 1px solid var(--line2);
+  }
+  table.diary td { padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,.045); }
+  table.diary tr { cursor: pointer; }
+  table.diary tr:hover td { background: rgba(255,255,255,.035); }
+  table.diary tr.sel td { background: rgba(240,180,41,.10); }
+  table.diary tr.gone td { color: var(--mute); }
+
+  /* ── the inspector ─────────────────────────────────────────────────────── */
+  .insp-head { padding: 15px 15px 12px; border-bottom: 1px solid var(--line); }
+  .insp-head h2 { margin: 0 0 3px; font-size: 19px; letter-spacing: -.02em; }
+  .insp-head .meta { color: var(--dim); font-size: 12.5px; display: flex; gap: 8px; align-items: center;
+    flex-wrap: wrap; }
+  .kv { display: grid; grid-template-columns: 82px 1fr; gap: 6px 10px; padding: 12px 15px;
+    font-size: 13px; border-bottom: 1px solid var(--line); }
+  .kv dt { color: var(--mute); font: 600 11px/1.5 var(--mono); letter-spacing: .06em;
+    text-transform: uppercase; padding-top: 2px; }
+  .kv dd { margin: 0; }
+  .note { padding: 12px 15px; border-bottom: 1px solid var(--line);
+    font-size: 13px; line-height: 1.55; color: #d6dcea; background: rgba(240,180,41,.05); }
+  .note b { display: block; font: 700 10px/1 var(--mono); letter-spacing: .14em;
+    text-transform: uppercase; color: var(--amber); margin-bottom: 5px; }
+  .acts { padding: 12px 15px; display: flex; flex-wrap: wrap; gap: 6px;
+    border-bottom: 1px solid var(--line); }
+  .acts .chip { height: 32px; }
+  .empty-insp { padding: 40px 20px; text-align: center; color: var(--mute); font-size: 13px; line-height: 1.6; }
+  .empty-insp b { display: block; color: var(--dim); font-weight: 650; margin-bottom: 6px; }
+
+  .offer { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+    padding: 8px 9px; border-radius: 8px; background: var(--panel2);
+    border: 1px solid var(--line); margin-bottom: 4px; font-size: 13px; }
+  .offer:hover { border-color: var(--amber); background: rgba(240,180,41,.09); }
+  .offer .num { font-weight: 700; }
+  .offer em { font-style: normal; color: var(--mute); margin-left: auto; font-size: 11.5px; }
+
+  /* ── the bottom bar ────────────────────────────────────────────────────── */
+  .stats { display: flex; align-items: center; gap: 0; height: 46px; padding: 0 6px;
+    background: var(--panel); border-top: 1px solid var(--line); overflow-x: auto; }
+  .stat { padding: 0 14px; border-right: 1px solid var(--line); white-space: nowrap; }
+  .stat:last-of-type { border-right: 0; }
+  .stat .v { font: 700 16px/1.1 var(--mono); font-variant-numeric: tabular-nums; }
+  .stat .k { font: 600 9.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase;
+    color: var(--mute); margin-top: 3px; }
+  .stat.warn .v { color: var(--amber); } .stat.bad .v { color: var(--red); }
+  .stats .grow { flex: 1; }
+  .feed { display: flex; align-items: center; gap: 8px; padding: 0 14px; font-size: 12.5px;
+    color: var(--dim); max-width: 46ch; overflow: hidden; }
+  .feed .dot { animation: blip 1.6s ease-in-out infinite; }
+  @keyframes blip { 50% { opacity: .25; } }
+
+  /* ── dialogs ───────────────────────────────────────────────────────────── */
+  .veil { position: fixed; inset: 0; z-index: 80; background: rgba(4,6,9,.8);
+    display: grid; place-items: start center; padding: 9vh 16px; opacity: 0;
+    pointer-events: none; transition: opacity .16s; }
+  .veil.on { opacity: 1; pointer-events: auto; }
+  .modal { width: min(540px, 100%); background: var(--panel); border: 1px solid var(--line2);
+    border-radius: 14px; overflow: hidden; box-shadow: 0 40px 100px -30px rgba(0,0,0,.95); }
+  .modal header { padding: 15px 17px; border-bottom: 1px solid var(--line); }
+  .modal header h2 { margin: 0; font-size: 17px; letter-spacing: -.01em; }
+  .modal header p { margin: 3px 0 0; color: var(--dim); font-size: 12.5px; }
+  .modal .pad { padding: 15px 17px; }
+  .modal footer { padding: 12px 17px; border-top: 1px solid var(--line);
+    display: flex; gap: 8px; justify-content: flex-end; background: var(--sunk); }
+  .field { margin-bottom: 13px; }
+  .field label { display: block; font: 600 10.5px/1 var(--mono); letter-spacing: .13em;
+    text-transform: uppercase; color: var(--mute); margin-bottom: 6px; }
+  .field input, .field select {
+    width: 100%; padding: 10px 11px; border-radius: 9px; background: var(--sunk);
+    border: 1px solid var(--line2); font-size: 14px;
+  }
+  .field input:focus, .field select:focus { outline: 2px solid var(--amber); outline-offset: -1px; }
+  .sizes { display: flex; gap: 5px; flex-wrap: wrap; }
+  .sizes button { width: 40px; height: 38px; border-radius: 9px; border: 1px solid var(--line2);
+    background: var(--sunk); font: 700 14px/1 var(--mono); }
+  .sizes button[aria-pressed="true"] { background: var(--amber); border-color: var(--amber); color: #1a1200; }
+
+  #cmd input { width: 100%; padding: 15px 17px; background: none; border: 0; font-size: 16px; }
+  #cmd input:focus { outline: none; }
+  #cmdList { max-height: 46vh; overflow-y: auto; border-top: 1px solid var(--line); }
+  .cmd-row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+    padding: 10px 17px; font-size: 13.5px; }
+  .cmd-row[aria-selected="true"] { background: rgba(240,180,41,.13); }
+  .cmd-row em { font-style: normal; color: var(--mute); margin-left: auto; font-size: 11.5px;
+    font-family: var(--mono); }
+
+  .toast { position: fixed; left: 50%; bottom: 62px; transform: translateX(-50%); z-index: 70;
+    background: #151a24; border: 1px solid var(--line2); border-radius: 10px;
+    padding: 10px 15px; font-size: 13px; box-shadow: 0 20px 50px -18px rgba(0,0,0,.9);
+    opacity: 0; transition: opacity .18s, transform .18s; pointer-events: none; }
+  .toast.on { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+  .toast.bad { border-color: rgba(255,107,107,.5); }
+
+  .back { position: fixed; left: 8px; bottom: 54px; z-index: 50; font: 600 10px/1 var(--mono);
+    letter-spacing: .1em; color: var(--mute); text-decoration: none; padding: 6px 8px;
+    border-radius: 6px; opacity: .5; }
+  .back:hover { opacity: 1; background: rgba(255,255,255,.07); }
+
+  /* ── a phone is the host stand, not a shrunken desktop ─────────────────── */
+  @media (max-width: 1080px) { :root { --rail: 228px; --insp: 268px; } }
+  @media (max-width: 900px) {
+    .body { grid-template-columns: 1fr; }
+    .rail, .inspector { display: none; }
+    body.pane-rail .rail, body.pane-insp .inspector { display: block; grid-area: 1 / 1; }
+    body.pane-rail main, body.pane-insp main { display: none; }
+    .bar { gap: 7px; padding: 0 8px; overflow-x: auto; scrollbar-width: none; }
+    .bar::-webkit-scrollbar { display: none; }
+    .brand span, .when, .bar .kbd, .bar .sep { display: none; }
+    .brand b { font-size: 13px; letter-spacing: .08em; }
+    .clock .t { font-size: 18px; min-width: 4.6ch; }
+    .chip { height: 28px; padding: 0 9px; font-size: 12px; }
+    #cmdBtn { display: none; }
+    #newBtn { font-size: 0; padding: 0 12px; }
+    #newBtn::before { content: '+'; font-size: 18px; font-weight: 800; }
+    #alert { font-size: 0; padding: 0 10px; }
+    #alert::before { content: '⚠'; font-size: 14px; }
+    .stat { padding: 0 11px; }
+    .stat .v { font-size: 14px; } .stat .k { font-size: 8.5px; }
+    .views { padding: 6px 8px; }
+    .views .legend { display: none; }
+    .back { display: none; }
+  }
+  .mobile-tabs { display: none; }
+  @media (max-width: 900px) {
+    .mobile-tabs { display: flex; gap: 2px; padding: 6px 8px; background: var(--panel);
+      border-top: 1px solid var(--line); }
+    .mobile-tabs button { flex: 1; padding: 9px; border-radius: 8px;
+      font: 700 10.5px/1 var(--mono); letter-spacing: .1em; color: var(--mute); }
+    .mobile-tabs button[aria-selected="true"] { background: rgba(255,255,255,.09); color: var(--fg); }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="bar">
+    <div class="brand"><b>COVERS</b><span>Bartlett &amp; Vine</span></div>
+    <div class="sep"></div>
+    <div class="when" id="when"></div>
+    <div class="clock">
+      <button class="chip icon" id="back15" title="Back fifteen minutes">&minus;15</button>
+      <div class="t num" id="clock">19:42</div>
+      <button class="chip icon" id="play" title="Run the service (space)">▶</button>
+      <button class="chip icon" id="fwd15" title="Forward fifteen minutes">+15</button>
+    </div>
+    <div class="grow"></div>
+    <button class="chip warnish" id="alert" hidden></button>
+    <button class="chip" id="cmdBtn">Search <span class="kbd">⌘K</span></button>
+    <button class="chip primary" id="newBtn">+ Booking</button>
+  </header>
+
+  <div class="body">
+    <aside class="rail" id="rail"></aside>
+    <main>
+      <div class="views" role="tablist">
+        <button role="tab" data-view="floor" aria-selected="true">FLOOR</button>
+        <button role="tab" data-view="timeline" aria-selected="false">TIMELINE</button>
+        <button role="tab" data-view="diary" aria-selected="false">DIARY</button>
+        <div class="grow"></div>
+        <div class="legend">
+          <span><i class="dot t-quiet"></i>Booked</span>
+          <span><i class="dot t-warn"></i>At the door</span>
+          <span><i class="dot t-live"></i>Eating</span>
+          <span><i class="dot t-turn"></i>Turning</span>
+        </div>
+      </div>
+      <div class="stage" id="stage"></div>
+    </main>
+    <aside class="inspector" id="inspector"></aside>
+  </div>
+
+  <footer class="stats" id="stats"></footer>
+  <nav class="mobile-tabs" role="tablist">
+    <button role="tab" data-pane="rail" aria-selected="true">SERVICE</button>
+    <button role="tab" data-pane="main" aria-selected="false">FLOOR</button>
+    <button role="tab" data-pane="insp" aria-selected="false">DETAIL</button>
+  </nav>
+</div>
+
+<a class="back" href="../../index.html">&larr; INDEX</a>
+<div class="toast" id="toast"></div>
+<div class="veil" id="veil"><div class="modal" id="modal"></div></div>
+
+<script type="module">
+/* ───────────────────────────────────────────────────────────────────────────
+   Covers — the interface.
+
+   Four modules under this one, and none of them has ever heard of a pixel:
+
+     floor.js     the room — tables, where they are, what can join what
+     schedule.js  the rules — turn times, clashes, and why something is a no
+     book.js      a Saturday night, already half underway
+     service.js   what the room does while the clock runs
+     plan.js      geometry — metres to pixels, and where the chairs go
+
+   Which leaves this file doing one job: turning state into a screen and
+   gestures back into state. Every "can this party sit there" question goes to
+   schedule.js and comes back with a sentence, so the interface never has an
+   opinion of its own about the room.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+import { TABLES, BOOKABLE, ZONES, byId, seats, ROOM, FIXTURES } from './floor.js';
+import {
+  turnTime, TURNAROUND, SERVICE, window_, conflicts, findTables, nextAvailable,
+  canSeat, hhmm, parseTime, LIVE, IN_HOUSE, holderOf, loadCurve,
+} from './schedule.js';
+import { freshBook, freshWaitlist, NOW, SERVICE_DATE, STATUS, MENU_NOTES } from './book.js';
+import { tick, summary, offerTimes, waitFor, courseAt } from './service.js';
+import { scaleFor, chairs, groupChairs, outline, tableAt } from './plan.js';
+
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+};
+
+const state = {
+  book: freshBook(),
+  waitlist: freshWaitlist(),
+  now: NOW,
+  view: 'floor',
+  selected: null,
+  running: false,
+  /* Service minutes per real second. It was 45, which put the remaining two
+     and three quarter hours away in four seconds — technically "running the
+     service" and far too fast to watch anything happen, which is the entire
+     reason the control exists. At 8 the rest of the night takes about half a
+     minute and you can see each table turn. */
+  speed: 8,
+  feed: [],
+  seq: 100,
+};
+
+/* ── clock ───────────────────────────────────────────────────────────────── */
+
+let raf = null, lastFrame = 0;
+
+function setNow(minutes, { announce = true } = {}) {
+  /* Kept as a float. Rounding to whole minutes here meant that at eight
+     service-minutes a second each frame advanced 0.13 of a minute, rounded
+     back to the minute it started on, failed the "is this later" test, and
+     took the rewind path — which rebuilt the night from scratch. Pressing play
+     reset the restaurant sixty times a second and the clock never moved. */
+  const target = Math.max(SERVICE.opens, Math.min(SERVICE.closes, minutes));
+  if (target > state.now + 1e-9) {
+    const events = tick(state, target);
+    if (announce) for (const e of events) state.feed.unshift(e);
+    state.feed = state.feed.slice(0, 40);
+  } else {
+    /* Going backwards does not un-eat a dinner. Rewinding rebuilds the night
+       from the book and replays the clock forward, which is the only way the
+       room can be consistent with a time you have already passed. */
+    const keep = state.book.map((b) => ({ ...b }));
+    state.book = freshBook();
+    for (const b of state.book) {
+      const edited = keep.find((k) => k.id === b.id);
+      if (edited && edited.edited) Object.assign(b, edited, { status: edited.baseStatus ?? b.status });
+    }
+    state.now = NOW;
+    state.feed = [];
+    if (target > NOW) tick(state, target);
+    state.now = target;
+  }
+  render();
+}
+
+function play(on) {
+  state.running = on ?? !state.running;
+  $('play').textContent = state.running ? '❚❚' : '▶';
+  $('play').classList.toggle('on', state.running);
+  $('clock').classList.toggle('running', state.running);
+  if (state.running) { lastFrame = performance.now(); raf = requestAnimationFrame(step); }
+  else if (raf) cancelAnimationFrame(raf);
+}
+
+function step(t) {
+  if (!state.running) return;
+  const dt = Math.min(0.25, (t - lastFrame) / 1000);
+  lastFrame = t;
+  setNow(state.now + dt * state.speed);
+  if (state.now >= SERVICE.closes) { play(false); toast('Service over. 104 covers.'); }
+  else raf = requestAnimationFrame(step);
+}
+
+/* ── the rail: what needs doing, in the order it needs doing ─────────────── */
+
+function bookingRow(b, { showTable = true } = {}) {
+  const row = el('button', 'party' + (state.selected === b.id ? ' sel' : ''));
+  row.dataset.id = b.id;
+  row.append(el('div', 'pt num', hhmm(b.at)));
+
+  const mid = el('div');
+  const nm = el('div', 'nm', b.name);
+  mid.append(nm);
+  const sub = el('div', 'sub');
+  sub.append(el('i', 'dot t-' + STATUS[b.status].tone));
+  sub.append(el('span', null, `${b.party} cover${b.party === 1 ? '' : 's'}`));
+  if (b.tag === 'VIP') sub.append(el('span', 'flag vip', 'VIP'));
+  if (b.allergy) sub.append(el('span', 'flag alg', 'ALLERGY'));
+  if (b.access) sub.append(el('span', 'flag acc', 'ACCESS'));
+  mid.append(sub);
+  row.append(mid);
+
+  if (showTable) row.append(el('div', 'tb num', b.tableIds.length ? b.tableIds.join('+') : '—'));
+  row.addEventListener('click', () => select(b.id));
+  row.addEventListener('pointerdown', (e) => beginDrag(e, b, row));
+  return row;
+}
+
+function section(host, title, count, rows, emptyText) {
+  const s = el('div', 'sect');
+  const h = el('h3');
+  h.append(document.createTextNode(title));
+  if (count != null) h.append(el('b', null, String(count)));
+  s.append(h);
+  if (!rows.length) s.append(el('div', 'none', emptyText));
+  for (const r of rows) s.append(r);
+  host.append(s);
+}
+
+function renderRail() {
+  const rail = $('rail');
+  rail.replaceChildren();
+  const { book, waitlist, now } = state;
+
+  const door = book.filter((b) => b.status === 'arrived');
+  section(rail, 'At the door', door.length, door.map((b) => bookingRow(b)),
+    'Nobody waiting to be sat.');
+
+  const due = book
+    .filter((b) => (b.status === 'booked' || b.status === 'confirmed') && b.at < now + 60)
+    .sort((a, b) => a.at - b.at);
+  section(rail, 'Due', due.length, due.map((b) => bookingRow(b)),
+    'Nothing due in the next hour.');
+
+  const inHouse = book.filter((b) => IN_HOUSE.has(b.status) || b.status === 'paid')
+    .sort((a, b) => (a.seatedAt ?? a.at) - (b.seatedAt ?? b.at));
+  section(rail, 'In house', inHouse.length, inHouse.map((b) => bookingRow(b)),
+    'Empty room.');
+
+  const wl = waitlist.map((w) => {
+    const row = el('button', 'party');
+    row.append(el('div', 'pt num', `${now - w.since}m`));
+    const mid = el('div');
+    mid.append(el('div', 'nm', w.name));
+    const sub = el('div', 'sub');
+    sub.append(el('i', 'dot t-warn'));
+    sub.append(el('span', null, `${w.party} · quoted ${w.quoted}m`));
+    mid.append(sub);
+    row.append(mid);
+    const wait = waitFor(w.party, state);
+    row.append(el('div', 'tb num', wait ? hhmm(wait.at) : '—'));
+    row.addEventListener('click', () => seatWalkIn(w));
+    return row;
+  });
+  section(rail, 'At the bar', state.waitlist.length, wl, 'Nobody waiting.');
+
+  const notes = MENU_NOTES.filter((n) => n.at <= now);
+  if (notes.length) {
+    section(rail, 'From the pass', null, notes.map((n) => {
+      const d = el('div', 'note');
+      d.append(el('b', null, hhmm(n.at)));
+      d.append(document.createTextNode(n.text));
+      return d;
+    }), '');
+  }
+}
+
+/* ── the floor ───────────────────────────────────────────────────────────── */
+
+const NS = 'http://www.w3.org/2000/svg';
+const svgEl = (tag, attrs = {}) => {
+  const n = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  return n;
+};
+
+function assignments() {
+  const map = new Map();
+  for (const b of state.book) {
+    if (!LIVE.has(b.status)) continue;
+    const w = window_(b);
+    if (state.now < b.at - 45 || state.now >= w.to) continue;
+    for (const id of b.tableIds) map.set(id, b);
+  }
+  return map;
+}
+
+function renderFloor() {
+  const stage = $('stage');
+  const box = stage.getBoundingClientRect();
+  const sc = scaleFor(box.width, box.height);
+  const svg = svgEl('svg', {
+    id: 'floor', viewBox: `0 0 ${sc.width} ${sc.height}`,
+    preserveAspectRatio: 'xMidYMid meet',
+  });
+
+  /* the room: walls, kitchen, bar, pass */
+  svg.append(svgEl('rect', {
+    x: sc.x(0), y: sc.y(0), width: sc.len(ROOM.w), height: sc.len(ROOM.h),
+    rx: sc.len(0.18), fill: '#0d1016', stroke: 'rgba(255,255,255,.13)', 'stroke-width': 2,
+  }));
+  for (const f of FIXTURES) {
+    const fill = f.kind === 'kitchen' ? '#0b0e13'
+      : f.kind === 'wall' ? 'rgba(255,255,255,.11)'
+      : f.kind === 'door' ? 'rgba(240,180,41,.35)' : '#171c26';
+    svg.append(svgEl('rect', {
+      x: sc.x(f.x), y: sc.y(f.y), width: sc.len(f.w), height: sc.len(f.h),
+      rx: sc.len(0.06), fill,
+      stroke: f.kind === 'bar' || f.kind === 'pass' || f.kind === 'kitchen' ? 'rgba(255,255,255,.1)' : 'none',
+    }));
+    if (f.label) {
+      const t = svgEl('text', {
+        x: sc.x(f.x + f.w / 2), y: sc.y(f.y + f.h / 2) + 4,
+        'text-anchor': 'middle', fill: 'rgba(255,255,255,.26)',
+        'font-size': Math.max(8, sc.len(0.22)), 'font-family': 'ui-monospace, monospace',
+        'letter-spacing': 2, 'font-weight': 700,
+      });
+      t.textContent = f.label;
+      svg.append(t);
+    }
+  }
+
+  const seated = assignments();
+  const drawn = new Set();
+  const groups = [];
+  for (const t of TABLES) {
+    if (drawn.has(t.id)) continue;
+    const b = seated.get(t.id);
+    const ids = b && b.tableIds.length > 1 ? b.tableIds.filter((id) => byId.get(id)) : [t.id];
+    for (const id of ids) drawn.add(id);
+    groups.push({ ids, booking: b || null, table: t });
+  }
+
+  for (const g of groups) {
+    const o = outline(g.ids);
+    const b = g.booking;
+    const tone = b ? STATUS[b.status].tone : null;
+    const fill = { quiet: '#1b2230', warn: 'rgba(240,180,41,.26)', live: 'rgba(62,207,142,.22)',
+                   turn: 'rgba(90,169,255,.22)', done: '#161a22', bad: 'rgba(255,107,107,.2)' }[tone] || '#1b2230';
+    const edge = { quiet: 'rgba(255,255,255,.16)', warn: 'rgba(240,180,41,.75)', live: 'rgba(62,207,142,.7)',
+                   turn: 'rgba(90,169,255,.7)', done: 'rgba(255,255,255,.08)', bad: 'rgba(255,107,107,.75)' }[tone]
+                   || 'rgba(255,255,255,.16)';
+
+    const grp = svgEl('g', { class: 'tbl' + (b ? ' occupied' : '') });
+    grp.dataset.tables = g.ids.join(',');
+    if (b) grp.dataset.booking = b.id;
+    if (b && state.selected === b.id) grp.classList.add('sel');
+
+    for (const c of groupChairs(g.ids)) {
+      grp.append(svgEl('rect', {
+        class: 'chair', x: sc.x(c.x - 0.22), y: sc.y(c.y - 0.20),
+        width: sc.len(0.44), height: sc.len(0.40), rx: sc.len(0.09),
+      }));
+    }
+
+    grp.append(svgEl('rect', {
+      class: 'top', x: sc.x(o.x), y: sc.y(o.y), width: sc.len(o.w), height: sc.len(o.h),
+      rx: sc.len(o.r), fill, stroke: edge, 'stroke-width': 1.5,
+    }));
+
+    const label = svgEl('text', {
+      x: sc.x(o.cx), y: sc.y(o.cy) + (b ? -1 : 4),
+      'text-anchor': 'middle', fill: b ? '#fff' : 'rgba(255,255,255,.42)',
+      'font-size': Math.max(9, sc.len(b ? 0.24 : 0.28)), 'font-weight': 700,
+      'font-family': 'ui-monospace, monospace', 'pointer-events': 'none',
+    });
+    label.textContent = b ? b.name : g.ids.map((id) => byId.get(id).name).join('+');
+    grp.append(label);
+
+    if (b) {
+      const sub = svgEl('text', {
+        x: sc.x(o.cx), y: sc.y(o.cy) + Math.max(10, sc.len(0.30)),
+        'text-anchor': 'middle', fill: 'rgba(255,255,255,.62)',
+        'font-size': Math.max(8, sc.len(0.19)), 'font-family': 'ui-monospace, monospace',
+        'pointer-events': 'none',
+      });
+      const left = Math.round(window_(b).to - TURNAROUND - state.now);
+      sub.textContent = IN_HOUSE.has(b.status) || b.status === 'paid'
+        ? `${b.party} · ${left > 0 ? left + 'm' : 'due out'}`
+        : `${b.party} · ${hhmm(b.at)}`;
+      grp.append(sub);
+    }
+
+    svg.append(grp);
+  }
+
+  stage.replaceChildren(svg);
+  svg.addEventListener('pointerdown', onFloorPointerDown);
+}
+
+/* ── the timeline ────────────────────────────────────────────────────────── */
+
+function renderTimeline() {
+  const stage = $('stage');
+  const wrap = el('div', 'scroll');
+  const tl = el('div', 'tl');
+  const span = SERVICE.closes - SERVICE.opens;
+
+  const head = el('div', 'tl-head');
+  const hgrid = el('div', 'tl-grid');
+  for (let m = SERVICE.opens; m <= SERVICE.closes; m += 30) {
+    const pct = ((m - SERVICE.opens) / span) * 100;
+    const line = el('div', 'tl-hour' + (m % 60 ? ' half' : ''));
+    line.style.left = pct + '%';
+    hgrid.append(line);
+    if (m % 60 === 0) {
+      const t = el('div', 'tl-time num', hhmm(m));
+      t.style.left = pct + '%';
+      hgrid.append(t);
+    }
+  }
+  head.append(hgrid);
+  tl.append(head);
+
+  const clashing = new Set();
+  for (const c of conflicts(state.book)) { clashing.add(c.a.id); clashing.add(c.b.id); }
+
+  let lastZone = null;
+  for (const t of BOOKABLE) {
+    const row = el('div', 'tl-row' + (t.zone !== lastZone ? ' zone-start' : ''));
+    row.dataset.table = t.id;
+    lastZone = t.zone;
+
+    const lbl = el('div', 'tl-lbl');
+    lbl.append(el('span', null, t.name));
+    lbl.append(el('em', null, `${t.seats}`));
+    row.append(lbl);
+
+    const grid = el('div', 'tl-grid');
+    for (let m = SERVICE.opens; m <= SERVICE.closes; m += 30) {
+      const line = el('div', 'tl-hour' + (m % 60 ? ' half' : ''));
+      line.style.left = ((m - SERVICE.opens) / span) * 100 + '%';
+      grid.append(line);
+    }
+
+    for (const b of state.book) {
+      if (!b.tableIds.includes(t.id) || !LIVE.has(b.status)) continue;
+      const dur = b.duration ?? turnTime(b.party);
+      const blk = el('div', `blk b-${STATUS[b.status].tone}`
+        + (state.selected === b.id ? ' sel' : '') + (clashing.has(b.id) ? ' clash' : ''));
+      blk.style.left = ((b.at - SERVICE.opens) / span) * 100 + '%';
+      blk.style.width = ((dur + TURNAROUND) / span) * 100 + '%';
+      blk.style.setProperty('--turn', (TURNAROUND / (dur + TURNAROUND) * 100) + '%');
+      blk.dataset.id = b.id;
+      blk.append(el('span', null, `${b.name} ${b.party}`));
+      blk.append(el('i', 'turn'));
+      blk.addEventListener('click', () => select(b.id));
+      blk.addEventListener('pointerdown', (e) => beginDrag(e, b, blk));
+      grid.append(blk);
+    }
+
+    const now = el('div', 'tl-now');
+    now.style.left = ((state.now - SERVICE.opens) / span) * 100 + '%';
+    grid.append(now);
+
+    row.append(grid);
+    tl.append(row);
+  }
+
+  const nowHead = el('div', 'tl-now');
+  nowHead.style.left = ((state.now - SERVICE.opens) / span) * 100 + '%';
+  hgrid.append(nowHead);
+
+  wrap.append(tl);
+  stage.replaceChildren(wrap);
+}
+
+/* ── the diary ───────────────────────────────────────────────────────────── */
+
+function renderDiary() {
+  const stage = $('stage');
+  const wrap = el('div', 'scroll');
+  const table = el('table', 'diary');
+  const thead = el('thead');
+  const hr = el('tr');
+  for (const h of ['Time', 'Name', 'Covers', 'Table', 'Status', 'Phone', 'Note']) hr.append(el('th', null, h));
+  thead.append(hr);
+  table.append(thead);
+
+  const tbody = el('tbody');
+  for (const b of [...state.book].sort((a, b) => a.at - b.at || a.name.localeCompare(b.name))) {
+    const tr = el('tr', (state.selected === b.id ? 'sel ' : '')
+      + (b.status === 'cancelled' || b.status === 'noshow' || b.status === 'left' ? 'gone' : ''));
+    tr.append(el('td', 'num', hhmm(b.at)));
+    const nameCell = el('td');
+    nameCell.append(el('b', null, b.name));
+    if (b.tag) nameCell.append(el('span', 'flag ' + (b.tag === 'VIP' ? 'vip' : 'acc'), ' ' + b.tag));
+    tr.append(nameCell);
+    tr.append(el('td', 'num', String(b.party)));
+    tr.append(el('td', 'num', b.tableIds.join(' + ') || '—'));
+    const st = el('td');
+    st.append(el('i', 'dot t-' + STATUS[b.status].tone));
+    st.append(document.createTextNode(' ' + STATUS[b.status].label));
+    tr.append(st);
+    tr.append(el('td', 'num', b.phone || ''));
+    tr.append(el('td', null, b.note || ''));
+    tr.addEventListener('click', () => select(b.id));
+    tbody.append(tr);
+  }
+  table.append(tbody);
+  wrap.append(table);
+  stage.replaceChildren(wrap);
+}
+
+/* ── the inspector ───────────────────────────────────────────────────────── */
+
+function renderInspector() {
+  const host = $('inspector');
+  host.replaceChildren();
+  const b = state.book.find((x) => x.id === state.selected);
+
+  if (!b) {
+    const e = el('div', 'empty-insp');
+    e.append(el('b', null, 'Nothing selected'));
+    e.append(document.createTextNode(
+      'Pick a party from the list, a table on the floor, or a block on the timeline. '
+      + 'Then drag it somewhere else and the system will tell you whether that works.'));
+    host.append(e);
+    return;
+  }
+
+  const head = el('div', 'insp-head');
+  head.append(el('h2', null, b.name));
+  const meta = el('div', 'meta');
+  meta.append(el('i', 'dot t-' + STATUS[b.status].tone));
+  meta.append(el('span', null, STATUS[b.status].label));
+  meta.append(el('span', null, '·'));
+  meta.append(el('span', null, `${b.party} covers`));
+  if (b.tag) meta.append(el('span', 'flag ' + (b.tag === 'VIP' ? 'vip' : 'acc'), b.tag));
+  if (b.allergy) meta.append(el('span', 'flag alg', 'ALLERGY'));
+  if (b.access) meta.append(el('span', 'flag acc', 'ACCESS'));
+  head.append(meta);
+  host.append(head);
+
+  const dur = b.duration ?? turnTime(b.party);
+  const w = window_(b);
+  const kv = el('dl', 'kv');
+  const pair = (k, v) => { kv.append(el('dt', null, k)); kv.append(el('dd', v === '' ? null : 'num', v)); };
+  pair('Booked', hhmm(b.at));
+  pair('Table', b.tableIds.join(' + ') || 'unassigned');
+  pair('Turn', `${dur} min + ${TURNAROUND} to re-lay`);
+  pair('Holds until', hhmm(w.to));
+  if (b.seatedAt) pair('Sat at', hhmm(b.seatedAt));
+  if (b.phone) pair('Phone', b.phone);
+  host.append(kv);
+
+  if (b.note) {
+    const n = el('div', 'note');
+    n.append(el('b', null, 'Note'));
+    n.append(document.createTextNode(b.note));
+    host.append(n);
+  }
+
+  /* the actions a host would actually reach for, in that order */
+  const acts = el('div', 'acts');
+  const act = (label, fn, cls = 'chip') => {
+    const btn = el('button', cls, label);
+    btn.addEventListener('click', fn);
+    acts.append(btn);
+  };
+  if (b.status === 'booked' || b.status === 'confirmed') {
+    act('Arrived', () => { b.status = 'arrived'; b.edited = true; announce(`${b.name} at the door`); });
+    act('No-show', () => { b.status = 'noshow'; b.edited = true; announce(`${b.name} marked no-show — ${b.tableIds.join('+')} released`); });
+  }
+  if (b.status === 'arrived') {
+    act('Seat now', () => {
+      const check = canSeat(b, b.tableIds, state.book, { now: state.now });
+      if (!check.ok) return toast(check.message, true);
+      b.status = 'seated'; b.seatedAt = state.now; b.edited = true;
+      announce(`${b.name} sat on ${b.tableIds.join('+')}`);
+    }, 'chip primary');
+  }
+  if (IN_HOUSE.has(b.status)) {
+    const order = ['seated', 'main', 'dessert', 'bill'];
+    const next = order[order.indexOf(b.status) + 1];
+    if (next) act(`→ ${STATUS[next].label}`, () => { b.status = next; b.edited = true; announce(`${b.name} on ${next}`); });
+    act('Paid & gone', () => { b.status = 'left'; b.edited = true; announce(`${b.tableIds.join('+')} is free`); });
+  }
+  if (LIVE.has(b.status)) act('Cancel', () => { b.status = 'cancelled'; b.edited = true; announce(`${b.name} cancelled`); });
+  if (acts.children.length) host.append(acts);
+
+  /* where else could they go — the same search the refusals use */
+  if (LIVE.has(b.status)) {
+    const moves = findTables(b.party, b.at, state.book, { ignoreId: b.id, limit: 5, exclude: b.tableIds });
+    const s = el('div', 'sect');
+    const h = el('h3');
+    h.append(document.createTextNode('Move to'));
+    s.append(h);
+    if (!moves.length) {
+      s.append(el('div', 'none', `Nothing else free at ${hhmm(b.at)}.`));
+      for (const later of nextAvailable(b.party, b.at, state.book, { span: 120, notBefore: state.now }).slice(0, 3)) {
+        const o = el('button', 'offer');
+        o.append(el('span', 'num', hhmm(later.at)));
+        o.append(el('span', null, `table ${later.label}`));
+        o.append(el('em', null, `${later.at > b.at ? '+' : ''}${later.at - b.at} min`));
+        o.addEventListener('click', () => {
+          b.at = later.at; b.tableIds = later.tableIds; b.edited = true;
+          announce(`${b.name} moved to ${hhmm(later.at)} on ${later.label}`);
+        });
+        s.append(o);
+      }
+    }
+    for (const m of moves) {
+      const o = el('button', 'offer');
+      o.append(el('span', 'num', m.label));
+      o.append(el('span', null, `${m.seats} seats`));
+      o.append(el('em', null, m.tables[0].zone));
+      o.addEventListener('click', () => {
+        b.tableIds = m.tableIds; b.edited = true;
+        announce(`${b.name} moved to ${m.label}`);
+      });
+      s.append(o);
+    }
+    host.append(s);
+  }
+}
+
+/* ── the numbers along the bottom ────────────────────────────────────────── */
+
+function renderStats() {
+  const host = $('stats');
+  host.replaceChildren();
+  const s = summary(state);
+  const peak = loadCurve(state.book).reduce((best, p) => (p.covers > best.covers ? p : best));
+
+  const stat = (v, k, cls = '') => {
+    const d = el('div', 'stat ' + cls);
+    d.append(el('div', 'v num', v));
+    d.append(el('div', 'k', k));
+    host.append(d);
+  };
+  stat(String(s.seatedCovers), 'in house');
+  stat(String(s.servedCovers), 'covers served');
+  stat(String(s.bookedCovers), 'still to come');
+  stat(String(s.waitingCovers), 'at the bar', s.waiting ? 'warn' : '');
+  stat(String(s.noshows), 'no-shows', s.noshows ? 'bad' : '');
+  stat(hhmm(peak.at), 'peak');
+
+  host.append(el('div', 'grow'));
+  const feed = el('div', 'feed');
+  if (state.feed[0]) {
+    feed.append(el('i', 'dot t-live'));
+    feed.append(el('span', null, `${hhmm(state.feed[0].at)}  ${state.feed[0].text}`));
+  }
+  host.append(feed);
+}
+
+/* ── conflicts ───────────────────────────────────────────────────────────── */
+
+function renderAlert() {
+  const found = conflicts(state.book);
+  const btn = $('alert');
+  btn.hidden = !found.length;
+  if (!found.length) return;
+  btn.textContent = `⚠ ${found.length} conflict${found.length === 1 ? '' : 's'}`;
+  btn.onclick = () => showConflict(found[0]);
+}
+
+function showConflict(c) {
+  select(c.b.id);
+  const later = nextAvailable(c.b.party, c.b.at, state.book, { span: 120, notBefore: state.now });
+  const alt = findTables(c.b.party, c.b.at, state.book, { ignoreId: c.b.id, limit: 3 });
+  openModal({
+    title: 'Two parties, one table',
+    sub: `${c.a.name} and ${c.b.name} are both on table ${c.tables.join(', ')}.`,
+    body: (pad) => {
+      const w = window_(c.a);
+      pad.append(el('p', null,
+        `${c.a.name} sat a party of ${c.a.party} at ${hhmm(c.a.at)}. `
+        + `A party of that size holds the table for ${turnTime(c.a.party)} minutes and `
+        + `${TURNAROUND} more to clear and re-lay it, so table ${c.tables[0]} is not free `
+        + `until ${hhmm(w.to)}. ${c.b.name} is booked onto it at ${hhmm(c.b.at)}.`));
+      const h = el('h3');
+      h.style.cssText = 'font:700 10px/1 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--mute);margin:16px 0 8px';
+      h.textContent = alt.length ? 'Move them to' : 'Nothing free at that time — offer them';
+      pad.append(h);
+      const options = alt.length
+        ? alt.map((m) => ({ label: m.label, note: `${m.seats} seats, ${m.tables[0].zone}`, apply: () => { c.b.tableIds = m.tableIds; } }))
+        : later.slice(0, 3).map((m) => ({ label: hhmm(m.at), note: `table ${m.label} — ${m.at - c.b.at > 0 ? '+' : ''}${m.at - c.b.at} min`, apply: () => { c.b.at = m.at; c.b.tableIds = m.tableIds; } }));
+      for (const o of options) {
+        const btn = el('button', 'offer');
+        btn.append(el('span', 'num', o.label));
+        btn.append(el('span', null, o.note));
+        btn.addEventListener('click', () => {
+          o.apply();
+          c.b.edited = true;
+          closeModal();
+          announce(`${c.b.name} moved — conflict cleared`);
+        });
+        pad.append(btn);
+      }
+    },
+  });
+}
+
+/* ── selection and re-render ─────────────────────────────────────────────── */
+
+function select(id) {
+  state.selected = state.selected === id ? null : id;
+  render();
+  if (innerWidth <= 900 && state.selected) setPane('insp');
+}
+
+function announce(text) {
+  state.feed.unshift({ at: state.now, kind: 'edit', text });
+  state.feed = state.feed.slice(0, 40);
+  toast(text);
+  render();
+}
+
+let toastTimer = null;
+function toast(text, bad = false) {
+  const t = $('toast');
+  t.textContent = text;
+  t.classList.toggle('bad', bad);
+  t.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('on'), 2600);
+}
+
+function render() {
+  $('clock').textContent = hhmm(state.now);
+  $('when').textContent = SERVICE_DATE;
+  renderRail();
+  if (state.view === 'floor') renderFloor();
+  else if (state.view === 'timeline') renderTimeline();
+  else renderDiary();
+  renderInspector();
+  renderStats();
+  renderAlert();
+}
+
+/* ── dragging a party somewhere else ─────────────────────────────────────────
+   The whole product in one gesture. Pick a party up and the room answers in
+   real time: green where they fit, amber where they would be squeezed, red
+   where they cannot go — and the red always says why, and offers the fix.
+
+   Pointer events rather than HTML5 drag-and-drop, which cannot be styled, does
+   not work with touch without a fight, and gives you no control over the
+   feedback that is the entire point here. */
+
+let drag = null;
+
+function beginDrag(e, booking, node) {
+  if (e.button !== 0 && e.pointerType === 'mouse') return;
+  drag = {
+    booking, node, id: e.pointerId,
+    from: { x: e.clientX, y: e.clientY },
+    moved: false, target: null, verdict: null,
+  };
+  node.setPointerCapture?.(e.pointerId);
+  node.addEventListener('pointermove', onDragMove);
+  node.addEventListener('pointerup', onDragEnd);
+  node.addEventListener('pointercancel', onDragEnd);
+}
+
+function onDragMove(e) {
+  if (!drag || e.pointerId !== drag.id) return;
+  const far = Math.hypot(e.clientX - drag.from.x, e.clientY - drag.from.y);
+  if (!drag.moved && far < 6) return;
+
+  if (!drag.moved) {
+    drag.moved = true;
+    if (state.running) play(false);
+    drag.node.classList.add('dragging');
+    drag.ghost = el('div', 'ghost', `${drag.booking.name} · ${drag.booking.party}`);
+    document.body.append(drag.ghost);
+    drag.hint = el('div', 'drophint');
+    $('stage').append(drag.hint);
+    e.preventDefault();
+  }
+
+  drag.ghost.style.left = e.clientX + 'px';
+  drag.ghost.style.top = e.clientY + 'px';
+
+  const hit = state.view === 'floor' ? floorTarget(e) : timelineTarget(e);
+  drag.target = hit;
+  paintDragFeedback(hit, e);
+}
+
+/** Which table is under the pointer on the floor plan, in room metres. */
+function floorTarget(e) {
+  const svg = $('floor');
+  if (!svg) return null;
+  const ctm = svg.getScreenCTM();
+  if (!ctm) return null;
+  const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse());
+  const box = $('stage').getBoundingClientRect();
+  const sc = scaleFor(box.width, box.height);
+  const t = tableAt(p.x / sc.s - 0.55, p.y / sc.s - 0.55);
+  if (!t) return null;
+
+  /* Dropping onto a table another party has joined means joining that whole
+     run, not stealing one end of it. */
+  const held = holderOf(t.id, drag.booking.at, state.book);
+  const ids = held && held.id !== drag.booking.id && held.tableIds.length > 1 ? held.tableIds : [t.id];
+  return { kind: 'floor', tableIds: ids, at: drag.booking.at, label: ids.join(' + ') };
+}
+
+/** Which table and time the pointer is over on the timeline. */
+function timelineTarget(e) {
+  const row = document.elementsFromPoint(e.clientX, e.clientY).find((n) => n.classList?.contains('tl-row'));
+  if (!row) return null;
+  const grid = row.querySelector('.tl-grid').getBoundingClientRect();
+  const span = SERVICE.closes - SERVICE.opens;
+  const frac = Math.max(0, Math.min(1, (e.clientX - grid.left) / grid.width));
+  /* Snapped to five minutes. A booking system that lets you put a table at
+     19:37 is a booking system nobody can read at a glance. */
+  const at = Math.round((SERVICE.opens + frac * span) / 5) * 5;
+  return { kind: 'timeline', tableIds: [+row.dataset.table], at, label: String(row.dataset.table) };
+}
+
+function paintDragFeedback(hit, e) {
+  for (const g of document.querySelectorAll('.tbl')) g.classList.remove('ok', 'bad', 'hit');
+  if (!hit) { drag.hint.className = 'drophint'; drag.hint.textContent = ''; drag.hint.hidden = true; return; }
+  drag.hint.hidden = false;
+
+  const probe = { ...drag.booking, at: hit.at };
+  const v = canSeat(probe, hit.tableIds, state.book, { now: state.now });
+  drag.verdict = { ...v, at: hit.at, tableIds: hit.tableIds };
+
+  const cls = v.ok ? 'ok' : v.code === 'squeeze' ? 'hit' : 'bad';
+  if (state.view === 'floor') {
+    for (const g of document.querySelectorAll('.tbl')) {
+      const ids = (g.dataset.tables || '').split(',').map(Number);
+      if (ids.some((id) => hit.tableIds.includes(id))) g.classList.add(cls);
+    }
+  }
+
+  drag.hint.className = 'drophint ' + (v.ok ? 'yes' : v.code === 'squeeze' ? 'maybe' : 'no');
+  drag.hint.replaceChildren();
+  drag.hint.append(el('b', null,
+    v.ok ? `Table ${v.label}` : v.code === 'squeeze' ? 'Tight' : 'No'));
+  drag.hint.append(document.createTextNode(
+    v.ok ? `${drag.booking.party} covers at ${hhmm(hit.at)} — ${v.seats} seats.` : v.message));
+  /* A lateral move — same time, different table — is applied on release,
+     because it is obviously right and saving the host a second drag is the
+     whole point. A move that changes the TIME is not: that is a decision made
+     with the guest on the phone, not one a drop gesture should make on their
+     behalf. So it is offered, and taken deliberately from the panel. */
+  const fix = v.suggestion || v.squeeze;
+  if (fix) {
+    drag.hint.append(el('i', null, fix.at != null && fix.at !== hit.at
+      ? fix.note + ' — offered on the right'
+      : fix.note + ' — release to take it'));
+  } else if (!v.ok) {
+    /* A refusal with nothing to offer has to say so. Stopping at "no" leaves
+       the host wondering whether the system is broken or the night is full. */
+    drag.hint.append(el('i', null, `Nothing else free for ${drag.booking.party} tonight.`));
+  }
+
+  const box = $('stage').getBoundingClientRect();
+  drag.hint.style.left = Math.min(box.width - 310, Math.max(8, e.clientX - box.left + 16)) + 'px';
+  drag.hint.style.top = Math.min(box.height - 90, Math.max(8, e.clientY - box.top + 18)) + 'px';
+}
+
+function onDragEnd(e) {
+  if (!drag || e.pointerId !== drag.id) return;
+  const { booking, node, verdict, target, moved } = drag;
+  node.removeEventListener('pointermove', onDragMove);
+  node.removeEventListener('pointerup', onDragEnd);
+  node.removeEventListener('pointercancel', onDragEnd);
+  node.classList.remove('dragging');
+  drag.ghost?.remove();
+  drag.hint?.remove();
+  drag = null;
+  if (!moved || !target || !verdict) { render(); return; }
+
+  if (verdict.ok) {
+    apply(booking, verdict.tableIds, verdict.at);
+    return;
+  }
+  /* A refusal that came with a way forward takes it on release, because the
+     alternative is telling somebody what to do and making them do it again. */
+  const fix = verdict.suggestion || verdict.squeeze;
+  if (fix && (fix.at == null || fix.at === verdict.at)) {
+    apply(booking, fix.tableIds, verdict.at,
+      verdict.code === 'squeeze' ? `${booking.name} squeezed onto ${fix.label}` : null);
+    return;
+  }
+  /* Nothing moves. The refusal and the offer are both in the panel, where the
+     host can take the one that changes the time on purpose. */
+  state.selected = booking.id;
+  toast(verdict.message, true);
+  render();
+}
+
+function apply(booking, tableIds, at, message) {
+  const same = booking.at === at
+    && booking.tableIds.length === tableIds.length
+    && booking.tableIds.every((id) => tableIds.includes(id));
+  if (same) {
+    /* Nothing moved. Saying "Sandhu → 30 (was 30)" is a system reporting work
+       it did not do, which is the fastest way to stop being believed. */
+    toast(`${booking.name} is already on ${tableIds.join(' + ')} — nothing better free at ${hhmm(at)}.`);
+    state.selected = booking.id;
+    render();
+    return;
+  }
+  const was = `${booking.tableIds.join('+')} at ${hhmm(booking.at)}`;
+  booking.tableIds = [...tableIds];
+  booking.at = at;
+  booking.edited = true;
+  state.selected = booking.id;
+  announce(message || `${booking.name} → ${tableIds.join(' + ')} at ${hhmm(at)}  (was ${was})`);
+}
+
+/** Clicking or dragging on the floor plan. */
+function onFloorPointerDown(e) {
+  const grp = e.target.closest?.('.tbl');
+  if (!grp) { if (state.selected) select(state.selected); return; }
+  const id = grp.dataset.booking;
+  const booking = id && state.book.find((b) => b.id === id);
+  if (booking) {
+    beginDrag(e, booking, grp);
+    grp.addEventListener('pointerup', function once(ev) {
+      grp.removeEventListener('pointerup', once);
+      if (!drag?.moved && ev.pointerId === e.pointerId) select(booking.id);
+    });
+  }
+}
+
+/* ── walk-ins ────────────────────────────────────────────────────────────── */
+
+function seatWalkIn(w) {
+  const hit = findTables(w.party, state.now, state.book, { limit: 1 })[0];
+  if (!hit) {
+    const wait = waitFor(w.party, state);
+    return toast(wait
+      ? `Nothing for ${w.party} yet — about ${wait.minutes} minutes, table ${wait.table.label}.`
+      : `Nothing for a party of ${w.party} tonight.`, true);
+  }
+  const b = {
+    id: 'w' + (++state.seq), name: w.name, party: w.party, at: state.now,
+    tableIds: hit.tableIds, status: 'seated', seatedAt: state.now,
+    phone: w.phone, note: w.note, tag: 'walk-in', edited: true,
+  };
+  state.book.push(b);
+  state.waitlist = state.waitlist.filter((x) => x.id !== w.id);
+  state.selected = b.id;
+  announce(`${w.name} sat on ${hit.label} after ${state.now - w.since} minutes at the bar`);
+}
+
+/* ── dialogs ─────────────────────────────────────────────────────────────── */
+
+function openModal({ title, sub, body, footer }) {
+  const m = $('modal');
+  m.replaceChildren();
+  const head = el('header');
+  head.append(el('h2', null, title));
+  if (sub) head.append(el('p', null, sub));
+  m.append(head);
+  const pad = el('div', 'pad');
+  body(pad);
+  m.append(pad);
+  const foot = el('footer');
+  if (footer) footer(foot);
+  const close = el('button', 'chip', 'Close');
+  close.addEventListener('click', closeModal);
+  foot.append(close);
+  m.append(foot);
+  $('veil').classList.add('on');
+  m.querySelector('input, button')?.focus();
+}
+
+function closeModal() {
+  $('veil').classList.remove('on');
+  $('modal').replaceChildren();
+}
+
+/* ── taking a booking ────────────────────────────────────────────────────── */
+
+function newBooking() {
+  let party = 2;
+  let name = '';
+  openModal({
+    title: 'Take a booking',
+    sub: 'Party size first, then the times that are actually free tonight.',
+    body: (pad) => {
+      const f1 = el('div', 'field');
+      f1.append(el('label', null, 'Name'));
+      const input = el('input');
+      input.placeholder = 'Surname';
+      input.addEventListener('input', () => { name = input.value; });
+      f1.append(input);
+      pad.append(f1);
+
+      const f2 = el('div', 'field');
+      f2.append(el('label', null, 'Covers'));
+      const sizes = el('div', 'sizes');
+      const times = el('div');
+      for (let n = 1; n <= 10; n++) {
+        const btn = el('button', null, String(n));
+        btn.setAttribute('aria-pressed', String(n === party));
+        btn.addEventListener('click', () => {
+          party = n;
+          for (const s of sizes.children) s.setAttribute('aria-pressed', String(+s.textContent === n));
+          drawTimes();
+        });
+        sizes.append(btn);
+      }
+      f2.append(sizes);
+      pad.append(f2);
+
+      const f3 = el('div', 'field');
+      f3.append(el('label', null, 'Free tonight'));
+      f3.append(times);
+      pad.append(f3);
+
+      /* The only honest way to take a booking: offer the times the room can
+         actually do, worked out by the same search that validates every drag.
+         A free-text time box invites the host to promise something the
+         kitchen cannot deliver. */
+      function drawTimes() {
+        times.replaceChildren();
+        const offers = offerTimes(party, state);
+        if (!offers.length) {
+          times.append(el('div', 'none', `Nothing left tonight for ${party}. Offer them tomorrow.`));
+          return;
+        }
+        for (const o of offers.slice(0, 8)) {
+          const btn = el('button', 'offer');
+          btn.append(el('span', 'num', o.label));
+          btn.append(el('span', null, `table ${o.label2 ?? o.tableIds.join(' + ')}`));
+          btn.append(el('em', null, `${o.seats} seats`));
+          btn.addEventListener('click', () => {
+            const b = {
+              id: 'n' + (++state.seq), name: name.trim() || 'New booking', party,
+              at: o.at, tableIds: o.tableIds, status: 'booked', edited: true,
+            };
+            state.book.push(b);
+            state.selected = b.id;
+            closeModal();
+            announce(`${b.name}, ${party} at ${hhmm(o.at)} on ${o.tableIds.join(' + ')}`);
+          });
+          times.append(btn);
+        }
+      }
+      drawTimes();
+    },
+  });
+}
+
+/* ── the command palette ─────────────────────────────────────────────────── */
+
+function palette() {
+  const m = $('modal');
+  m.replaceChildren();
+  m.id = 'modal';
+  const wrap = el('div');
+  wrap.id = 'cmd';
+  const input = el('input');
+  input.placeholder = 'Find a party, a table, or an action…';
+  const list = el('div');
+  list.id = 'cmdList';
+  wrap.append(input, list);
+  m.append(wrap);
+  $('veil').classList.add('on');
+
+  let rows = [], cursor = 0;
+
+  const actions = [
+    { label: 'Run the service', hint: 'space', run: () => play(true) },
+    { label: 'Take a booking', hint: '⌘N', run: newBooking },
+    { label: 'Floor plan', hint: '1', run: () => setView('floor') },
+    { label: 'Timeline', hint: '2', run: () => setView('timeline') },
+    { label: 'Diary', hint: '3', run: () => setView('diary') },
+    { label: 'Jump to 20:00', hint: '', run: () => setNow(20 * 60) },
+    { label: 'Reset the night', hint: '', run: reset },
+  ];
+
+  function draw() {
+    const q = input.value.trim().toLowerCase();
+    rows = [];
+    for (const b of state.book) {
+      if (q && !(`${b.name} ${b.tableIds.join(' ')} ${hhmm(b.at)}`.toLowerCase().includes(q))) continue;
+      rows.push({
+        label: b.name,
+        hint: `${hhmm(b.at)} · ${b.party} · ${b.tableIds.join('+') || '—'}`,
+        tone: STATUS[b.status].tone,
+        run: () => { select(b.id); closeModal(); },
+      });
+    }
+    for (const a of actions) {
+      if (q && !a.label.toLowerCase().includes(q)) continue;
+      rows.push({ ...a, run: () => { a.run(); closeModal(); } });
+    }
+    rows = rows.slice(0, 40);
+    cursor = Math.min(cursor, Math.max(0, rows.length - 1));
+    list.replaceChildren();
+    rows.forEach((r, i) => {
+      const btn = el('button', 'cmd-row');
+      btn.setAttribute('aria-selected', String(i === cursor));
+      if (r.tone) btn.append(el('i', 'dot t-' + r.tone));
+      btn.append(el('span', null, r.label));
+      if (r.hint) btn.append(el('em', null, r.hint));
+      btn.addEventListener('click', r.run);
+      list.append(btn);
+    });
+  }
+
+  input.addEventListener('input', () => { cursor = 0; draw(); });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') { cursor = Math.min(cursor + 1, rows.length - 1); draw(); e.preventDefault(); }
+    else if (e.key === 'ArrowUp') { cursor = Math.max(cursor - 1, 0); draw(); e.preventDefault(); }
+    else if (e.key === 'Enter') { rows[cursor]?.run(); e.preventDefault(); }
+  });
+  draw();
+  input.focus();
+}
+
+/* ── views, panes, keys ──────────────────────────────────────────────────── */
+
+function setView(v) {
+  state.view = v;
+  for (const btn of document.querySelectorAll('.views [role="tab"]')) {
+    btn.setAttribute('aria-selected', String(btn.dataset.view === v));
+  }
+  for (const btn of document.querySelectorAll('.mobile-tabs [role="tab"]')) {
+    if (btn.dataset.pane === 'main') btn.textContent = v.toUpperCase();
+  }
+  render();
+}
+
+function setPane(p) {
+  document.body.classList.toggle('pane-rail', p === 'rail');
+  document.body.classList.toggle('pane-insp', p === 'insp');
+  for (const btn of document.querySelectorAll('.mobile-tabs [role="tab"]')) {
+    btn.setAttribute('aria-selected', String(btn.dataset.pane === p));
+  }
+  if (p === 'main') render();
+}
+
+function reset() {
+  play(false);
+  state.book = freshBook();
+  state.waitlist = freshWaitlist();
+  state.now = NOW;
+  state.selected = null;
+  state.feed = [];
+  render();
+  toast('Back to 19:42.');
+}
+
+for (const btn of document.querySelectorAll('.views [role="tab"]')) {
+  btn.addEventListener('click', () => setView(btn.dataset.view));
+}
+for (const btn of document.querySelectorAll('.mobile-tabs [role="tab"]')) {
+  btn.addEventListener('click', () => setPane(btn.dataset.pane));
+}
+$('play').addEventListener('click', () => play());
+/* The buttons and the keys land on whole quarter hours; only the running
+   clock lives between them. */
+const nudge = (by) => setNow(Math.round((state.now + by) / 15) * 15);
+$('fwd15').addEventListener('click', () => nudge(15));
+$('back15').addEventListener('click', () => nudge(-15));
+$('newBtn').addEventListener('click', newBooking);
+$('cmdBtn').addEventListener('click', palette);
+$('veil').addEventListener('click', (e) => { if (e.target === $('veil')) closeModal(); });
+
+addEventListener('keydown', (e) => {
+  const typing = e.target.matches?.('input, select, textarea');
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); palette(); return; }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'n') { e.preventDefault(); newBooking(); return; }
+  if (e.key === 'Escape') { closeModal(); return; }
+  if (typing) return;
+  if (e.key === ' ') { e.preventDefault(); play(); }
+  else if (e.key === 'ArrowRight') nudge(e.shiftKey ? 60 : 15);
+  else if (e.key === 'ArrowLeft') nudge(e.shiftKey ? -60 : -15);
+  else if (e.key === '1') setView('floor');
+  else if (e.key === '2') setView('timeline');
+  else if (e.key === '3') setView('diary');
+});
+
+let resizeTimer = null;
+addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(render, 90);
+});
+
+/* On a phone this is the host stand by the door, and the first thing a host
+   wants is the list of who is due, not a floor plan they cannot read at that
+   size. The plan is one tap away. */
+if (innerWidth <= 900) setPane('rail');
+
+render();
+
+/* A handle for driving it from a script, which is how every screen in this
+   thing was checked. */
+window.covers = {
+  state, setNow, play, select, render,
+  summary: () => summary(state),
+  conflicts: () => conflicts(state.book).map((c) => `${c.a.name}/${c.b.name} on ${c.tables}`),
+  seatCheck: (id, tables) => canSeat(state.book.find((b) => b.id === id), tables, state.book),
+};
+</script>
+</body>
+</html>
