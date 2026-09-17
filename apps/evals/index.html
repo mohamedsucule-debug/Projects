@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="icon" href="../../favicon.svg" />
+<meta name="theme-color" content="#0a0d16" />
+<title>Evals — 92% versus 89% is not a result</title>
+<meta name="description" content="Two real parsers, eight hundred real items, graded live. Watch the confidence interval on the difference cross zero as you shrink the sample, and see the run where the better system scores worse. Paired bootstrap, McNemar's test, and the sample size you needed before you started." />
+<meta property="og:title" content="Evals — 92% versus 89% is not a result" />
+<meta property="og:description" content="The part of shipping an LLM product that nobody demos: knowing whether the number moved. Real systems, real grading, real statistics." />
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --bg: #0a0d16; --panel: #0f1422; --raise: #141a2b;
+    --line: rgba(255,255,255,.09); --line2: rgba(255,255,255,.17);
+    --ink: #e9eefb; --dim: rgba(233,238,251,.56); --dimmer: rgba(233,238,251,.34);
+    --accent: #5fb8ff;
+    /* The two systems. Validated for colour-vision deficiency against this
+       page's panel surface — worst-pair ΔE 22.3 under protanopia, both inside
+       the dark-mode lightness band. Not chosen by eye. */
+    --s1: #bc8436;   /* parser v1 — the incumbent */
+    --s2: #3f8fd4;   /* parser v2 — the change */
+    --good: #6cc48f; --warn: #d9a441; --bad: #e0736f;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans);
+    -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+
+  header.bar {
+    position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 12px;
+    flex-wrap: wrap; padding: 10px 16px; border-bottom: 1px solid var(--line);
+    background: rgba(10,13,22,.88); backdrop-filter: blur(14px);
+  }
+  .back { color: var(--dim); text-decoration: none; font: 600 11.5px/1 var(--mono);
+    letter-spacing: .07em; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; }
+  .back:hover { color: var(--ink); border-color: var(--line2); }
+  .bar .title { font-weight: 800; font-size: 15px; letter-spacing: -.012em; }
+  .bar .title small { font-weight: 500; color: var(--dimmer); margin-left: 9px; font-size: 12px; }
+  .grow { flex: 1 1 auto; }
+
+  main { max-width: 1020px; margin: 0 auto; padding: 0 20px 110px; }
+  .lede { padding: 46px 0 8px; }
+  .lede h1 { font-size: clamp(30px, 4.6vw, 46px); line-height: 1.06; letter-spacing: -.035em;
+    margin: 0 0 18px; max-width: 19ch; }
+  .lede h1 em { font-style: normal; color: var(--accent); }
+  .lede p { font-size: 17px; line-height: 1.65; color: var(--dim); max-width: 66ch; margin: 0 0 14px; }
+  .lede p b { color: var(--ink); font-weight: 650; }
+
+  section { margin-top: 60px; }
+  section > h2 { font: 700 11.5px/1 var(--mono); letter-spacing: .2em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 12px; }
+  section > .say { font-size: 15.5px; line-height: 1.65; color: var(--dim); max-width: 70ch; margin: 0 0 20px; }
+  section > .say b { color: var(--ink); font-weight: 650; }
+
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+  .card + .card { margin-top: 14px; }
+  .card h3 { margin: 0 0 4px; font-size: 15px; letter-spacing: -.015em; }
+  .card h3 span { font: 600 10.5px/1 var(--mono); letter-spacing: .12em; color: var(--dimmer);
+    margin-left: 8px; text-transform: uppercase; }
+  .card > p { margin: 0 0 14px; font-size: 13.5px; line-height: 1.6; color: var(--dim); }
+  .card > p b { color: var(--ink); font-weight: 650; }
+
+  .controls { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .seg { display: inline-flex; border: 1px solid var(--line2); border-radius: 9px; overflow: hidden; }
+  .seg button { border: 0; background: transparent; color: var(--dim); cursor: pointer;
+    padding: 9px 13px; font: 650 12px/1 var(--mono); letter-spacing: .03em; }
+  .seg button[aria-pressed="true"] { background: rgba(95,184,255,.18); color: #cfe9ff; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  label.slider { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--dim); }
+  label.slider input { width: 230px; accent-color: var(--accent); }
+  label.slider b { color: var(--ink); font: 700 14px/1 var(--mono); min-width: 4ch; }
+
+  /* ── stat tiles: the story is one number, so it is not a chart ───── */
+  .tiles { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line);
+    border-radius: 12px; overflow: hidden; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+  .tile { background: var(--panel); padding: 15px 16px; }
+  .tile .k { font: 600 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase;
+    color: var(--dimmer); display: flex; align-items: center; gap: 7px; }
+  .tile .k i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; font-style: normal; }
+  .tile .v { font: 700 30px/1.05 var(--sans); letter-spacing: -.03em; margin-top: 9px; }
+  .tile .ci { font: 600 11.5px/1.4 var(--mono); color: var(--dim); margin-top: 7px; }
+
+  /* ── the verdict ──────────────────────────────────────────────── */
+  .verdict { margin-top: 14px; padding: 16px 18px; border-radius: 12px;
+    display: flex; gap: 14px; align-items: flex-start; font-size: 14.5px; line-height: 1.6; }
+  .verdict .mark { font: 700 11px/1 var(--mono); letter-spacing: .12em; padding: 7px 10px;
+    border-radius: 7px; white-space: nowrap; flex: none; }
+  .verdict.no { background: rgba(224,115,111,.09); border: 1px solid rgba(224,115,111,.3); color: var(--dim); }
+  .verdict.no .mark { background: rgba(224,115,111,.2); color: #ffb4b0; }
+  .verdict.yes { background: rgba(108,196,143,.09); border: 1px solid rgba(108,196,143,.3); color: var(--dim); }
+  .verdict.yes .mark { background: rgba(108,196,143,.2); color: #a8e6c1; }
+  .verdict b { color: var(--ink); font-weight: 650; }
+
+  .aside { margin-top: 14px; padding: 14px 16px; border-radius: 11px;
+    background: rgba(95,184,255,.07); border: 1px solid rgba(95,184,255,.22);
+    font-size: 13.5px; line-height: 1.62; color: var(--dim); }
+  .aside b { color: var(--ink); font-weight: 650; }
+
+  /* ── charts ───────────────────────────────────────────────────── */
+  figure { margin: 0; }
+  figcaption { font-size: 12.5px; color: var(--dimmer); margin-top: 10px; line-height: 1.55; }
+  svg.chart { display: block; width: 100%; height: auto; overflow: visible; }
+  svg.chart .grid { stroke: rgba(255,255,255,.07); stroke-width: 1; }
+  svg.chart .axis { stroke: rgba(255,255,255,.16); stroke-width: 1; }
+  svg.chart .tick { fill: var(--dimmer); font: 500 10.5px var(--mono); }
+  svg.chart .zero { stroke: rgba(233,238,251,.42); stroke-width: 1; }
+  svg.chart .zlabel { fill: var(--dim); font: 600 10px var(--mono); }
+  svg.chart .band { fill: rgba(63,143,212,.22); }
+  svg.chart .line { stroke: var(--s2); stroke-width: 2; fill: none; }
+  svg.chart .hit { fill: transparent; cursor: crosshair; }
+  svg.chart .cursor { stroke: rgba(255,255,255,.3); stroke-width: 1; }
+  .tip { position: fixed; z-index: 60; pointer-events: none; opacity: 0; transition: opacity .12s;
+    background: #0c1120; border: 1px solid var(--line2); border-radius: 9px; padding: 9px 11px;
+    font: 600 11.5px/1.55 var(--mono); color: var(--ink); box-shadow: 0 16px 40px -18px #000; }
+  .tip u { text-decoration: none; color: var(--dimmer); }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px;
+    font: 600 11.5px/1 var(--mono); color: var(--dim); }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .legend i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+
+  /* ── tables ───────────────────────────────────────────────────── */
+  table { width: 100%; border-collapse: collapse; font: 600 12.5px/1.35 var(--mono); }
+  th { font: 600 10px/1 var(--mono); letter-spacing: .13em; text-transform: uppercase;
+    color: var(--dimmer); text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line2); }
+  td { padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tr:last-child td { border-bottom: 0; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .minibar { height: 7px; border-radius: 3px; background: rgba(255,255,255,.07); overflow: hidden; min-width: 44px; }
+  .minibar i { display: block; height: 100%; border-radius: 3px; }
+  .drop { color: var(--bad); }
+  .rise { color: var(--good); }
+
+  /* 2×2 contingency */
+  .matrix { display: grid; grid-template-columns: auto 1fr 1fr; gap: 1px; background: var(--line);
+    border: 1px solid var(--line); border-radius: 11px; overflow: hidden; }
+  .matrix > div { background: var(--panel); padding: 14px 15px; }
+  .matrix .hd { font: 600 10px/1.3 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dimmer); }
+  .matrix .cell .n { font: 700 24px/1 var(--sans); letter-spacing: -.02em; }
+  .matrix .cell .l { font: 500 11px/1.4 var(--sans); color: var(--dimmer); margin-top: 6px; }
+  .matrix .cell.live .n { color: var(--ink); }
+  .matrix .cell.dead .n { color: var(--dimmer); }
+
+  .lines { font: 500 12px/1.75 var(--mono); color: var(--dim); }
+  .lines b { color: var(--ink); font-weight: 600; }
+  .lines em { font-style: normal; color: var(--dimmer); }
+
+  footer { margin-top: 84px; padding-top: 26px; border-top: 1px solid var(--line);
+    color: var(--dimmer); font-size: 13px; line-height: 1.65; }
+  footer a { color: var(--dim); }
+
+  @media (max-width: 620px) {
+    main { padding: 0 15px 80px; }
+    .lede { padding-top: 30px; }
+    .tile .v { font-size: 24px; }
+    label.slider input { width: 160px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <a class="back" href="../../index.html">← PLAYGROUND</a>
+  <div class="title">Evals <small>knowing whether the number moved</small></div>
+  <span class="grow"></span>
+</header>
+
+<div class="tip" id="tip"></div>
+
+<main>
+
+  <div class="lede">
+    <h1>Your eval said 92%. The old one said 89%. <em>You have learned nothing.</em></h1>
+    <p>
+      Three points on a hundred items is inside the noise, and you can show that in about fifteen
+      lines of resampling. Almost nobody does. The demo gets built, the prompt gets tuned, the
+      number goes up, and the thing ships on a difference that <b>would have gone the other way if
+      the items had arrived in a different order.</b>
+    </p>
+    <p>
+      Everything below is computed live from two real parsers running on eight hundred real inputs.
+      No simulated models, no invented scores. <b>The better parser is genuinely better</b> — and at
+      a hundred items it comes out worse.
+    </p>
+  </div>
+
+  <!-- ── 1. the task ───────────────────────────────────────────────────── -->
+  <section id="task">
+    <h2>One · Something real to measure</h2>
+    <p class="say">
+      Pull the total off a line of a receipt. It looks trivial and it is not, because of the long
+      tail: a hundred lines are <code>$1,234.56</code> and then one is <code>1.234,56 EUR</code>,
+      which is the same amount written by someone in Germany. <b>v1</b> strips the commas and reads
+      that as one euro twenty-three. <b>v2</b> works out what the separators mean first — and
+      arrives, as real improvements do, with a regression attached.
+    </p>
+    <div class="card">
+      <div class="controls">
+        <div class="seg" role="group" aria-label="Grader">
+          <button data-grader="strict" aria-pressed="true">amount + currency</button>
+          <button data-grader="amount" aria-pressed="false">amount only</button>
+          <button data-grader="partial" aria-pressed="false">partial credit</button>
+        </div>
+        <span class="grow"></span>
+        <span style="font-size:12.5px;color:var(--dimmer)" id="graderNote"></span>
+      </div>
+      <table id="samples"></table>
+    </div>
+  </section>
+
+  <!-- ── 2. the slider ─────────────────────────────────────────────────── -->
+  <section id="size">
+    <h2>Two · How many items did you run?</h2>
+    <p class="say">
+      Drag it. The systems do not change and the items do not change — <b>only how many of them you
+      looked at.</b> Watch the interval on the difference, and watch it cross zero.
+    </p>
+    <div class="card">
+      <div class="controls">
+        <label class="slider">
+          items <input id="n" type="range" min="25" max="800" step="25" value="100" /><b id="nv">100</b>
+        </label>
+      </div>
+      <div class="tiles" id="tiles"></div>
+      <div id="verdict"></div>
+    </div>
+    <div class="card">
+      <figure>
+        <h3>The interval on the difference, as the eval grows <span>v2 minus v1</span></h3>
+        <p>
+          The band is the 95% paired bootstrap interval. While it touches the grey line, the honest
+          answer is <b>"we cannot tell"</b> — whatever the two percentages happen to say.
+        </p>
+        <svg class="chart" id="ciChart" viewBox="0 0 900 300" role="img"
+             aria-label="Confidence interval on the difference between the two parsers, plotted against the number of eval items."></svg>
+        <figcaption id="ciCaption"></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ── 3. pairing ────────────────────────────────────────────────────── -->
+  <section id="pairing">
+    <h2>Three · Compare on the same items</h2>
+    <p class="say">
+      Both systems saw the same inputs, so resample the <b>items</b> — carrying both outcomes with
+      each one — rather than the two scores separately. An item that is hard for everybody then
+      contributes nothing to the uncertainty about the <em>difference</em>, because it cancels.
+      This is free precision, and it is thrown away by every report that shows two intervals side
+      by side and invites you to compare them by eye.
+    </p>
+    <div class="card" id="pairCard"></div>
+  </section>
+
+  <!-- ── 4. McNemar ────────────────────────────────────────────────────── -->
+  <section id="mcnemar">
+    <h2>Four · Your eval is deciding on far fewer items than you think</h2>
+    <p class="say">
+      Items that both systems get right, and items both get wrong, carry <b>no information at all</b>
+      about which is better. Only the disagreements do. So an eight-hundred-item eval comparing two
+      similar systems is really deciding on the handful of rows where they differ — and McNemar's
+      test is the one that says so out loud.
+    </p>
+    <div class="card">
+      <div class="matrix" id="matrix"></div>
+      <div id="mcSay" class="aside"></div>
+    </div>
+  </section>
+
+  <!-- ── 5. where the failures are ─────────────────────────────────────── -->
+  <section id="breakdown">
+    <h2>Five · The average hid a regression</h2>
+    <p class="say">
+      v2 is better overall. It is also <b>strictly worse</b> on one input shape, and no summary
+      number will ever tell you that. Break the score down by the kind of input and the fix and the
+      breakage are both visible immediately — which is why a single headline metric is a reporting
+      format, not an evaluation.
+    </p>
+    <div class="card">
+      <div class="legend">
+        <span><i style="background:var(--s1)"></i>parser v1</span>
+        <span><i style="background:var(--s2)"></i>parser v2</span>
+      </div>
+      <table id="formats"></table>
+    </div>
+  </section>
+
+  <!-- ── 6. planning ───────────────────────────────────────────────────── -->
+  <section id="power">
+    <h2>Six · Work it out before you run it, not after</h2>
+    <p class="say">
+      The most useful number in evaluation is the one you compute <b>before</b> spending anything:
+      how many items it takes to see the change you are hoping for. If the answer is more than you
+      are willing to run, you have learned that now rather than after a week of arguing about a
+      dashboard.
+    </p>
+    <div class="card">
+      <div class="controls">
+        <label class="slider">
+          baseline <input id="p1" type="range" min="50" max="97" step="1" value="90" /><b id="p1v">90%</b>
+        </label>
+        <label class="slider">
+          improvement <input id="dp" type="range" min="1" max="15" step="1" value="3" /><b id="dpv">+3</b>
+        </label>
+      </div>
+      <div class="tiles" id="powerTiles"></div>
+      <div class="aside" id="powerSay"></div>
+    </div>
+  </section>
+
+  <footer>
+    Two real parsers, eight hundred generated-but-deterministic inputs, graded live in this page —
+    no server, no API key, nothing sent anywhere. The statistics are in
+    <a href="stats.js">stats.js</a> (percentile bootstrap, paired and unpaired; Wilson intervals;
+    McNemar's exact test; two-proportion power) and the task is in <a href="suite.js">suite.js</a>.
+    <a href="../../tests/evals.test.mjs">43 tests</a>, including a coverage check that the 95%
+    interval really does contain the truth about 95% of the time.
+    <a href="README.md">Full write-up</a>.
+  </footer>
+
+</main>
+
+<script type="module">
+import {
+  bootstrapMeanCI, pairedDiffCI, unpairedDiffCI, wilson, mcnemar, requiredN, detectableEffect,
+} from './stats.js';
+import {
+  buildItems, SYSTEMS, GRADERS, runEval, disagreements, byFormat, FORMATS,
+} from './suite.js';
+
+const $ = (s) => document.querySelector(s);
+const pct = (v) => `${(v * 100).toFixed(1)}%`;
+const pts = (v) => `${v >= 0 ? '+' : '−'}${Math.abs(v * 100).toFixed(1)}`;
+
+const ITEMS = buildItems(800);
+let grader = GRADERS.strict;
+
+/* Scored once over the full set; every view below is a prefix of these. The
+   systems are deterministic, so slicing the scores is exactly the same as
+   re-running on a smaller set, and it keeps the slider at 60fps. */
+let full = { a: null, b: null };
+
+function rescore() {
+  full.a = runEval(SYSTEMS.v1, grader, ITEMS);
+  full.b = runEval(SYSTEMS.v2, grader, ITEMS);
+}
+
+/* ── 1. samples ─────────────────────────────────────────────────────────── */
+
+function renderSamples() {
+  /* One example of each format, so the long tail is visible rather than
+     described — the three rows at the bottom are 6% of the data and all of the
+     disagreement. */
+  const seen = new Set();
+  const rows = [];
+  for (let i = 0; i < ITEMS.length && rows.length < FORMATS.length; i++) {
+    if (seen.has(ITEMS[i].format)) continue;
+    seen.add(ITEMS[i].format);
+    rows.push({ item: ITEMS[i], i });
+  }
+  $('#samples').innerHTML =
+    `<tr><th>input</th><th>expected</th><th>v1</th><th>v2</th></tr>` +
+    rows.map(({ item, i }) => {
+      const cell = (out, score) => {
+        const text = out ? `${out.amount.toFixed(2)} ${out.currency}` : '—';
+        const cls = score >= 1 ? '' : (score > 0 ? 'class="drop"' : 'class="drop"');
+        return `<td ${cls}>${text}${score >= 1 ? '' : ' ✗'}</td>`;
+      };
+      return `<tr><td>${esc(item.line)}</td>` +
+        `<td style="color:var(--dimmer)">${item.gold.amount.toFixed(2)} ${item.gold.currency}</td>` +
+        cell(full.a.outputs[i], full.a.scores[i]) +
+        cell(full.b.outputs[i], full.b.scores[i]) + `</tr>`;
+    }).join('');
+}
+
+/* ── 2. the slider ──────────────────────────────────────────────────────── */
+
+function slice(n) {
+  const a = full.a.scores.slice(0, n);
+  const b = full.b.scores.slice(0, n);
+  return { a, b, ci: pairedDiffCI(a, b, { iters: 3000 }) };
+}
+
+function renderSize() {
+  const n = Number($('#n').value);
+  $('#nv').textContent = n;
+  const { a, b, ci } = slice(n);
+  const ma = a.reduce((x, y) => x + y, 0) / n;
+  const mb = b.reduce((x, y) => x + y, 0) / n;
+  const ca = bootstrapMeanCI(a, { iters: 2000 });
+  const cb = bootstrapMeanCI(b, { iters: 2000 });
+
+  $('#tiles').innerHTML = [
+    { k: 'parser v1', c: 'var(--s1)', v: pct(ma), ci: `95% CI  ${pct(ca.low)} – ${pct(ca.high)}` },
+    { k: 'parser v2', c: 'var(--s2)', v: pct(mb), ci: `95% CI  ${pct(cb.low)} – ${pct(cb.high)}` },
+    { k: 'the difference', c: null,
+      v: `<span style="color:${ci.conclusive ? 'var(--good)' : 'var(--warn)'}">${pts(ci.estimate)} pts</span>`,
+      ci: `95% CI  ${pts(ci.low)} – ${pts(ci.high)}` },
+  ].map((t) => `<div class="tile"><div class="k">${t.c ? `<i style="background:${t.c}"></i>` : ''}${t.k}</div>` +
+    `<div class="v">${t.v}</div><div class="ci">${t.ci}</div></div>`).join('');
+
+  const flipped = mb < ma;
+  $('#verdict').innerHTML = ci.conclusive
+    ? `<div class="verdict yes"><span class="mark">CONCLUSIVE</span><div>
+         The whole interval is on one side of zero, so <b>v2 really is better</b> — by somewhere
+         between ${pts(ci.low)} and ${pts(ci.high)} points. This is a result you can ship on.
+       </div></div>`
+    : `<div class="verdict no"><span class="mark">NOT A RESULT</span><div>
+         The interval runs from <b>${pts(ci.low)}</b> to <b>${pts(ci.high)}</b> points. It contains
+         zero, so this run is equally consistent with v2 being worse.
+         ${flipped
+            ? `In fact at ${n} items <b>v2 scores lower</b> — and it is the better parser. That is
+               what noise at this sample size looks like.`
+            : `The ${pts(ci.estimate)} points on screen is not evidence of anything yet.`}
+       </div></div>`;
+
+  drawCI(n);
+  renderPairing(n);
+  renderMcNemar(n);
+}
+
+/* ── the chart ──────────────────────────────────────────────────────────── */
+
+const SWEEP = [25, 50, 75, 100, 150, 200, 300, 400, 500, 600, 700, 800];
+let sweepCache = null;
+
+function sweep() {
+  if (sweepCache) return sweepCache;
+  sweepCache = SWEEP.map((n) => ({
+    n,
+    ...pairedDiffCI(full.a.scores.slice(0, n), full.b.scores.slice(0, n), { iters: 1500 }),
+  }));
+  return sweepCache;
+}
+
+function drawCI(current) {
+  const data = sweep();
+  const W = 900, H = 300, L = 54, R = 16, T = 18, B = 40;
+  const lo = Math.min(...data.map((d) => d.low), 0);
+  const hi = Math.max(...data.map((d) => d.high), 0);
+  const pad = (hi - lo) * 0.12;
+  const y0 = lo - pad, y1 = hi + pad;
+  const x = (n) => L + (Math.log(n) - Math.log(25)) / (Math.log(800) - Math.log(25)) * (W - L - R);
+  const y = (v) => T + (1 - (v - y0) / (y1 - y0)) * (H - T - B);
+
+  /* A log x-axis, because the useful part of the story is all between 25 and
+     200 items and a linear axis spends two thirds of its width on the part
+     where nothing changes. */
+  const ticks = [25, 50, 100, 200, 400, 800];
+  const yticks = niceTicks(y0, y1, 5);
+
+  const band = data.map((d) => `${x(d.n)},${y(d.high)}`).join(' ') + ' ' +
+    data.slice().reverse().map((d) => `${x(d.n)},${y(d.low)}`).join(' ');
+  const line = data.map((d, i) => `${i ? 'L' : 'M'}${x(d.n)},${y(d.estimate)}`).join('');
+
+  $('#ciChart').innerHTML = `
+    ${yticks.map((v) => `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" />`).join('')}
+    ${yticks.map((v) => `<text class="tick" x="${L - 9}" y="${y(v) + 3.5}" text-anchor="end">${pts(v)}</text>`).join('')}
+    <polygon class="band" points="${band}" />
+    <line class="zero" x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}" />
+    <text class="zlabel" x="${W - R}" y="${y(0) - 7}" text-anchor="end">no difference</text>
+    <path class="line" d="${line}" />
+    <text class="tick" transform="translate(13,${(T + H - B) / 2}) rotate(-90)" text-anchor="middle"
+          style="letter-spacing:.12em">PERCENTAGE POINTS</text>
+    <line class="axis" x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}" />
+    ${ticks.map((n) => `<text class="tick" x="${x(n)}" y="${H - B + 18}" text-anchor="middle">${n}</text>`).join('')}
+    <text class="tick" x="${(L + W - R) / 2}" y="${H - 4}" text-anchor="middle" style="letter-spacing:.12em">EVAL ITEMS</text>
+    <line class="cursor" x1="${x(current)}" x2="${x(current)}" y1="${T}" y2="${H - B}" />
+    ${data.map((d) => `<circle class="hit" cx="${x(d.n)}" cy="${y(d.estimate)}" r="16" data-n="${d.n}"
+       data-tip="${d.n} items&#10;difference ${pts(d.estimate)} pts&#10;95% CI ${pts(d.low)} to ${pts(d.high)}&#10;${d.conclusive ? 'conclusive' : 'contains zero — not a result'}" />`).join('')}
+  `;
+
+  const firstConclusive = data.find((d) => d.conclusive);
+  $('#ciCaption').innerHTML = firstConclusive
+    ? `The band first clears zero at <b style="color:var(--ink)">${firstConclusive.n} items</b>. ` +
+      `Below that, the difference between these two parsers is not measurable with this eval set, ` +
+      `however many times you re-run it.`
+    : 'The band never clears zero on this set.';
+}
+
+function niceTicks(lo, hi, want) {
+  const span = hi - lo;
+  const raw = span / want;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw) ?? mag * 10;
+  const out = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(v);
+  return out;
+}
+
+/* ── 3. pairing ─────────────────────────────────────────────────────────── */
+
+function renderPairing(n) {
+  const a = full.a.scores.slice(0, n), b = full.b.scores.slice(0, n);
+  const p = pairedDiffCI(a, b, { iters: 3000 });
+  const u = unpairedDiffCI(a, b, { iters: 3000 });
+  const wp = p.high - p.low, wu = u.high - u.low;
+  const max = Math.max(wp, wu);
+  const row = (label, ci, w, cls) => `
+    <tr>
+      <td>${label}</td>
+      <td class="num">${pts(ci.low)} – ${pts(ci.high)}</td>
+      <td style="width:46%"><span class="minibar"><i style="width:${(w / max * 100).toFixed(1)}%;background:${cls}"></i></span></td>
+      <td class="num">${(w * 100).toFixed(1)} pts wide</td>
+      <td class="num ${ci.conclusive ? 'rise' : 'drop'}">${ci.conclusive ? 'conclusive' : 'contains zero'}</td>
+    </tr>`;
+  $('#pairCard').innerHTML = `
+    <h3>Same data, two ways of asking <span>at ${n} items</span></h3>
+    <table>
+      <tr><th>method</th><th>95% interval on the difference</th><th>width</th><th></th><th>verdict</th></tr>
+      ${row('paired — resample items', p, wp, 'var(--s2)')}
+      ${row('unpaired — resample scores', u, wu, 'var(--s1)')}
+    </table>
+    <div class="aside" style="margin-top:14px">
+      Pairing is <b>${(wu / wp).toFixed(2)}× narrower</b> here, for no extra data and no extra
+      compute. Getting the same precision the unpaired way would take roughly
+      <b>${Math.round(n * Math.pow(wu / wp, 2))} items</b> instead of ${n}.
+    </div>`;
+}
+
+/* ── 4. McNemar ─────────────────────────────────────────────────────────── */
+
+function renderMcNemar(n) {
+  /* Binary outcomes only. Under partial credit a "pass" is anything that got
+     full marks, which is the only reading of a 0.5 that McNemar can use. */
+  const a = full.a.scores.slice(0, n).map((v) => (v >= 1 ? 1 : 0));
+  const b = full.b.scores.slice(0, n).map((v) => (v >= 1 ? 1 : 0));
+  const m = mcnemar(a, b);
+  const cell = (n_, label, live) =>
+    `<div class="cell ${live ? 'live' : 'dead'}"><div class="n">${n_}</div><div class="l">${label}</div></div>`;
+  $('#matrix').innerHTML =
+    `<div class="hd"></div><div class="hd">v2 right</div><div class="hd">v2 wrong</div>` +
+    `<div class="hd">v1 right</div>` +
+    cell(m.both, 'both right — tells you nothing', false) +
+    cell(m.onlyA, 'v2 broke it', true) +
+    `<div class="hd">v1 wrong</div>` +
+    cell(m.onlyB, 'v2 fixed it', true) +
+    cell(m.neither, 'both wrong — headroom', false);
+
+  const pretty = m.p < 0.0001 ? 'p < 0.0001' : `p = ${m.p.toFixed(4)}`;
+  $('#mcSay').innerHTML =
+    `Of ${n} items, <b>${m.both + m.neither}</b> carry no information about which system is better — ` +
+    `both got them right or both got them wrong. The comparison rests on the ` +
+    `<b>${m.discordant}</b> that disagree: ${m.onlyB} fixed, ${m.onlyA} broken. ` +
+    (m.discordant === 0
+      ? 'With no disagreements there is nothing to test.'
+      : `McNemar's exact test gives <b>${pretty}</b> — ` +
+        (m.p < 0.05
+          ? 'so the improvement is real.'
+          : 'which is not enough to act on. A fix-to-breakage ratio like this needs more items before it means anything.'));
+}
+
+/* ── 5. breakdown ───────────────────────────────────────────────────────── */
+
+function renderFormats() {
+  const ra = byFormat(ITEMS, full.a), rb = byFormat(ITEMS, full.b);
+  const bm = new Map(rb.map((r) => [r.format, r]));
+  $('#formats').innerHTML =
+    `<tr><th>input shape</th><th>items</th><th>v1</th><th>v2</th><th>change</th><th></th></tr>` +
+    ra.map((r) => {
+      const other = bm.get(r.format);
+      const delta = other.mean - r.mean;
+      const tag = Math.abs(delta) < 1e-9 ? '<span style="color:var(--dimmer)">—</span>'
+        : `<span class="${delta > 0 ? 'rise' : 'drop'}">${pts(delta)} pts</span>`;
+      return `<tr>
+        <td>${r.format}<div style="font:500 11px/1.4 var(--sans);color:var(--dimmer);margin-top:3px">${r.note}</div></td>
+        <td class="num" style="color:var(--dimmer)">${r.n}</td>
+        <td class="num">${pct(r.mean)}</td>
+        <td class="num">${pct(other.mean)}</td>
+        <td class="num">${tag}</td>
+        <td style="width:26%">
+          <span class="minibar" style="margin-bottom:3px"><i style="width:${(r.mean * 100).toFixed(0)}%;background:var(--s1)"></i></span>
+          <span class="minibar"><i style="width:${(other.mean * 100).toFixed(0)}%;background:var(--s2)"></i></span>
+        </td>
+      </tr>`;
+    }).join('');
+}
+
+/* ── 6. power ───────────────────────────────────────────────────────────── */
+
+function renderPower() {
+  const p1 = Number($('#p1').value) / 100;
+  const d = Number($('#dp').value) / 100;
+  $('#p1v').textContent = `${(p1 * 100).toFixed(0)}%`;
+  $('#dpv').textContent = `+${(d * 100).toFixed(0)}`;
+  const p2 = Math.min(0.999, p1 + d);
+  const need = requiredN(p1, p2);
+  const at100 = detectableEffect(100, p1);
+  const at800 = detectableEffect(800, p1);
+
+  $('#powerTiles').innerHTML = [
+    { k: 'items needed, per side', v: Number.isFinite(need) ? need.toLocaleString() : '∞',
+      ci: `to see ${(p1 * 100).toFixed(0)}% → ${(p2 * 100).toFixed(0)}% at 80% power` },
+    { k: 'visible with 100 items', v: `${(at100 * 100).toFixed(1)} pts`,
+      ci: 'anything smaller is unmeasurable' },
+    { k: 'visible with 800 items', v: `${(at800 * 100).toFixed(1)} pts`,
+      ci: 'the set on this page' },
+  ].map((t) => `<div class="tile"><div class="k">${t.k}</div><div class="v">${t.v}</div><div class="ci">${t.ci}</div></div>`).join('');
+
+  $('#powerSay').innerHTML = Number.isFinite(need)
+    ? `A hundred items can only resolve a change of about <b>${(at100 * 100).toFixed(1)} points</b> ` +
+      `from a ${(p1 * 100).toFixed(0)}% baseline. To see <b>${(d * 100).toFixed(0)} points</b> you need ` +
+      `about <b>${need.toLocaleString()}</b> per side. ` +
+      (need > 100
+        ? `That is ${Math.round(need / 100)}× the eval most teams are running when they decide to ship.`
+        : `Which is, unusually, within reach of a small eval.`)
+    : 'Detecting no difference at all takes infinitely many items.';
+}
+
+/* ── wiring ─────────────────────────────────────────────────────────────── */
+
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/* A tooltip on the chart, because an SVG chart that does not answer "what is
+   that point" is a picture of data rather than a view of it. */
+const tip = $('#tip');
+document.addEventListener('pointermove', (e) => {
+  const hit = e.target.closest?.('[data-tip]');
+  if (!hit) { tip.style.opacity = '0'; return; }
+  tip.innerHTML = hit.dataset.tip.split('\n').map((l, i) =>
+    i === 0 ? `<b>${esc(l)}</b>` : `<u>${esc(l)}</u>`).join('<br>');
+  tip.style.opacity = '1';
+  const r = tip.getBoundingClientRect();
+  tip.style.left = `${Math.min(innerWidth - r.width - 12, e.clientX + 16)}px`;
+  tip.style.top = `${Math.max(8, e.clientY - r.height - 12)}px`;
+}, { passive: true });
+
+for (const b of document.querySelectorAll('[data-grader]')) {
+  b.addEventListener('click', () => {
+    grader = GRADERS[b.dataset.grader];
+    for (const o of document.querySelectorAll('[data-grader]')) {
+      o.setAttribute('aria-pressed', String(o === b));
+    }
+    $('#graderNote').textContent = grader.note;
+    sweepCache = null;
+    rescore();
+    renderSamples();
+    renderFormats();
+    renderSize();
+  });
+}
+
+$('#n').addEventListener('input', renderSize);
+$('#p1').addEventListener('input', renderPower);
+$('#dp').addEventListener('input', renderPower);
+
+$('#graderNote').textContent = grader.note;
+rescore();
+renderSamples();
+renderFormats();
+renderSize();
+renderPower();
+</script>
+</body>
+</html>

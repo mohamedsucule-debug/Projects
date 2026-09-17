@@ -90,7 +90,20 @@ console.log(`uniform guessing = ${setup.uniform.toFixed(3)}, best possible = ${s
 
 const history = [];
 const checkpoints = [];
-const wantCheckpoint = new Set([0, Math.floor(steps * 0.12), Math.floor(steps * 0.25), steps - 1]);
+/* Dense through the phase change, sparse elsewhere.
+   The induction circuit appears between roughly step 280 and step 400 on this
+   seed, and the whole demonstration is the difference between a head before
+   that and the same head after it. Checkpoints spread evenly across the run
+   would have caught none of it — they would have shown "random" and then
+   "solved" with the interesting 120 steps missing in between.
+
+   A comma-separated list can be passed as the third argument; the default is
+   the transition on the induction run. */
+const wantCheckpoint = new Set(
+  (process.argv[4] ?? '').split(',').filter(Boolean).map(Number).concat(
+    process.argv[4] ? [] : [0, Math.floor(steps * 0.12), Math.floor(steps * 0.25), steps - 1]
+  )
+);
 const started = Date.now();
 
 for (let step = 0; step < steps; step++) {
@@ -138,7 +151,8 @@ const out = {
   history: history.filter((h, i) => i % 10 === 0 || i === history.length - 1),
   checkpoints,
 };
-const path = join(here, 'weights', `${setup.name}.json`);
+const suffix = process.argv[5] ? `.${process.argv[5]}` : '';
+const path = join(here, 'weights', `${setup.name}${suffix}.json`);
 writeFileSync(path, JSON.stringify(out));
 const kb = (Buffer.byteLength(JSON.stringify(out)) / 1024).toFixed(0);
 console.log(`\nwrote ${path} (${kb} KB)`);
