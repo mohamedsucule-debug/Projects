@@ -5,18 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" href="favicon.svg" />
 <meta name="theme-color" content="#06070d" />
-<title>Playground — twenty-six things you can click</title>
-<meta name="description" content="Scroll a lighthouse through one night in a gale. Solve a locked-room murder by looking at nineteen things. Fly a paper plane through a canyon, rebuild your photo out of six thousand dots, or drop into a restaurant mid-service and sort out a double-booked table. Twenty-six things that all run in your browser, with nothing to install." />
-<meta property="og:title" content="Playground — twenty-six things you can click" />
-<meta property="og:description" content="Opens on two of them already running: a lighthouse keeper’s last night, and a locked-room murder. Below that, seventeen games, toys and instruments, and seven serious tools with plain-English explanations." />
+<title>Playground — machine learning from the algorithm up, and twenty-six other things</title>
+<meta name="description" content="A transformer trained from scratch with hand-written backpropagation, and the exact step it learned to copy. A byte-pair tokeniser that trains itself in front of you. The statistics that decide whether a change to a model did anything at all. Plus a lighthouse, a locked-room murder and a restaurant booking system. Twenty-nine things, all running in your browser, nothing to install." />
+<meta property="og:title" content="Playground — machine learning from the algorithm up" />
+<meta property="og:description" content="Three pieces on how language models actually work — a transformer trained here with backpropagation written from nothing, a tokeniser you train yourself, and the statistics nobody runs. Plus twenty-six other things, all live in the page." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://mohamedsucule-debug.github.io/Projects/" />
 <meta property="og:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Playground — twenty-six things you can click" />
-<meta name="twitter:description" content="A lighthouse in a gale, a locked-room murder, a paper plane in a canyon, and your photo rebuilt out of six thousand dots. All running in the browser, nothing to install." />
+<meta name="twitter:title" content="Playground — machine learning from the algorithm up" />
+<meta name="twitter:description" content="Watch an induction head form in a transformer trained from scratch. Train a tokeniser in 380ms. Then a lighthouse in a gale and a locked-room murder. All in the browser, nothing to install." />
 <meta name="twitter:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <link rel="canonical" href="https://mohamedsucule-debug.github.io/Projects/" />
 <style>
@@ -117,6 +117,24 @@
     max-width: 96ch;
   }
   .door .facts b { color: var(--dim); font-weight: 600; }
+
+  /* A row of three, directly under the headline. A reader who came here for
+     machine learning should not have to scroll past a lighthouse to find out
+     there is any. */
+  .door .jump {
+    display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-top: 18px;
+  }
+  .door .jump .lead {
+    font: 600 12px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase;
+    color: var(--mute);
+  }
+  .door .jump a {
+    text-decoration: none; font: 650 13px/1 var(--sans);
+    border: 1px solid rgba(125,211,252,.34); border-radius: 99px; padding: 8px 14px;
+    color: #cfe9ff; background: rgba(125,211,252,.09);
+    transition: background .16s, transform .16s;
+  }
+  .door .jump a:hover { background: rgba(125,211,252,.2); transform: translateY(-1px); }
 
   /* ── the two panes ─────────────────────────────────────────
      Two live scenes, and the one you point at takes the room. Animating
@@ -483,9 +501,20 @@
        a paragraph about how I work, that goes instead. */
     nav.top a.ghost:last-of-type { display: none; }
   }
-  /* And on the narrowest phones still in use, only the link to the work. */
-  @media (max-width: 400px) {
-    nav.top a.ghost:nth-of-type(2) { display: none; }
+  /* And on the narrowest phones still in use, one link only. The nav grew a
+     fourth entry and dropping two of four still ran off the side of a 320px
+     screen; the first one is the one worth keeping. */
+  @media (max-width: 430px) {
+    nav.top a.ghost:not(:first-of-type) { display: none; }
+  }
+
+  /* At the narrowest widths the section heading is set in letter-spaced capitals
+     and refuses to shrink, and the rule beside it has a 20px floor — together
+     they are wider than the screen. Both give here. */
+  @media (max-width: 430px) {
+    .chapter .tier { flex-wrap: wrap; }
+    .chapter > header h2 { flex: 1 1 auto; letter-spacing: .13em; }
+    .chapter .rule { min-width: 0; }
   }
 
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
@@ -504,6 +533,7 @@
     <span class="logo"></span>
     <b>Playground</b>
     <span class="spacer"></span>
+    <a class="ghost" href="#ml">inside the models</a>
     <a class="ghost" href="#run">everything</a>
     <a class="ghost" href="#deep">the serious ones</a>
     <a class="ghost" href="#how">how I work</a>
@@ -512,15 +542,24 @@
   <div class="say">
     <!-- ↓↓ YOUR NAME AND TITLE — edit these two lines ↓↓ -->
     <p class="eyebrow"><b>Mohamed Sucule</b> &middot; software engineer</p>
-    <h1>Twenty-six things I built. <em>All of them run right here.</em></h1>
+    <h1>Twenty-nine things I built. <em>All of them run right here.</em></h1>
     <p class="sub">
       No videos, no screenshots, no &ldquo;request a demo&rdquo;. Both of these are live on
       this page right now &mdash; <b>click either one and you are in it.</b> Then keep going:
-      there are twenty-four more below.
+      there are twenty-seven more below.
     </p>
+    <!-- The three machine-learning pieces, above the fold, because they are the
+         ones a reader looking for that will want first and they are three
+         scrolls down otherwise. -->
+    <nav class="jump" aria-label="Machine learning">
+      <span class="lead">How language models actually work &mdash;</span>
+      <a href="apps/tokens/index.html">Tokens</a>
+      <a href="apps/attention/index.html">Attention</a>
+      <a href="apps/evals/index.html">Evals</a>
+    </nav>
     <p class="facts">
       Plain HTML, CSS and JavaScript &middot; <b>no framework, no build step, no dependencies</b>
-      &middot; 551 tests run in CI
+      &middot; 703 tests run in CI
     </p>
   </div>
 
@@ -553,14 +592,78 @@
     </a>
   </div>
 
-  <a class="cue" href="#run">seventeen more games and toys below <i>↓</i></a>
+  <a class="cue" href="#ml">three on machine learning, then twenty-four more <i>↓</i></a>
 </section>
 
 <div class="page">
 
+  <!-- ── inside the models ───────────────────────────────────────────────
+       First, before the games. Everything below this is craft; this is the
+       part that is about the machines. -->
+  <section class="chapter" id="ml" style="--accent: 125,211,252">
+    <header>
+      <div class="tier"><span class="tick"></span><h2>Inside the models</h2><span class="rule"></span></div>
+      <p class="note">
+        Three pieces on how language models actually work, built from the algorithm up rather
+        than from an API call. A tokeniser that trains itself in front of you; a transformer
+        trained here with backpropagation written from nothing; and the statistics that decide
+        whether a change to one of these systems did anything at all.
+        <b>No key, no server, nothing sent anywhere</b> — same promise as everything else here.
+      </p>
+    </header>
+    <div class="grid" style="--min:320px">
+
+      <a class="card reveal" href="apps/attention/index.html" style="--accent: 125,211,252; --d: 0ms">
+        <div class="stage"><canvas id="mlAttention"></canvas></div>
+        <span class="tag">trained from scratch</span>
+        <span class="play">open →</span>
+        <div class="meta">
+          <h2>Attention</h2>
+          <p>
+            45,440 parameters, trained with an automatic differentiation engine written from
+            nothing — no PyTorch, no library at all, every backward pass checked against finite
+            differences. Drag through training and watch eight attention heads go from an even
+            smear to bright stripes at the exact step the loss falls off a cliff. The circuit that
+            appears is the induction head, and it lands in the layer the theory says it must.
+          </p>
+        </div>
+      </a>
+
+      <a class="card reveal" href="apps/tokens/index.html" style="--accent: 163,230,53; --d: 70ms">
+        <div class="stage"><canvas id="mlTokens"></canvas></div>
+        <span class="tag">train it yourself</span>
+        <span class="play">open →</span>
+        <div class="meta">
+          <h2>Tokens</h2>
+          <p>
+            A real byte-pair encoder, trained in the page in 380ms — watch the vocabulary build
+            itself one merge at a time. Then why a model cannot count the r's in strawberry, why
+            arithmetic was hard and got easier, and why the same sentence costs three times as
+            much in Japanese.
+          </p>
+        </div>
+      </a>
+
+      <a class="card reveal" href="apps/evals/index.html" style="--accent: 255,196,107; --d: 140ms">
+        <div class="stage"><canvas id="mlEvals"></canvas></div>
+        <span class="tag">the one nobody builds</span>
+        <span class="play">open →</span>
+        <div class="meta">
+          <h2>Evals</h2>
+          <p>
+            Two real parsers, eight hundred real inputs, graded live. Drag the sample size and
+            watch the confidence interval cross zero. At a hundred items the better parser scores
+            <b>worse</b> — which is what three points of noise looks like when you can drag it.
+          </p>
+        </div>
+      </a>
+
+    </div>
+  </section>
+
   <section class="chapter" id="run" style="--accent: 255,77,141">
     <header>
-      <div class="tier"><span class="tick"></span><h2>Everything else</h2><span class="rule"></span></div>
+      <div class="tier"><span class="tick"></span><h2>Then everything else</h2><span class="rule"></span></div>
       <p class="note">
         Games, physics you can put your finger in, instruments that make you something,
         and one horror story. <b>Shuffled on purpose</b> — two of a kind in a row gets
@@ -669,9 +772,11 @@
     </div>
     <p class="colophon">
       No frameworks, no build step, no dependencies — every page here is plain HTML, CSS and
-      JavaScript, about 21,000 lines of it, with the engine behind Ace, Morph, Portrait, Loom,
-      Nightshift, The Room, Covers and each of the tools unit-tested: 551 tests, run in CI before anything
-      is published. The commit history is the full record.
+      JavaScript, about 27,000 lines of it, with the engine behind Ace, Morph, Portrait, Loom,
+      Nightshift, The Room, Covers, the transformer, the tokeniser and each of the tools
+      unit-tested: 703 tests, run in CI before anything is published — including twenty gradient
+      checks against finite differences, and a check that a 95% confidence interval really does
+      contain the truth 95% of the time. The commit history is the full record.
     </p>
   </footer>
 </div>
@@ -933,6 +1038,11 @@ for (const [i, toy] of TOYS.entries()) {
 mount(document.querySelector('#headline canvas'), coversPreview, { margin: '160px' });
 mount(document.getElementById('machine'), machinePreview);
 
+/* The three machine-learning cards. */
+mount(document.getElementById('mlAttention'), attentionPreview);
+mount(document.getElementById('mlTokens'), tokensPreview);
+mount(document.getElementById('mlEvals'), evalsPreview);
+
 for (const el of document.querySelectorAll('.chapter > header, #headline, .plate, .how > div, .card-me')) {
   el.classList.add('reveal');
 }
@@ -968,6 +1078,196 @@ watchReveals();
 }
 
 /* ── previews ───────────────────────────────────────────────────────────── */
+
+/* ── the three machine-learning cards ────────────────────────────────────────
+   Same promise as every other card on this page: what you see is the real
+   thing, not a drawing of it. Tokens runs the actual BPE trainer. Evals runs
+   the actual bootstrap over the actual parsers. Attention is the only one that
+   cannot run the real model here — eight hundred kilobytes of weights to fill a
+   180px square is not a landing page — so it ships the real model's OUTPUT
+   instead: the attention pattern of the induction head, already evaluated, at
+   six points in training. */
+
+/** Attention: the induction head forming, from the real checkpoints. */
+function attentionPreview(api) {
+  let card = null;
+  fetch('apps/attention/weights/card.json')
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+    .then((c) => {
+      card = c;
+      card.grids = c.frames.map((f) => {
+        const bin = atob(f.b64);
+        const g = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) g[i] = bin.charCodeAt(i);
+        return g;
+      });
+    })
+    .catch(() => { card = false; });
+
+  let t = 0;
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    ctx.fillStyle = '#080c16';
+    ctx.fillRect(0, 0, w, h);
+    if (!card) return;
+
+    t += 1 / 60;
+    /* Two and a half seconds a frame, holding on the last one twice as long:
+       the finished stripe is the thing worth looking at and it should not flick
+       past at the same rate as the four frames of nothing before it. */
+    const n = card.frames.length;
+    const cycle = (n + 1) * 2.5;
+    const at = Math.min(n - 1, Math.floor((t % cycle) / 2.5));
+    const f = card.frames[at], grid = card.grids[at];
+    const N = card.size;
+
+    const side = Math.min(w, h) * 0.94;
+    const ox = (w - side) / 2, oy = (h - side) / 2;
+    const cell = side / N;
+    for (let r = 0; r < N; r++) {
+      for (let c = 0; c <= r; c++) {
+        const v = Math.sqrt(grid[r * N + c] / 255);
+        if (v < 0.03) continue;
+        ctx.fillStyle = `rgb(${Math.round(18 + v * 237)},${Math.round(26 + v * 154)},${Math.round(58 + v * 26)})`;
+        ctx.fillRect(ox + c * cell, oy + r * cell, cell + 0.6, cell + 0.6);
+      }
+    }
+    ctx.strokeStyle = 'rgba(255,255,255,.08)';
+    ctx.strokeRect(ox, oy, side, side);
+
+    /* Bottom-left and right only. The card's tag pill is absolutely positioned
+       over the top-left corner of this canvas, so anything drawn there is
+       printed through by it. */
+    ctx.font = '650 10px ui-monospace, Menlo, monospace';
+    ctx.fillStyle = 'rgba(233,238,251,.55)';
+    ctx.fillText(`STEP ${f.step}`, 12, h - 12);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = f.score > 0.3 ? '#ffb454' : 'rgba(233,238,251,.4)';
+    ctx.fillText(`HEAD ${f.head} · ${f.score.toFixed(2)}`, w - 12, h - 12);
+    ctx.fillStyle = 'rgba(233,238,251,.4)';
+    ctx.fillText(`LOSS ${f.loss.toFixed(2)}`, w - 12, 19);
+    ctx.textAlign = 'left';
+  };
+}
+
+/** Tokens: the real trainer, learning merges off a small corpus, live. */
+function tokensPreview(api) {
+  let B = null;
+  import('./apps/tokens/bpe.js').then((m) => { B = m; }).catch(() => { B = false; });
+
+  /* Two kilobytes rather than the sixty-four the page itself uses. Enough to
+     learn "the" and "ing"; small enough that the front page is not downloading
+     a corpus to animate a card. */
+  const SMALL = (
+    'the keeper watched the weather and the shipping. the light turned again. ' +
+    'nothing in the weather that the keeper had not seen before the night ended. ' +
+    'the room was locked from the inside and the keeper was not there at all. ' +
+    'building something that runs beats planning something that does not. '
+  ).repeat(6);
+
+  let merges = null, shown = 0, t = 0;
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    ctx.fillStyle = '#080c16';
+    ctx.fillRect(0, 0, w, h);
+    if (!B) return;
+    if (!merges) {
+      merges = [];
+      B.trainBPE(SMALL, { vocabSize: 330, style: 'gpt4', onMerge: (m) => merges.push(m) });
+    }
+
+    t += 1 / 60;
+    /* Builds for eight seconds, then holds for six. A cycle that snaps back to
+       zero the instant it finishes means a card caught at the wrong moment
+       shows an empty box — which is exactly what the first screenshot of it
+       did, at t = 9.0 of a nine-second loop. */
+    const phase = t % 14;
+    shown = Math.min(merges.length, Math.floor(Math.min(1, phase / 8) * merges.length));
+
+    let x = 12, y = 52;
+    const pad = 5, gap = 4, lh = 19;
+    for (let i = 0; i < shown; i++) {
+      const label = merges[i].text.replace(/ /g, '␣').replace(/\n/g, '⏎');
+      ctx.font = '650 11px ui-monospace, Menlo, monospace';
+      const tw = ctx.measureText(label).width + pad * 2;
+      if (x + tw > w - 12) { x = 12; y += lh; }
+      if (y > h - 14) break;
+      const fresh = i > shown - 4;
+      ctx.fillStyle = fresh ? 'rgba(163,230,53,.26)' : 'rgba(255,255,255,.06)';
+      roundRect(ctx, x, y - 11, tw, 16, 4);
+      ctx.fill();
+      ctx.fillStyle = fresh ? '#d4f58a' : 'rgba(233,238,251,.6)';
+      ctx.fillText(label, x + pad, y + 1);
+      x += tw + gap;
+    }
+
+    ctx.textAlign = 'right';
+    ctx.font = '650 9.5px ui-monospace, Menlo, monospace';
+    ctx.fillStyle = 'rgba(233,238,251,.35)';
+    ctx.fillText(`${shown} MERGES LEARNED`, w - 12, 19);
+    ctx.textAlign = 'left';
+  };
+}
+
+/** Evals: the real bootstrap, over the real parsers, narrowing as n grows. */
+function evalsPreview(api) {
+  let data = null;
+  Promise.all([import('./apps/evals/suite.js'), import('./apps/evals/stats.js')])
+    .then(([S, T]) => {
+      const items = S.buildItems(800);
+      const a = S.runEval(S.SYSTEMS.v1, S.GRADERS.strict, items);
+      const b = S.runEval(S.SYSTEMS.v2, S.GRADERS.strict, items);
+      data = [25, 50, 100, 200, 400, 800].map((n) => ({
+        n, ...T.pairedDiffCI(a.scores.slice(0, n), b.scores.slice(0, n), { iters: 800 }),
+      }));
+    })
+    .catch(() => { data = false; });
+
+  let t = 0;
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    ctx.fillStyle = '#080c16';
+    ctx.fillRect(0, 0, w, h);
+    if (!data) return;
+
+    t += 1 / 60;
+    const phase = t % 12;
+    const upto = Math.max(1, Math.round(Math.min(1, phase / 7) * data.length));
+    const L = 34, R = 12, T = 30, Bm = 26;
+    const lo = Math.min(...data.map((d) => d.low), 0) - 0.01;
+    const hi = Math.max(...data.map((d) => d.high), 0) + 0.01;
+    const x = (i) => L + (i / (data.length - 1)) * (w - L - R);
+    const y = (v) => T + (1 - (v - lo) / (hi - lo)) * (h - T - Bm);
+
+    ctx.fillStyle = 'rgba(63,143,212,.26)';
+    ctx.beginPath();
+    for (let i = 0; i < upto; i++) ctx.lineTo(x(i), y(data[i].high));
+    for (let i = upto - 1; i >= 0; i--) ctx.lineTo(x(i), y(data[i].low));
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(233,238,251,.42)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(L, y(0)); ctx.lineTo(w - R, y(0)); ctx.stroke();
+
+    ctx.strokeStyle = '#3f8fd4';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < upto; i++) ctx.lineTo(x(i), y(data[i].estimate));
+    ctx.stroke();
+
+    const last = data[upto - 1];
+    ctx.font = '650 9.5px ui-monospace, Menlo, monospace';
+    ctx.fillStyle = 'rgba(233,238,251,.4)';
+    ctx.fillText(`${last.n} ITEMS`, 12, h - 10);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = last.conclusive ? '#6cc48f' : '#e0736f';
+    ctx.fillText(last.conclusive ? 'CONCLUSIVE' : 'CONTAINS ZERO', w - 12, 19);
+    ctx.fillStyle = 'rgba(233,238,251,.3)';
+    ctx.fillText('NO DIFFERENCE', w - 12, y(0) - 5);
+    ctx.textAlign = 'left';
+  };
+}
 
 /** Ace, playing itself: the real engine, flown by a bot that aims at the gaps. */
 function acePreview(api) {

@@ -2,3 +2,4 @@
 # Megabytes of it. What ships is the quantised pack built by pack.mjs.
 *.json
 !*.pack.json
+!card.json

@@ -126,6 +126,42 @@ const path = join(here, 'weights', `${to}.pack.json`);
 const text = JSON.stringify(out);
 writeFileSync(path, text);
 
+/* ── and a much smaller file, for the card on the landing page ──────────────
+   The landing page promises that every card on it is the real thing running.
+   Honouring that for this one would otherwise mean the front page downloading
+   eight hundred kilobytes of weights to draw a 180px square, so what ships for
+   the card is the OUTPUT rather than the model: the attention pattern of the
+   best induction head, at six checkpoints, on one fixed sequence. Still real
+   numbers out of the real model — just already evaluated. */
+{
+  const seq = inductionSequence(rng(7), raw.extra);
+  const want = [0, 2, 5, 8, 10, checkpoints.length - 1].filter((v, i, a) => a.indexOf(v) === i);
+  const frames = want.map((i) => {
+    const model = Transformer.fromJSON({ config: raw.config ?? raw.checkpoints[0].model.config, params: unpackParams(checkpoints[i].params) });
+    const prof = profile(model, seq);
+    const pat = prof.inductionHead.pattern;
+    /* 0-255 rather than int8: an attention weight is never negative, so the
+       sign bit would be a wasted eighth of the range. */
+    const bytes = new Uint8Array(pat.rows * pat.cols);
+    for (let r = 0; r < pat.rows; r++) {
+      for (let c = 0; c < pat.cols; c++) {
+        bytes[r * pat.cols + c] = Math.round(Math.min(1, pat.at(r, c)) * 255);
+      }
+    }
+    return {
+      step: checkpoints[i].step,
+      loss: Number(checkpoints[i].lossInt8.toFixed(3)),
+      head: prof.inductionHead.label,
+      score: Number(prof.inductionHead.induction.toFixed(3)),
+      b64: Buffer.from(bytes).toString('base64'),
+    };
+  });
+  const card = { size: seq.length, period: seq.period, floor: raw.floor, uniform: raw.uniform, frames };
+  const cardPath = join(here, 'weights', 'card.json');
+  writeFileSync(cardPath, JSON.stringify(card));
+  console.log(`  card: ${frames.length} frames, ${(JSON.stringify(card).length / 1024).toFixed(0)} KB`);
+}
+
 const rawKB = readFileSync(join(here, 'weights', `${from}.json`)).length / 1024;
 console.log(
   `\nwrote ${path}\n` +

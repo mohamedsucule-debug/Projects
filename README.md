@@ -1,18 +1,13 @@
 # Playground
 
-Twenty-six things I built. All of them run in a browser — no install, no signup,
-no video of someone else using it.
+Twenty-nine things I built. All of them run in a browser — no install, no
+signup, no API key, no video of someone else using it.
 
 **→ [Open the playground](https://mohamedsucule-debug.github.io/Projects/)**
 
-The site opens on two of them already running — **The Lamplighter** and **The
-Room** — and everything else is below that, mixed rather than filed: no two
-neighbours are the same kind of thing. The longest single piece, **Covers**, is
-at the end with the other serious ones, because it is a working tool that repays
-twenty minutes and is the wrong thing to meet a stranger with.
-
 | | | |
 |---|---|---:|
+| **0** | [**Inside the models**](#0--inside-the-models) — how language models actually work | 3 |
 | **I** | [Fiction](#i--fiction) — things to read, and the two the site opens on | 3 |
 | **II** | [Physics you can touch](#ii--physics-you-can-touch) | 4 |
 | **III** | [Games](#iii--games) | 6 |
@@ -20,7 +15,75 @@ twenty minutes and is the wrong thing to meet a stranger with.
 | **V** | [The serious ones](#v--the-serious-ones) — Covers, and six tools for engineers | 7 |
 
 Plain HTML, CSS and JavaScript. No framework, no build step, no dependencies.
-551 tests run in CI before anything here is published.
+703 tests run in CI before anything here is published — including twenty
+gradient checks against finite differences, and a check that a 95% confidence
+interval really does contain the truth about 95% of the time.
+
+---
+
+## 0 · Inside the models
+
+Three pieces on how language models work, built from the algorithm up rather
+than from an API call. Everything runs in the browser: no key, no server,
+nothing sent anywhere.
+
+### [Attention](apps/attention/) — a transformer, and the step it learned to copy
+
+**[Open it](apps/attention/)** · 45,440 parameters, trained with an automatic
+differentiation engine written from nothing — no PyTorch, no JAX, no library at
+all. Drag through thirteen checkpoints and watch eight attention heads go from
+an even smear to bright stripes at the exact step the loss falls off a cliff.
+
+The gradient checks came first, because a wrong *forward* pass throws and a
+wrong *backward* pass does not — it trains slightly worse and gives you nothing
+to chase. Every backward pass in
+[`autograd.js`](apps/attention/autograd.js) is verified against central finite
+differences before anything was built on it.
+
+The circuit that appears is the **induction head**, and it lands where the
+theory says it must: a previous-token head in layer 0 marking each position with
+its predecessor, and a head in layer 1 matching on that mark and copying. Loss
+4.71 → 2.17 against a floor of 1.72; 98% of the repeated tokens copied
+correctly.
+
+**The mistake that mattered.** The first version of the task repeated at a fixed
+point, and what appeared scored 0.92 and was not an induction head at all — it
+was a *positional* copy head that had memorised "attend to i − 31" and never
+read a token. On screen the two are identical. The period is now drawn fresh per
+sequence, and the packer scores the model across every period and prints the
+spread, so the claim cannot quietly stop being true. There was then a second bug
+in the *measurement* of the fix. Both are written up in full, because catching
+them is the part of the work worth reading.
+
+### [Tokens](apps/tokens/) — what a model actually reads
+
+**[Open it](apps/tokens/)** · A byte-level byte-pair encoder, trained in the
+page on 64,000 characters in about 380ms. Watch the vocabulary build itself one
+merge at a time — pairs of letters, then endings, then whole common words with
+their leading space.
+
+Then three consequences: `strawberry` is ten characters and six tokens, so the
+count of r's is not present in anything the model holds; GPT-2's pre-tokeniser
+lets BPE learn `2024` as one token and splits `1999` into `1·99·9`, where the
+middle token means nothing arithmetically; and the same sentence costs three
+times as much in Japanese. `decode(encode(x)) === x` is asserted for every byte
+value, for emoji and for Arabic.
+
+### [Evals](apps/evals/) — 92% versus 89% is not a result
+
+**[Open it](apps/evals/)** · Two real parsers, eight hundred real inputs, graded
+live. Drag the sample size and watch the confidence interval on the difference
+cross zero. **At a hundred items the better parser scores worse.**
+
+Percentile bootstrap, paired and unpaired; Wilson intervals rather than the
+textbook one that returns [1, 1] from twenty observations; McNemar's exact test,
+which shows that at 100 items the comparison rests on five disagreements and
+p = 1.0; and the power calculation that says detecting three points from a 90%
+baseline needs about 1,400 items per side.
+
+Nothing is simulated. Both systems are real programs and the second ships a real
+regression, because improvements arrive with breakage attached and an eval that
+cannot see the breakage is not doing its job.
 
 ---
 
@@ -448,8 +511,10 @@ and — deliberately — what it does **not** do.
 ## How it's built
 
 **No frameworks. No build step. No dependencies.** Every page here is plain
-HTML, CSS and JavaScript. The five toys are each a single self-contained file
-you can open by double-clicking it. Clone this in five years and it still runs.
+HTML, CSS and JavaScript — including the transformer, which is trained by an
+automatic differentiation engine written from nothing rather than by a library.
+The five toys are each a single self-contained file you can open by
+double-clicking. Clone this in five years and it still runs.
 
 The front page, Ace, Morph, Portrait, Loom and the six serious tools load ES
 modules, which browsers refuse to serve from a `file://` address — run
@@ -461,9 +526,29 @@ a blank section.
 screen code, testable from a terminal) and an `index.html` (the interface). The
 engine has to be *correct*; the interface has to be *understood*. Different jobs.
 
+The machine-learning pieces follow the same rule, which is what makes them
+testable at all: `autograd.js` knows nothing about a canvas, so the same file
+that trains the model in node runs it in the browser — and the picture on the
+page is therefore guaranteed to be a picture of the model that was trained,
+rather than a second implementation that agrees with it on the examples someone
+checked.
+
 ```
 index.html              the front page, with a live preview on every card
 shared/briefings.js     the plain-English explanation of each serious tool
+apps/attention/
+  autograd.js           reverse-mode autodiff over matrices, every op grad-checked
+  model.js              an attention-only transformer, and the sampling knobs
+  optim.js              Adam, gradient clipping, a cosine schedule with warmup
+  analysis.js           finding a circuit by its signature, and scoring it
+  quantise.js           int8 symmetric quantisation — how the weights ship
+  train.mjs / pack.mjs  train it in node; measure it; pack it for the web
+apps/tokens/
+  bpe.js                byte-level byte-pair encoding, both pre-tokenisers
+  corpus.js             64,000 characters of this repo's own prose
+apps/evals/
+  stats.js              bootstrap, Wilson, McNemar, power — the statistics
+  suite.js              two real parsers and the graders that score them
 play/<name>/index.html  a toy — one file, no imports
 play/ace/
   engine.js             the rules: gravity, rocks, collision, scoring — DOM-free
