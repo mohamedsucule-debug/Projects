@@ -28,6 +28,13 @@ Four pieces on how language models work, built from the algorithm up rather
 than from an API call. Everything runs in the browser: no key, no server,
 nothing sent anywhere.
 
+> **If you only read one thing**, read the two bugs in
+> [the Attention write-up](apps/attention/README.md). The first made a positional
+> copy head look exactly like an induction head; the second made one induction
+> head look like eight different ones. Both produced a plausible picture and a
+> beautiful number, and neither would ever have thrown. Finding them took longer
+> than the build, and it is the only reason the claim is worth anything.
+
 ### [Attention](apps/attention/) — a transformer, and the step it learned to copy
 
 **[Open it](apps/attention/)** · 45,440 parameters, trained with an automatic
@@ -663,6 +670,22 @@ two failed because the *engine* was wrong — including a query planner that key
 by table name while keying its estimates by alias, so every filter silently fell back to a
 default selectivity and produced plans that looked entirely plausible. Telling those two
 cases apart is the job.
+
+**A beautiful result is not the same as a correct one.** This is the newest thing
+in this repo and the one I would want read first. The transformer learned to
+copy, the loss fell off a cliff exactly on cue, and a head reached an induction
+score of 0.92. It was the wrong mechanism: it had memorised a position rather
+than learning to match on content, and on screen those two are identical — the
+only tell was that it had appeared in the layer where the circuit does not fit.
+Fixing the task then surfaced a second bug, this time in the *measurement* of
+the fix, which made one head look like eight.
+
+Neither would ever have thrown. Both produced a plausible picture and a number
+you would happily put in a slide. Finding them took longer than the original
+build, and the checks that would catch each of them now run on every pack. The
+same instinct is why the eval page tests that its 95% interval really does
+contain the truth 95% of the time, and why the agent page caught its own
+"a tool throws" demonstration never reaching the tool.
 
 **The words are half of it.** "Pour sand. Add water. Then set it on fire" teaches the
 sandbox faster than a tutorial would. Deciding what a thing says, and what it refuses to

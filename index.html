@@ -331,6 +331,16 @@
     margin: 13px 0 0; color: var(--dim); font-size: 16px; line-height: 1.62; max-width: 64ch;
   }
   .chapter .note b { color: var(--fg); font-weight: 650; }
+  /* A reading suggestion, not a summary. Somebody assessing this has minutes,
+     not an afternoon, and the most useful thing to hand them is not the best
+     result — it is the place where a result turned out to be wrong. */
+  .guide {
+    margin-top: 16px; padding: 15px 18px; border-radius: 12px;
+    background: rgba(125,211,252,.07); border: 1px solid rgba(125,211,252,.22);
+    font-size: 14px; line-height: 1.62; color: var(--dim); max-width: 78ch;
+  }
+  .guide b { color: var(--fg); font-weight: 650; }
+  .guide a { color: #9bd4ff; }
   /* An aside is a note about the work rather than more of the work, so its
      heading is dimmed and it carries no accent rule of its own. */
   .chapter.aside > header h2 { color: var(--dim); }
@@ -676,6 +686,13 @@
       </a>
 
     </div>
+    <div class="guide">
+      <b>If you only read one thing:</b> the two bugs in
+      <a href="apps/attention/README.md">the Attention write-up</a>. The first made a positional
+      copy head look exactly like an induction head; the second made one induction head look like
+      eight different ones. Both produced a plausible picture and a beautiful number, and neither
+      would ever have thrown. Finding them took longer than the build.
+    </div>
   </section>
 
   <section class="chapter" id="run" style="--accent: 255,77,141">
@@ -736,8 +753,9 @@
       <p class="note">
         I build fast and I am hard to satisfy. With modern tooling a working version exists in
         minutes, so the job stops being typing and starts being judgement — <b>what is worth
-        building, what is wrong with it, and what it should say.</b> That is where my time goes,
-        and it is the part that never gets easier.
+        building, what is wrong with it, whether it is actually doing what it appears to be
+        doing, and what it should say.</b> That is where my time goes, and it is the part that
+        never gets easier.
       </p>
     </header>
   <div class="how">
@@ -758,6 +776,17 @@
         hourglass that leaked sand, the forest fire that burned one tree and gave up, and
         the island that came out as a featureless green blob all got caught. No test would
         have flagged any of them — they were all technically working.
+      </p>
+    </div>
+    <div>
+      <span class="n">verify</span>
+      <h4>A beautiful result is not the same as a correct one</h4>
+      <p>
+        The transformer here learned to copy, the loss fell off a cliff on cue, and a head hit a
+        score of 0.92. <b>It was the wrong mechanism</b> — it had memorised a position, not
+        learned to match on content, and on screen the two are identical. Finding that out took
+        longer than the original build and is the only reason the claim is worth anything. Every
+        strong result in this repo has a check attached that would catch it being the wrong one.
       </p>
     </div>
     <div>
