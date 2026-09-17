@@ -18,36 +18,54 @@
 import { rng } from './autograd.js';
 
 /**
- * One induction sequence: `half` random tokens, then the same `half` again.
+ * One sequence: `period` random tokens, then that block repeating to `length`.
  *
- * Perfect loss on this is not zero. The first half is unpredictable by
- * construction, so a perfect model still pays log(vocab) on every token of it
- * and zero on the second half — roughly half of log(vocab) overall. A run that
- * reports a loss below that has a bug, usually a target that is off by one and
- * lets the model see the answer.
+ * THE PERIOD VARIES FROM SEQUENCE TO SEQUENCE, and that is the entire point of
+ * this function. The first version of it repeated a fixed half, and the model
+ * duly learned to solve it — by attending, from position i, to position
+ * i − 31. Always 31. It never looked at a single token; it had memorised an
+ * offset from the positional embeddings, and since every sequence repeated at
+ * the same place, that worked perfectly.
+ *
+ * It scored 0.92 and it was not an induction head. It was a positional copy
+ * head wearing one, and the only reason to notice is that it turned up in
+ * layer 0, where the circuit is not supposed to fit.
+ *
+ * With the period drawn fresh per sequence there is no offset to memorise. To
+ * predict anything the model has to find where the CURRENT token appeared
+ * before and read off what followed it — which is induction, and which needs a
+ * head in one layer to mark each position with its predecessor and a head in
+ * the next to match on that mark.
  */
-export function inductionSequence(next, { vocab, half }) {
-  const first = [];
-  for (let i = 0; i < half; i++) first.push(Math.floor(next() * vocab));
-  return first.concat(first);
+export function inductionSequence(next, { vocab, length, minPeriod = 12, maxPeriod = 40 }) {
+  const period = minPeriod + Math.floor(next() * (maxPeriod - minPeriod + 1));
+  const seq = [];
+  for (let i = 0; i < period; i++) seq.push(Math.floor(next() * vocab));
+  for (let i = period; i < length; i++) seq.push(seq[i - period]);
+  seq.period = period;
+  return seq;
 }
 
-export function inductionBatch(next, { vocab, half, batch }) {
+export function inductionBatch(next, opts) {
   const out = [];
-  for (let i = 0; i < batch; i++) out.push(inductionSequence(next, { vocab, half }));
+  for (let i = 0; i < opts.batch; i++) out.push(inductionSequence(next, opts));
   return out;
 }
 
-/** The loss a perfect model still pays, given that half the sequence is noise. */
-export function inductionFloor(vocab, half) {
-  /* Predicting position t from positions < t. The first token of the second
-     half is the last one that cannot be known — at that point the model has
-     seen the whole first half but has no way to know the repeat starts here...
-     except that it does, because position is part of the input. So: the first
-     `half - 1` predictions are pure noise, the rest are knowable. */
-  const noisy = half - 1;
-  const total = 2 * half - 1;
-  return (noisy * Math.log(vocab)) / total;
+/**
+ * The loss a perfect model still pays.
+ *
+ * Predicting token t from tokens 0…t−1. Tokens 1…p are unguessable: up to and
+ * including the first repeated token the model has seen nothing but noise and
+ * has no way to know where the block ends. From t = p+1 onwards it has seen
+ * token p equal token 0, so it knows the period and everything after is
+ * determined. So p of the length−1 predictions cost log(vocab) and the rest
+ * cost nothing — averaged over the periods the generator actually draws.
+ */
+export function inductionFloor(vocab, length, minPeriod = 12, maxPeriod = 40) {
+  let total = 0;
+  for (let p = minPeriod; p <= maxPeriod; p++) total += (p * Math.log(vocab)) / (length - 1);
+  return total / (maxPeriod - minPeriod + 1);
 }
 
 /* ── the text side ──────────────────────────────────────────────────────────

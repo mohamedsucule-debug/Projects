@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="icon" href="../../favicon.svg" />
+<meta name="theme-color" content="#0a0d16" />
+<title>Attention — watching a circuit form</title>
+<meta name="description" content="A transformer trained from scratch with hand-written backpropagation, running in your browser. Drag through training and watch one attention head go from noise to a clean stripe at the exact moment the loss falls off a cliff." />
+<meta property="og:title" content="Attention — watching a circuit form" />
+<meta property="og:description" content="45,440 parameters, trained with an autograd engine written from nothing. Scrub through training and watch the induction head appear." />
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --bg: #0a0d16; --panel: #0f1422; --raise: #141a2b;
+    --line: rgba(255,255,255,.09); --line2: rgba(255,255,255,.17);
+    --ink: #e9eefb; --dim: rgba(233,238,251,.56); --dimmer: rgba(233,238,251,.34);
+    --accent: #5fb8ff; --hot: #ffb454; --good: #6cc48f; --bad: #e0736f;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans);
+    -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+
+  header.bar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 12px;
+    flex-wrap: wrap; padding: 10px 16px; border-bottom: 1px solid var(--line);
+    background: rgba(10,13,22,.88); backdrop-filter: blur(14px); }
+  .back { color: var(--dim); text-decoration: none; font: 600 11.5px/1 var(--mono);
+    letter-spacing: .07em; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; }
+  .back:hover { color: var(--ink); border-color: var(--line2); }
+  .bar .title { font-weight: 800; font-size: 15px; letter-spacing: -.012em; }
+  .bar .title small { font-weight: 500; color: var(--dimmer); margin-left: 9px; font-size: 12px; }
+  .grow { flex: 1 1 auto; }
+
+  main { max-width: 1040px; margin: 0 auto; padding: 0 20px 110px; }
+  .lede { padding: 46px 0 8px; }
+  .lede h1 { font-size: clamp(30px, 4.6vw, 46px); line-height: 1.06; letter-spacing: -.035em;
+    margin: 0 0 18px; max-width: 19ch; }
+  .lede h1 em { font-style: normal; color: var(--accent); }
+  .lede p { font-size: 17px; line-height: 1.65; color: var(--dim); max-width: 66ch; margin: 0 0 14px; }
+  .lede p b { color: var(--ink); font-weight: 650; }
+
+  section { margin-top: 60px; }
+  section > h2 { font: 700 11.5px/1 var(--mono); letter-spacing: .2em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 12px; }
+  section > .say { font-size: 15.5px; line-height: 1.65; color: var(--dim); max-width: 70ch; margin: 0 0 20px; }
+  section > .say b { color: var(--ink); font-weight: 650; }
+
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+  .card + .card { margin-top: 14px; }
+  .card h3 { margin: 0 0 4px; font-size: 15px; letter-spacing: -.015em; }
+  .card h3 span { font: 600 10.5px/1 var(--mono); letter-spacing: .12em; color: var(--dimmer);
+    margin-left: 8px; text-transform: uppercase; }
+  .card > p { margin: 0 0 14px; font-size: 13.5px; line-height: 1.6; color: var(--dim); }
+  .card > p b { color: var(--ink); font-weight: 650; }
+
+  .controls { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  button.act { border: 1px solid var(--line2); background: rgba(255,255,255,.07); color: var(--ink);
+    border-radius: 9px; padding: 9px 14px; font: 650 12.5px/1 var(--sans); cursor: pointer; }
+  button.act:hover { background: rgba(255,255,255,.13); }
+  button.act.go { border-color: rgba(95,184,255,.5); background: rgba(95,184,255,.14); color: #cfe9ff; }
+  label.slider { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--dim); }
+  label.slider input { width: 300px; accent-color: var(--accent); }
+  label.slider b { color: var(--ink); font: 700 14px/1 var(--mono); min-width: 5ch; }
+
+  /* ── the sequence strip ────────────────────────────────────── */
+  .seq { display: flex; flex-wrap: wrap; gap: 2px; font: 600 10.5px/1 var(--mono); }
+  .seq span { width: 24px; height: 22px; display: grid; place-items: center; border-radius: 3px;
+    background: var(--raise); color: var(--dimmer); border: 1px solid transparent; }
+  .seq span.fresh { background: rgba(255,180,84,.14); color: #ffd7a1; }
+  .seq span.echo { background: rgba(95,184,255,.15); color: #b8dcff; }
+  .seq .cut { width: 0; border-left: 2px solid var(--hot); height: 22px; margin: 0 3px; }
+
+  /* ── heads ─────────────────────────────────────────────────── */
+  .heads { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 178px), 1fr)); }
+  .head { background: var(--raise); border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px; transition: border-color .2s, box-shadow .2s; }
+  .head.star { border-color: rgba(255,180,84,.6); box-shadow: 0 0 0 1px rgba(255,180,84,.2); }
+  .head canvas { width: 100%; aspect-ratio: 1; display: block; border-radius: 5px;
+    image-rendering: pixelated; background: #05070d; }
+  .head .nm { display: flex; justify-content: space-between; align-items: baseline;
+    font: 600 11px/1 var(--mono); color: var(--dim); margin-bottom: 8px; }
+  .head .nm b { color: var(--ink); }
+  .head .sc { margin-top: 9px; font: 600 10.5px/1 var(--mono); color: var(--dimmer); }
+  .head .sc i { font-style: normal; color: var(--hot); }
+  .head .bar { height: 4px; border-radius: 2px; background: rgba(255,255,255,.08);
+    margin-top: 6px; overflow: hidden; }
+  .head .bar u { display: block; height: 100%; background: var(--hot); text-decoration: none; }
+
+  .tiles { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line);
+    border-radius: 12px; overflow: hidden; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .tile { background: var(--panel); padding: 14px 15px; }
+  .tile .k { font: 600 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dimmer); }
+  .tile .v { font: 700 26px/1.05 var(--sans); letter-spacing: -.03em; margin-top: 8px; }
+  .tile .v small { font: 600 12px/1 var(--mono); color: var(--dim); margin-left: 5px; }
+
+  figure { margin: 0; }
+  figcaption { font-size: 12.5px; color: var(--dimmer); margin-top: 10px; line-height: 1.55; }
+  svg.chart { display: block; width: 100%; height: auto; overflow: visible; }
+  svg.chart .grid { stroke: rgba(255,255,255,.07); }
+  svg.chart .axis { stroke: rgba(255,255,255,.16); }
+  svg.chart .tick { fill: var(--dimmer); font: 500 10.5px var(--mono); }
+  svg.chart .ref { stroke: rgba(233,238,251,.3); stroke-width: 1; }
+  svg.chart .reflab { fill: var(--dim); font: 600 10px var(--mono); }
+  svg.chart .loss { stroke: var(--accent); stroke-width: 2; fill: none; }
+  svg.chart .cursor { stroke: var(--hot); stroke-width: 1.5; }
+  svg.chart .dot { fill: var(--hot); }
+
+  .aside { margin-top: 14px; padding: 14px 16px; border-radius: 11px;
+    background: rgba(95,184,255,.07); border: 1px solid rgba(95,184,255,.22);
+    font-size: 13.5px; line-height: 1.62; color: var(--dim); }
+  .aside b { color: var(--ink); font-weight: 650; }
+  .aside.warn { background: rgba(255,180,84,.07); border-color: rgba(255,180,84,.26); }
+
+  table { width: 100%; border-collapse: collapse; font: 600 12.5px/1.35 var(--mono); }
+  th { font: 600 10px/1 var(--mono); letter-spacing: .13em; text-transform: uppercase;
+    color: var(--dimmer); text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line2); }
+  td { padding: 9px 8px; border-bottom: 1px solid var(--line); }
+  tr:last-child td { border-bottom: 0; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  #loading { padding: 40px; text-align: center; color: var(--dim); font: 500 14px/1.6 var(--sans); }
+
+  footer { margin-top: 84px; padding-top: 26px; border-top: 1px solid var(--line);
+    color: var(--dimmer); font-size: 13px; line-height: 1.65; }
+  footer a { color: var(--dim); }
+
+  @media (max-width: 620px) {
+    main { padding: 0 15px 80px; }
+    .lede { padding-top: 30px; }
+    label.slider input { width: 180px; }
+    .seq span { width: 20px; height: 19px; font-size: 9px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <a class="back" href="../../index.html">← PLAYGROUND</a>
+  <div class="title">Attention <small>watching a circuit form</small></div>
+  <span class="grow"></span>
+</header>
+
+<main>
+
+  <div class="lede">
+    <h1>A transformer, and the exact step it <em>learned to copy</em>.</h1>
+    <p>
+      Forty-five thousand parameters, trained from scratch with an automatic differentiation
+      engine written from nothing — no PyTorch, no JAX, no library at all. Every backward pass in
+      it is checked against finite differences before it is trusted.
+    </p>
+    <p>
+      For a hundred and fifty steps the loss does not move. Then, over about seventy steps, it
+      falls off a cliff. <b>Drag through training below and watch what happens inside one
+      attention head at that moment</b> — it goes from an even smear to a single bright stripe,
+      and the stripe is the algorithm.
+    </p>
+  </div>
+
+  <div id="loading">loading the trained weights…</div>
+
+  <div id="app" hidden>
+
+  <!-- ── 1. the task ─────────────────────────────────────────────────── -->
+  <section id="task">
+    <h2>One · A task with exactly one trick in it</h2>
+    <p class="say">
+      A sequence of random tokens, where a block of them repeats. The first block is noise —
+      nothing can predict it, and a perfect model still pays full price there. Everything after it
+      is completely determined. <b>The only way to get any of it is to look back</b>: find where
+      the current token appeared before, and say whatever followed it that time.
+    </p>
+    <div class="card">
+      <div class="controls">
+        <button class="act" id="reroll">New sequence ↻</button>
+        <span class="grow"></span>
+        <span style="font:600 11.5px/1 var(--mono);color:var(--dimmer)" id="seqInfo"></span>
+      </div>
+      <div class="seq" id="seq"></div>
+      <div class="aside" id="taskSay"></div>
+    </div>
+  </section>
+
+  <!-- ── 2. the loss curve ──────────────────────────────────────────── -->
+  <section id="curve">
+    <h2>Two · The cliff</h2>
+    <p class="say">
+      Loss on the vertical, training steps on the horizontal. The upper line is what guessing
+      uniformly costs; the lower one is the best any model could possibly do, given that the first
+      block is genuinely unpredictable. <b>Nothing happens for a long time, and then everything
+      happens at once.</b> That shape is the signature of a circuit that needs more than one piece
+      before any of it pays.
+    </p>
+    <div class="card">
+      <figure>
+        <svg class="chart" id="lossChart" viewBox="0 0 900 300" role="img"
+             aria-label="Training loss against step, showing a long plateau followed by a sharp drop."></svg>
+        <figcaption id="lossCaption"></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ── 3. the scrubber ────────────────────────────────────────────── -->
+  <section id="scrub">
+    <h2>Three · Drag through training</h2>
+    <p class="say">
+      Every square below is one attention head, at the training step you have selected. The grid is
+      <b>which position attends to which</b>: row <i>i</i> is the model standing at token <i>i</i>,
+      and the brightness along that row is where it chose to look. The black upper triangle is
+      causal masking — nothing can see the future.
+    </p>
+    <div class="card">
+      <div class="controls">
+        <label class="slider">
+          step <input id="step" type="range" min="0" max="1" step="1" value="0" /><b id="stepv">0</b>
+        </label>
+        <button class="act go" id="play">Play ▸</button>
+      </div>
+      <div class="tiles" id="tiles" style="margin-bottom:16px"></div>
+      <div class="heads" id="heads"></div>
+      <div class="aside" id="headSay"></div>
+    </div>
+  </section>
+
+  <!-- ── 4. the circuit ─────────────────────────────────────────────── -->
+  <section id="circuit">
+    <h2>Four · Why it takes two layers</h2>
+    <p class="say">
+      A single layer of attention cannot do this, and the reason is worth the paragraph. To answer
+      <i>"what followed this token last time"</i> you first need each position to be marked with
+      what came <b>before</b> it — so one head has to write that mark, and a head in a
+      <b>later</b> layer has to read it and match on it. Two pieces, useless apart. That is exactly
+      why the loss sits flat for so long: gradient has to assemble both halves before either one
+      earns anything.
+    </p>
+    <div class="card" id="circuitCard"></div>
+  </section>
+
+  <!-- ── 5. honesty ─────────────────────────────────────────────────── -->
+  <section id="honest">
+    <h2>Five · What this is and is not</h2>
+    <div class="card" id="honestCard"></div>
+  </section>
+
+  </div>
+
+  <footer>
+    The autograd engine is <a href="autograd.js">autograd.js</a>, the model is
+    <a href="model.js">model.js</a>, the training loop is <a href="train.mjs">train.mjs</a>, and
+    the weights on this page were produced by running it. Nothing is fetched from a service and no
+    key is needed. <a href="../../tests/autograd.test.mjs">20 gradient checks</a> and
+    <a href="../../tests/attention.test.mjs">48 model tests</a>.
+    <a href="README.md">Full write-up</a>.
+  </footer>
+
+</main>
+
+<script type="module">
+import { Transformer } from './model.js';
+import { unpackParams } from './quantise.js';
+import { profile, copyAccuracy, uniformBaseline } from './analysis.js';
+import { rng, inductionSequence } from './data.js';
+
+const $ = (s) => document.querySelector(s);
+
+let pack = null, models = [], demo = null, playing = null;
+
+/* ── loading ────────────────────────────────────────────────────────────── */
+
+try {
+  const res = await fetch('weights/induction.pack.json');
+  if (!res.ok) throw new Error(`${res.status}`);
+  pack = await res.json();
+} catch (e) {
+  $('#loading').innerHTML =
+    `Could not load the weights (<code>${e.message}</code>).<br><br>` +
+    `This page reads a JSON file and ES modules, which browsers refuse to do from a ` +
+    `<code>file://</code> address. Run <b>npx http-server</b> in the repo and open it over ` +
+    `localhost, or use the published site.`;
+  throw e;
+}
+
+/* Checkpoints are decoded lazily. Thirteen of them at 45,440 parameters each is
+   about six hundred thousand numbers; decoding them all up front costs a
+   visible pause for twelve models the reader may never look at. */
+function modelAt(i) {
+  if (!models[i]) {
+    models[i] = Transformer.fromJSON({
+      config: pack.config,
+      params: unpackParams(pack.checkpoints[i].params),
+    });
+  }
+  return models[i];
+}
+
+$('#loading').hidden = true;
+$('#app').hidden = false;
+$('#step').max = String(pack.checkpoints.length - 1);
+$('#step').value = String(pack.checkpoints.length - 1);
+
+/* ── 1. the sequence ────────────────────────────────────────────────────── */
+
+let seed = 7;
+
+function newSequence() {
+  demo = inductionSequence(rng(seed++), {
+    vocab: pack.extra.vocab,
+    length: pack.extra.length,
+    minPeriod: pack.extra.minPeriod,
+    maxPeriod: pack.extra.maxPeriod,
+  });
+  renderSequence();
+}
+
+function renderSequence() {
+  const p = demo.period;
+  $('#seqInfo').textContent = `${demo.length} tokens · repeats every ${p}`;
+  $('#seq').innerHTML = demo.map((t, i) => {
+    const cut = i === p ? '<span class="cut" title="the block starts again here"></span>' : '';
+    return `${cut}<span class="${i < p ? 'fresh' : 'echo'}" title="position ${i}">${t}</span>`;
+  }).join('');
+  $('#taskSay').innerHTML =
+    `The first <b>${p}</b> tokens are fresh random draws — there is nothing to learn there, and a ` +
+    `perfect model still pays log(${pack.extra.vocab}) = <b>${Math.log(pack.extra.vocab).toFixed(2)}</b> ` +
+    `on each of them. The remaining <b>${demo.length - p}</b> are the block repeating. ` +
+    `<b>The period is different every time</b>, so there is no fixed distance to memorise: to predict ` +
+    `anything the model has to match on the tokens themselves.`;
+}
+
+/* ── 2. the loss curve ──────────────────────────────────────────────────── */
+
+function drawLoss(stepIndex) {
+  const h = pack.history;
+  const W = 900, H = 300, L = 54, R = 92, T = 18, B = 40;
+  const maxStep = h[h.length - 1].step;
+  const y0 = Math.min(pack.floor, ...h.map((d) => d.loss)) - 0.12;
+  const y1 = Math.max(pack.uniform, ...h.map((d) => d.loss)) + 0.12;
+  const x = (s) => L + (s / maxStep) * (W - L - R);
+  const y = (v) => T + (1 - (v - y0) / (y1 - y0)) * (H - T - B);
+
+  const line = h.map((d, i) => `${i ? 'L' : 'M'}${x(d.step).toFixed(1)},${y(d.loss).toFixed(1)}`).join('');
+  const cp = pack.checkpoints[stepIndex];
+  const ticks = [];
+  for (let s = 0; s <= maxStep; s += Math.ceil(maxStep / 6 / 100) * 100) ticks.push(s);
+
+  $('#lossChart').innerHTML = `
+    ${[1, 2, 3, 4].map((v) => `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" />`).join('')}
+    ${[1, 2, 3, 4].map((v) => `<text class="tick" x="${L - 9}" y="${y(v) + 3.5}" text-anchor="end">${v.toFixed(1)}</text>`).join('')}
+    <line class="ref" x1="${L}" x2="${W - R}" y1="${y(pack.uniform)}" y2="${y(pack.uniform)}" />
+    <text class="reflab" x="${W - R + 8}" y="${y(pack.uniform) + 3.5}">guessing</text>
+    <line class="ref" x1="${L}" x2="${W - R}" y1="${y(pack.floor)}" y2="${y(pack.floor)}" />
+    <text class="reflab" x="${W - R + 8}" y="${y(pack.floor) + 3.5}">best possible</text>
+    <path class="loss" d="${line}" />
+    <line class="cursor" x1="${x(cp.step)}" x2="${x(cp.step)}" y1="${T}" y2="${H - B}" />
+    <circle class="dot" cx="${x(cp.step)}" cy="${y(cp.lossInt8)}" r="4" />
+    <line class="axis" x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}" />
+    ${ticks.map((s) => `<text class="tick" x="${x(s)}" y="${H - B + 18}" text-anchor="middle">${s}</text>`).join('')}
+    <text class="tick" x="${(L + W - R) / 2}" y="${H - 4}" text-anchor="middle" style="letter-spacing:.12em">TRAINING STEPS</text>
+    <text class="tick" transform="translate(13,${(T + H - B) / 2}) rotate(-90)" text-anchor="middle"
+          style="letter-spacing:.12em">LOSS (NATS)</text>`;
+}
+
+/* ── 3. the heads ───────────────────────────────────────────────────────── */
+
+/** One attention matrix, drawn as a heatmap. */
+function drawHead(canvas, pattern) {
+  const T = pattern.rows;
+  canvas.width = T;
+  canvas.height = T;
+  const ctx = canvas.getContext('2d');
+  const img = ctx.createImageData(T, T);
+  /* Square-rooted, not linear. Attention on a 64-long sequence is mostly small
+     numbers — a row that is perfectly uniform sits at 1/64 — and on a linear
+     ramp every interesting pattern except the very sharpest is invisible black.
+     The gamma is a display choice and it is the same for every head, so the
+     comparison between them is still honest. */
+  for (let i = 0; i < T; i++) {
+    for (let j = 0; j < T; j++) {
+      const v = j > i ? -1 : Math.sqrt(Math.min(1, pattern.at(i, j)));
+      const o = (i * T + j) * 4;
+      if (v < 0) {
+        img.data[o] = 5; img.data[o + 1] = 7; img.data[o + 2] = 13; img.data[o + 3] = 255;
+      } else {
+        /* Dark blue through to a hot amber: one ramp, monotone in lightness,
+           so brighter always means more attention. */
+        img.data[o] = Math.round(18 + v * 237);
+        img.data[o + 1] = Math.round(26 + v * 154);
+        img.data[o + 2] = Math.round(58 + v * 26);
+        img.data[o + 3] = 255;
+      }
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+function renderHeads() {
+  const i = Number($('#step').value);
+  const cp = pack.checkpoints[i];
+  const model = modelAt(i);
+  const prof = profile(model, demo);
+  const acc = copyAccuracy(model, demo);
+  const best = prof.inductionHead;
+
+  $('#stepv').textContent = cp.step;
+
+  $('#tiles').innerHTML = [
+    { k: 'training step', v: cp.step },
+    { k: 'loss', v: cp.lossInt8.toFixed(3), s: `floor ${pack.floor.toFixed(2)}` },
+    { k: 'copies correctly', v: `${(acc * 100).toFixed(0)}%` },
+    { k: 'best induction score', v: best.induction.toFixed(3), s: `head ${best.label}` },
+  ].map((t) => `<div class="tile"><div class="k">${t.k}</div>` +
+    `<div class="v">${t.v}${t.s ? `<small>${t.s}</small>` : ''}</div></div>`).join('');
+
+  $('#heads').innerHTML = prof.heads.map((hd) => `
+    <div class="head${hd === best && hd.induction > 0.2 ? ' star' : ''}">
+      <div class="nm"><b>head ${hd.label}</b><span>layer ${hd.layer}</span></div>
+      <canvas></canvas>
+      <div class="sc">induction <i>${hd.induction.toFixed(3)}</i></div>
+      <div class="bar"><u style="width:${Math.min(100, hd.induction * 100).toFixed(0)}%"></u></div>
+    </div>`).join('');
+
+  const canvases = document.querySelectorAll('#heads canvas');
+  prof.heads.forEach((hd, k) => drawHead(canvases[k], hd.pattern));
+
+  const chance = prof.baseline;
+  $('#headSay').innerHTML = best.induction > 0.2
+    ? `<b>Head ${best.label}</b> is putting <b>${(best.induction * 100).toFixed(0)}%</b> of its ` +
+      `attention on exactly the position that holds the answer — against ` +
+      `<b>${(chance * 100).toFixed(1)}%</b> for a head that spread its attention evenly over ` +
+      `everything it can see. That is the stripe you can see in its square, and it is the whole ` +
+      `algorithm: <i>find where I have been before, look one to the right, copy.</i>`
+    : `No head is doing better than <b>${(best.induction * 100).toFixed(1)}%</b> on the position ` +
+      `that holds the answer — chance is <b>${(chance * 100).toFixed(1)}%</b>. Every square here is ` +
+      `an even smear, which is what attention looks like before it means anything. ` +
+      `Drag further right.`;
+
+  drawLoss(i);
+  renderCircuit(prof);
+}
+
+/* ── 4. the circuit ─────────────────────────────────────────────────────── */
+
+function renderCircuit(prof) {
+  const ind = prof.inductionHead, prev = prof.previousTokenHead;
+  $('#circuitCard').innerHTML = `
+    <h3>The two halves, at the step you have selected</h3>
+    <table>
+      <tr><th>role</th><th>head</th><th>layer</th><th>what it is doing</th><th class="num">score</th></tr>
+      <tr>
+        <td>marks each position with its predecessor</td>
+        <td><b>${prev.label}</b></td><td>${prev.layer}</td>
+        <td style="color:var(--dim)">attends to the token immediately before it</td>
+        <td class="num">${prev.previous.toFixed(3)}</td>
+      </tr>
+      <tr>
+        <td>matches on that mark and copies</td>
+        <td><b>${ind.label}</b></td><td>${ind.layer}</td>
+        <td style="color:var(--dim)">attends to the token after the previous occurrence</td>
+        <td class="num">${ind.induction.toFixed(3)}</td>
+      </tr>
+    </table>
+    <div class="aside">
+      A head's <b>induction score</b> here is the average attention weight it puts on the one
+      position that holds the answer, measured over the repeated part of the sequence. Chance is
+      <b>${(prof.baseline * 100).toFixed(1)}%</b>. It is measured rather than eyeballed, on a
+      sequence whose period is drawn fresh, so no fixed offset could produce it.
+    </div>`;
+}
+
+/* ── 5. honesty ─────────────────────────────────────────────────────────── */
+
+function renderHonest() {
+  const q = pack.quantisation;
+  $('#honestCard').innerHTML = `
+    <h3>The numbers, including the unflattering ones</h3>
+    <table>
+      <tr><td>parameters</td><td class="num">${pack.parameterCount.toLocaleString()}</td>
+          <td style="color:var(--dimmer)">a production model is six to seven orders of magnitude larger</td></tr>
+      <tr><td>architecture</td><td class="num">${pack.config.nLayers}L × ${pack.config.nHeads}H, d=${pack.config.dModel}</td>
+          <td style="color:var(--dimmer)">attention only — no MLP blocks, so every computation is visible above</td></tr>
+      <tr><td>training</td><td class="num">${pack.steps} steps</td>
+          <td style="color:var(--dimmer)">single-threaded JavaScript, about twenty minutes on one core</td></tr>
+      <tr><td>shipped as</td><td class="num">int${q.bits}</td>
+          <td style="color:var(--dimmer)">${q.scheme} — ${(pack.parameterCount / 1024).toFixed(0)}KB per checkpoint instead of 400KB</td></tr>
+      <tr><td>cost of that</td><td class="num">${q.worstLossDelta.toFixed(5)}</td>
+          <td style="color:var(--dimmer)">worst loss change from quantising, in nats, across all checkpoints</td></tr>
+    </table>
+    <div class="aside warn">
+      <b>What this is not.</b> It is not a language model — it is trained on random tokens and can
+      do exactly one thing. It has no MLP layers, which real transformers rely on heavily. The
+      induction head here is a clean textbook instance because the task was built to isolate it;
+      in a model trained on text the same circuit exists but is tangled up with everything else.
+      <br /><br />
+      <b>What it is.</b> A real transformer, with real backpropagation written from nothing,
+      trained until a specific named mechanism appeared — and then measured rather than asserted.
+      The first version of this task repeated at a fixed point, and the head that appeared scored
+      0.92 by attending to a memorised offset without ever reading a token. That is in the
+      write-up, because catching it is the part of the work that mattered.
+    </div>`;
+}
+
+/* ── wiring ─────────────────────────────────────────────────────────────── */
+
+$('#step').addEventListener('input', renderHeads);
+$('#reroll').addEventListener('click', () => { newSequence(); renderHeads(); });
+$('#play').addEventListener('click', () => {
+  if (playing) { clearInterval(playing); playing = null; $('#play').textContent = 'Play ▸'; return; }
+  $('#play').textContent = 'Pause ⏸';
+  $('#step').value = '0';
+  renderHeads();
+  playing = setInterval(() => {
+    const next = Number($('#step').value) + 1;
+    if (next > Number($('#step').max)) {
+      clearInterval(playing); playing = null; $('#play').textContent = 'Play ▸';
+      return;
+    }
+    $('#step').value = String(next);
+    renderHeads();
+  }, 700);
+});
+
+newSequence();
+renderHeads();
+renderHonest();
+
+const first = pack.history.find((h) => h.loss < (pack.uniform + pack.floor) / 2);
+$('#lossCaption').innerHTML = first
+  ? `The loss crosses the halfway mark between guessing and perfect at step <b style="color:var(--ink)">${first.step}</b>. ` +
+    `Before that it had spent hundreds of steps apparently doing nothing.`
+  : `The run did not reach the halfway mark between guessing and perfect.`;
+</script>
+</body>
+</html>

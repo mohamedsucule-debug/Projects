@@ -46,16 +46,16 @@ function corpus() {
 
 const setups = {
   induction: () => {
-    const half = 32, vocab = 64;
+    const vocab = 64, length = 64, minPeriod = 12, maxPeriod = 40;
     const next = rng(4242);
     return {
       name: 'induction',
-      config: { vocab, dModel: 64, nHeads: 4, nLayers: 2, ctx: half * 2, seed: 1337 },
+      config: { vocab, dModel: 64, nHeads: 4, nLayers: 2, ctx: length, seed: 1337 },
       lr: 2e-3,
-      batch: () => inductionBatch(next, { vocab, half, batch: 24 }),
-      floor: inductionFloor(vocab, half),
+      batch: () => inductionBatch(next, { vocab, length, minPeriod, maxPeriod, batch: 24 }),
+      floor: inductionFloor(vocab, length, minPeriod, maxPeriod),
       uniform: Math.log(vocab),
-      extra: { half, vocab },
+      extra: { vocab, length, minPeriod, maxPeriod },
     };
   },
   text: () => {

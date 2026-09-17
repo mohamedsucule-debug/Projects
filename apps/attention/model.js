@@ -241,7 +241,13 @@ export function topP(probs, p) {
   for (const [v, i] of order) {
     kept[i] = v;
     mass += v;
-    if (mass >= p) break;
+    /* The epsilon is not defensive padding, it is load-bearing. Accumulating
+       0.4 + 0.3 + 0.2 in binary floating point gives 0.8999999999999999, so a
+       nucleus that reaches exactly 0.9 in real arithmetic misses the threshold
+       and admits one more token — and the token it admits is the low-probability
+       tail that nucleus sampling exists to remove. A test caught this; it would
+       have been close to invisible in output. */
+    if (mass >= p - 1e-9) break;
   }
   return renormalise(kept);
 }
