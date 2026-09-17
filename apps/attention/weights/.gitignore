@@ -1,0 +1,4 @@
+# Raw training output: full-precision checkpoints plus every history point.
+# Megabytes of it. What ships is the quantised pack built by pack.mjs.
+*.json
+!*.pack.json

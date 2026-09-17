@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="icon" href="../../favicon.svg" />
+<meta name="theme-color" content="#0a0d16" />
+<title>Tokens — what a language model actually reads</title>
+<meta name="description" content="Train a byte-pair encoder in your browser and watch the vocabulary being built, one merge at a time. Then see why a model cannot count the letters in strawberry, why arithmetic is hard, and why the same sentence costs three times as much in Japanese." />
+<meta property="og:title" content="Tokens — what a language model actually reads" />
+<meta property="og:description" content="A real BPE tokeniser, trained live in the page. Watch the merges appear, then see the three consequences everybody has run into and nobody has been shown." />
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --bg: #0a0d16; --panel: #0f1422; --raise: #141a2b;
+    --line: rgba(255,255,255,.09); --line2: rgba(255,255,255,.17);
+    --ink: #e9eefb; --dim: rgba(233,238,251,.56); --dimmer: rgba(233,238,251,.34);
+    --accent: #5fb8ff; --ok: #7ee0b0; --warn: #ffc46b; --bad: #ff8fa3; --viol: #c9a6ff;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans);
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  [hidden] { display: none !important; }
+
+  header.bar {
+    position: sticky; top: 0; z-index: 30;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 10px 16px; border-bottom: 1px solid var(--line);
+    background: rgba(10,13,22,.86); backdrop-filter: blur(14px);
+  }
+  .back {
+    color: var(--dim); text-decoration: none;
+    font: 600 11.5px/1 var(--mono); letter-spacing: .07em;
+    padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px;
+  }
+  .back:hover { color: var(--ink); border-color: var(--line2); }
+  .bar .title { font-weight: 800; font-size: 15px; letter-spacing: -.012em; }
+  .bar .title small { font-weight: 500; color: var(--dimmer); margin-left: 9px; font-size: 12px; }
+  .grow { flex: 1 1 auto; }
+
+  main { max-width: 1000px; margin: 0 auto; padding: 0 20px 110px; }
+
+  .lede { padding: 46px 0 8px; }
+  .lede h1 { font-size: clamp(30px, 4.6vw, 46px); line-height: 1.06; letter-spacing: -.035em; margin: 0 0 18px; max-width: 18ch; }
+  .lede h1 em { font-style: normal; color: var(--accent); }
+  .lede p { font-size: 17px; line-height: 1.65; color: var(--dim); max-width: 64ch; margin: 0 0 14px; }
+  .lede p b { color: var(--ink); font-weight: 650; }
+
+  section { margin-top: 62px; }
+  section > h2 {
+    font: 700 11.5px/1 var(--mono); letter-spacing: .2em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 12px;
+  }
+  section > .say { font-size: 15.5px; line-height: 1.65; color: var(--dim); max-width: 68ch; margin: 0 0 20px; }
+  section > .say b { color: var(--ink); font-weight: 650; }
+
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+  .card + .card { margin-top: 14px; }
+
+  /* ── controls ───────────────────────────────────────────── */
+  .controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  button.act {
+    border: 1px solid var(--line2); background: rgba(255,255,255,.07); color: var(--ink);
+    border-radius: 9px; padding: 9px 14px; font: 650 12.5px/1 var(--sans); cursor: pointer;
+  }
+  button.act:hover { background: rgba(255,255,255,.13); }
+  button.act:disabled { opacity: .45; cursor: default; }
+  button.act.go { border-color: rgba(95,184,255,.5); background: rgba(95,184,255,.14); color: #cfe9ff; }
+
+  .seg { display: inline-flex; border: 1px solid var(--line2); border-radius: 9px; overflow: hidden; }
+  .seg button {
+    border: 0; background: transparent; color: var(--dim); cursor: pointer;
+    padding: 9px 13px; font: 650 12px/1 var(--mono); letter-spacing: .04em;
+  }
+  .seg button[aria-pressed="true"] { background: rgba(95,184,255,.18); color: #cfe9ff; }
+  .seg button + button { border-left: 1px solid var(--line); }
+
+  label.slider { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--dim); }
+  label.slider input { width: 150px; accent-color: var(--accent); }
+  label.slider b { color: var(--ink); font: 650 12.5px/1 var(--mono); min-width: 4ch; }
+
+  .note { font: 500 12.5px/1.55 var(--sans); color: var(--dimmer); margin: 10px 0 0; }
+  .note b { color: var(--dim); font-weight: 650; }
+
+  /* ── merges ─────────────────────────────────────────────── */
+  #merges { display: flex; flex-wrap: wrap; gap: 6px; min-height: 132px; align-content: flex-start; }
+  .merge {
+    display: inline-flex; align-items: baseline; gap: 7px;
+    border: 1px solid var(--line); border-radius: 7px; padding: 5px 9px;
+    background: var(--raise); font: 600 12.5px/1 var(--mono);
+    animation: pop .28s cubic-bezier(.2,.8,.3,1);
+  }
+  .merge i { font-style: normal; color: var(--dimmer); font-size: 10.5px; }
+  .merge u { text-decoration: none; color: var(--ok); }
+  @keyframes pop { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: none; } }
+
+  /* ── tokens ─────────────────────────────────────────────── */
+  textarea#input {
+    width: 100%; min-height: 108px; resize: vertical;
+    background: #080b14; border: 1px solid var(--line2); border-radius: 11px;
+    color: var(--ink); padding: 13px 14px; font: 500 14.5px/1.6 var(--mono);
+  }
+  textarea#input:focus { outline: none; border-color: var(--accent); }
+
+  .tokens { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 14px; font: 600 14px/1.5 var(--mono); }
+  .tok {
+    padding: 3px 1px; border-radius: 4px; white-space: pre-wrap;
+    background: var(--tc); color: #06080f; cursor: default;
+  }
+  .tok.frag { outline: 1px dashed rgba(255,143,163,.75); outline-offset: -1px; }
+  .tok .nl::after { content: '\\n'; opacity: .45; }
+
+  .stats { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line);
+    border-radius: 11px; overflow: hidden; margin-top: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); }
+  .stat { background: var(--panel); padding: 12px 14px; }
+  .stat .k { font: 600 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dimmer); }
+  .stat .v { font: 700 21px/1.1 var(--sans); letter-spacing: -.02em; margin-top: 7px; }
+  .stat .v small { font-size: 12px; color: var(--dim); font-weight: 600; margin-left: 4px; }
+
+  /* ── demonstrations ─────────────────────────────────────── */
+  .split { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+  .split > .card { margin: 0; }
+  .card h3 { margin: 0 0 4px; font-size: 15px; letter-spacing: -.015em; }
+  .card h3 span { font: 600 10.5px/1 var(--mono); letter-spacing: .12em; color: var(--dimmer); margin-left: 8px; text-transform: uppercase; }
+  .card > p { margin: 0 0 14px; font-size: 13.5px; line-height: 1.6; color: var(--dim); }
+  .card > p b { color: var(--ink); font-weight: 650; }
+
+  .letters { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 10px; }
+  .letters span {
+    width: 26px; height: 30px; display: grid; place-items: center; border-radius: 5px;
+    background: var(--raise); border: 1px solid var(--line);
+    font: 600 14px/1 var(--mono); color: var(--dim);
+  }
+  .letters span.hit { background: rgba(255,143,163,.2); border-color: rgba(255,143,163,.5); color: #ffc3ce; }
+
+  .rowbar { display: grid; grid-template-columns: 8.5ch 1fr 6ch; align-items: center; gap: 10px; margin-top: 9px; }
+  .rowbar .lang { font: 600 12px/1 var(--mono); color: var(--dim); }
+  .rowbar .track { height: 24px; background: var(--raise); border-radius: 5px; overflow: hidden; border: 1px solid var(--line); }
+  .rowbar .fill { height: 100%; background: linear-gradient(90deg, rgba(95,184,255,.85), rgba(201,166,255,.85));
+    display: flex; align-items: center; justify-content: flex-end; padding-right: 7px;
+    font: 700 11px/1 var(--mono); color: #06080f; transition: width .5s cubic-bezier(.2,.8,.3,1); }
+  .rowbar .mult { font: 700 12px/1 var(--mono); color: var(--warn); text-align: right; }
+  .rowbar .sample { grid-column: 1 / -1; font: 500 12.5px/1.5 var(--mono); color: var(--dimmer); margin: 2px 0 6px; }
+
+  table.cmp { width: 100%; border-collapse: collapse; font: 600 13px/1 var(--mono); }
+  table.cmp td, table.cmp th { padding: 9px 8px; border-bottom: 1px solid var(--line); text-align: left; }
+  table.cmp th { font: 600 10px/1 var(--mono); letter-spacing: .13em; text-transform: uppercase; color: var(--dimmer); }
+  table.cmp td.pieces { color: var(--dim); }
+  table.cmp td.pieces b { color: var(--ok); font-weight: 700; }
+  table.cmp tr:last-child td { border-bottom: 0; }
+
+  .verdict { margin-top: 14px; padding: 13px 15px; border-radius: 10px;
+    background: rgba(95,184,255,.08); border: 1px solid rgba(95,184,255,.24);
+    font-size: 13.5px; line-height: 1.6; color: var(--dim); }
+  .verdict b { color: var(--ink); font-weight: 650; }
+
+  footer { margin-top: 84px; padding-top: 26px; border-top: 1px solid var(--line);
+    color: var(--dimmer); font-size: 13px; line-height: 1.65; }
+  footer a { color: var(--dim); }
+
+  @media (max-width: 560px) {
+    .lede { padding-top: 30px; }
+    main { padding: 0 15px 80px; }
+    .stat .v { font-size: 18px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <a class="back" href="../../index.html">← PLAYGROUND</a>
+  <div class="title">Tokens <small>what a model actually reads</small></div>
+  <span class="grow"></span>
+</header>
+
+<main>
+
+  <div class="lede">
+    <h1>A model has never seen a <em>letter</em> in its life.</h1>
+    <p>
+      It reads tokens: a few thousand common fragments of text, each one an opaque number.
+      Almost everything people find strange about what these systems can and cannot do —
+      <b>that they miscount the letters in a word, that they are worse at arithmetic than a
+      calculator from 1974, that the same sentence costs three times as much in Japanese</b> —
+      comes out of one algorithm, and it is small enough to fit on this page.
+    </p>
+    <p>
+      So here it is, running. Train it, then type into it, then look at what it does to
+      three things you have probably already been annoyed by.
+    </p>
+  </div>
+
+  <!-- ── 1. the vocabulary ─────────────────────────────────────────────── -->
+  <section id="train">
+    <h2>One · The vocabulary builds itself</h2>
+    <p class="say">
+      Byte-pair encoding starts with the 256 byte values and nothing else. It counts every
+      adjacent pair in the corpus, merges the most common one into a new token, and repeats.
+      <b>That is the entire algorithm.</b> Press the button and watch the order it learns things
+      in — pairs of letters first, then endings, then whole common words with their leading space.
+    </p>
+    <div class="card">
+      <div class="controls">
+        <button class="act go" id="go">Train the tokeniser ▸</button>
+        <div class="seg" role="group" aria-label="Pre-tokeniser">
+          <button id="p2" aria-pressed="false">GPT-2</button>
+          <button id="p4" aria-pressed="true">GPT-4</button>
+        </div>
+        <label class="slider">vocabulary <input id="vsize" type="range" min="300" max="1200" step="20" value="640" /><b id="vsizev">640</b></label>
+        <span class="grow"></span>
+        <span class="note" id="trainStatus" style="margin:0"></span>
+      </div>
+      <div id="merges"></div>
+      <p class="note" id="preNote"></p>
+    </div>
+  </section>
+
+  <!-- ── 2. the playground ─────────────────────────────────────────────── -->
+  <section id="play">
+    <h2>Two · Type anything</h2>
+    <p class="say">
+      Every coloured block is one token — one number, as far as the model is concerned. A block
+      with a <b style="color:var(--bad)">dashed outline</b> is not even a whole character: it is
+      one byte of a multi-byte one, which is what happens to any script the tokeniser was not
+      trained on.
+    </p>
+    <div class="card">
+      <textarea id="input" spellcheck="false">The lighthouse keeper watched the weather. Then: 1234567, 日本語, 🚀, and a word it has never seen — zxqvbn.</textarea>
+      <div class="tokens" id="tokens"></div>
+      <div class="stats" id="stats"></div>
+    </div>
+  </section>
+
+  <!-- ── 3. spelling ───────────────────────────────────────────────────── -->
+  <section id="spelling">
+    <h2>Three · Why it cannot count the r's</h2>
+    <p class="say">
+      This is the famous one, and the explanation is not that the model is stupid. Nothing in it
+      ever sees the letters. It sees two or three numbers, and <b>the spelling of a token is a
+      fact it has to have learned about a number</b> — which it can sometimes do, from having read
+      people discussing spelling, and therefore does unreliably rather than never.
+    </p>
+    <div class="split">
+      <div class="card">
+        <h3>What you see <span id="charCount"></span></h3>
+        <div class="letters" id="letters"></div>
+        <p style="margin:0">Counting the highlighted ones is trivial. You can see them.</p>
+      </div>
+      <div class="card">
+        <h3>What the model sees <span id="tokCount"></span></h3>
+        <div class="tokens" id="spellTokens" style="margin-top:0"></div>
+        <p style="margin:12px 0 0" id="spellSay"></p>
+      </div>
+    </div>
+    <div class="verdict">
+      This tracks the box in section two. Put <b>hippopotamus</b>, <b>Mississippi</b> or
+      <b>bookkeeper</b> in it and watch the split change — then ask yourself how you would count
+      a letter inside a number you had only ever seen used and never seen spelled out.
+    </div>
+  </section>
+
+  <!-- ── 4. arithmetic ─────────────────────────────────────────────────── -->
+  <section id="numbers">
+    <h2>Four · Why arithmetic was hard, and then got easier</h2>
+    <p class="say">
+      GPT-2's pre-tokeniser let a run of digits be any length, so BPE was free to learn
+      <b>2024</b> as a single token if it saw it often enough. GPT-4 capped digit runs at three,
+      which makes a four-digit token <b>unlearnable — for any corpus, forever</b>. Same algorithm,
+      one number changed in a regular expression.
+    </p>
+    <div class="card">
+      <h3>Trained on this repository's prose <span>what you are using above</span></h3>
+      <p>
+        The two tokenisers agree on every number. That is not the demonstration failing; it is
+        the first half of it. <b>No number appears often enough in this corpus to be worth a
+        token</b>, so both fall back to one token per digit and the pre-tokeniser has nothing to
+        decide. What GPT-2 does with a number depends entirely on what it happened to read.
+      </p>
+      <table class="cmp" id="numTable"></table>
+    </div>
+    <div class="card">
+      <h3>Trained on a corpus full of dates <span>the same code, different reading</span></h3>
+      <p>
+        Now give both the same thousand log lines stamped with years. GPT-2 immediately spends a
+        token on <b>2024</b> as a whole unit. GPT-4 never can, however many times it sees it — the
+        best it manages is two pieces, because a chunk is three digits and that is that.
+      </p>
+      <table class="cmp" id="numTable2"></table>
+      <div class="verdict" style="margin-top:16px">
+        <b>Look at what GPT-2 did to 1999.</b> It came out as
+        <code>1</code>·<code>99</code>·<code>9</code> — the middle token is the <i>99</i> out of
+        the middle of a year, and it means nothing arithmetically. That is the real cost: not that
+        numbers take more tokens, but that the pieces are <b>whatever the corpus made common</b>,
+        so the same digit sits in a different-shaped token depending on what is around it, and a
+        rule about carrying has to be learned separately for each shape.
+        <br /><br />
+        GPT-4 is not immune to this — it learned <code>202</code> here and splits 2024 as
+        <code>202</code>·<code>4</code>. What it has is a <b>ceiling</b>: three digits, never more,
+        so an <i>n</i>-digit number is always at least ⌈<i>n</i>/3⌉ pieces and the alignment is
+        forced by the regular expression rather than by what happened to be popular. Bounded
+        beats optimal here.
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 5. the tax ────────────────────────────────────────────────────── -->
+  <section id="tax">
+    <h2>Five · The language tax</h2>
+    <p class="say">
+      The same sentence, in several languages. The bars are tokens. Because the vocabulary was
+      learned from English, everything else falls back towards one token per <b>byte</b> — and a
+      character outside ASCII is two to four bytes before anything has even started. Everyone pays
+      per token. <b>Not everyone is charged the same amount for the same sentence.</b>
+    </p>
+    <div class="card" id="tax-card"></div>
+    <div class="verdict">
+      This is not a rounding error. It is a longer wait, a smaller usable context window and a
+      larger bill, for the same meaning, imposed on whoever does not write in the language the
+      vocabulary was fitted to.
+    </div>
+  </section>
+
+  <footer>
+    Real byte-level BPE, trained in this page on 64,000 characters of this repository's own
+    prose — no server, no API key, nothing sent anywhere. The algorithm is in
+    <a href="bpe.js">bpe.js</a> and it has <a href="../../tests/tokens.test.mjs">40 tests</a>,
+    including that <code>decode(encode(x)) === x</code> for every byte value, for emoji, and for
+    right-to-left text. <a href="README.md">Full write-up</a>.
+  </footer>
+
+</main>
+
+<script type="module">
+import {
+  PATTERNS, trainBPE, encode, encodeDetailed, decode, bytesToText, spellingView, costBySample,
+} from './bpe.js';
+import { CORPUS } from './corpus.js';
+
+const $ = (s) => document.querySelector(s);
+
+/* A palette that cycles, so two touching tokens are always different colours.
+   Six is enough that a repeat is never adjacent and few enough that it reads
+   as a scheme rather than as confetti. */
+const HUES = ['#5fb8ff', '#7ee0b0', '#ffc46b', '#c9a6ff', '#ff9bb0', '#8fd8d0'];
+
+let style = 'gpt4';
+let model = null;
+let other = null;          // the same corpus under the other pre-tokeniser
+
+/* ── training, animated ─────────────────────────────────────────────────── */
+
+const mergesHost = $('#merges');
+const status = $('#trainStatus');
+
+function train({ animate }) {
+  const size = Number($('#vsize').value);
+  mergesHost.innerHTML = '';
+  status.textContent = 'counting pairs…';
+  $('#go').disabled = true;
+
+  /* Training is collected first and then replayed. Doing the work inside the
+     animation would make the frame rate a function of corpus size, and the
+     thing worth watching is the ORDER, not the speed. */
+  const learned = [];
+  const t0 = performance.now();
+  model = trainBPE(CORPUS, { vocabSize: size, style, onMerge: (m) => learned.push(m) });
+  other = trainBPE(CORPUS, { vocabSize: size, style: style === 'gpt4' ? 'gpt2' : 'gpt4' });
+  const ms = Math.round(performance.now() - t0);
+
+  const finish = () => {
+    status.innerHTML = `<b>${learned.length}</b> merges from ${CORPUS.length.toLocaleString()} characters in ${ms}ms`;
+    $('#go').disabled = false;
+    refresh();
+  };
+
+  if (!animate || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    /* Only the first 96 are ever shown. A thousand chips is a wall of noise and
+       the interesting ones are all at the front anyway. */
+    mergesHost.innerHTML = learned.slice(0, 96).map(chip).join('');
+    finish();
+    return;
+  }
+
+  let i = 0;
+  const shown = Math.min(96, learned.length);
+  (function frame() {
+    const until = Math.min(shown, i + Math.ceil(shown / 70));
+    let html = '';
+    for (; i < until; i++) html += chip(learned[i]);
+    mergesHost.insertAdjacentHTML('beforeend', html);
+    status.textContent = `${i} merges…`;
+    if (i < shown) requestAnimationFrame(frame); else finish();
+  })();
+}
+
+function chip(m) {
+  return `<span class="merge"><i>${m.rank + 1}</i><u>${chipText(m.text)}</u><i>×${m.count.toLocaleString()}</i></span>`;
+}
+
+/* ── the playground ─────────────────────────────────────────────────────── */
+
+function renderTokens(host, text) {
+  const detailed = encodeDetailed(text, model);
+  let n = 0;
+  host.innerHTML = detailed.flatMap((c) =>
+    c.ids.map((id, i) => {
+      const piece = c.pieces[i];
+      const fragment = piece.includes('⟨');
+      return `<span class="tok${fragment ? ' frag' : ''}" style="--tc:${HUES[n++ % HUES.length]}"` +
+        ` title="token ${id}${fragment ? ' — part of a character' : ''}">${escapeShow(piece)}</span>`;
+    })
+  ).join('');
+  return detailed.reduce((k, c) => k + c.ids.length, 0);
+}
+
+function refresh() {
+  if (!model) return;
+  const text = $('#input').value;
+  const tokens = renderTokens($('#tokens'), text);
+  const chars = Array.from(text).length;
+  const bytes = new TextEncoder().encode(text).length;
+  const words = (text.match(/\S+/g) ?? []).length;
+
+  $('#stats').innerHTML = [
+    ['characters', chars.toLocaleString()],
+    ['bytes', bytes.toLocaleString()],
+    ['tokens', `<span style="color:var(--accent)">${tokens.toLocaleString()}</span>`],
+    ['chars / token', chars ? (chars / tokens).toFixed(2) : '—'],
+    ['tokens / word', words ? (tokens / words).toFixed(2) : '—'],
+    ['round-trips', decode(encode(text, model), model) === text
+      ? '<span style="color:var(--ok)">exactly</span>'
+      : '<span style="color:var(--bad)">NO</span>'],
+  ].map(([k, v]) => `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+
+  renderSpelling();
+  renderNumbers();
+  renderTax();
+}
+
+/* ── spelling ───────────────────────────────────────────────────────────── */
+
+const FALLBACK = 'strawberry';
+
+/**
+ * The most spelling-hostile word in whatever is currently in the box.
+ *
+ * The section used to be hardcoded to "strawberry" while the copy underneath
+ * invited you to type something else — an instruction the page then ignored.
+ * Now it takes the word with the most repeats of a single letter, breaking
+ * ties on length, which is exactly the shape of word this failure happens to.
+ */
+function pickWord(text) {
+  const words = (text.toLowerCase().match(/\p{L}{4,}/gu) ?? []);
+  let best = null, bestScore = 0;
+  for (const w of words) {
+    const tally = new Map();
+    for (const ch of w) tally.set(ch, (tally.get(ch) ?? 0) + 1);
+    const most = Math.max(...tally.values());
+    const score = most * 100 + w.length;
+    if (most > 1 && score > bestScore) { bestScore = score; best = w; }
+  }
+  return best ?? FALLBACK;
+}
+
+function renderSpelling() {
+  const word = pickWord($('#input').value);
+  const v = spellingView(word, model);
+  const [letter, count] = v.repeated[0] ?? ['r', 0];
+  $('#letters').innerHTML = Array.from(word)
+    .map((c) => `<span class="${c === letter ? 'hit' : ''}">${c}</span>`).join('');
+  $('#charCount').textContent = `${v.characters} character${v.characters === 1 ? '' : 's'}`;
+  $('#tokCount').textContent = `${v.tokens} token${v.tokens === 1 ? '' : 's'}`;
+  renderTokens($('#spellTokens'), word);
+  $('#spellSay').innerHTML =
+    `Asked how many <b style="color:var(--ink)">${letter}</b>'s are in ` +
+    `<b style="color:var(--ink)">${word}</b>, the model is holding ` +
+    `${v.tokens} number${v.tokens === 1 ? '' : 's'} — and the answer, ` +
+    `<b style="color:var(--ink)">${count}</b>, is not visible in any of them.`;
+}
+
+/* ── numbers ────────────────────────────────────────────────────────────── */
+
+const NUMBERS = ['2024', '1999', '1234567', '3.14159', '512'];
+
+/* A thousand log lines with years all over them. Synthetic and obviously so —
+   the point is to give BPE something worth memorising, which this repository's
+   own prose does not contain. */
+const DATED = Array.from({ length: 1000 }, (_, i) =>
+  `2024-0${(i % 9) + 1}-1${i % 10} request 1999 ok in ${(i % 400) + 100}ms, since 2024, before 1999\n`
+).join('');
+
+let datedPair = null;
+
+function numberTable(two, four) {
+  /* Each piece is its own chip rather than dot-separated text: the separator
+     used to be a middot, and in "3.14159" a middot next to a decimal point is
+     unreadable — you cannot tell the punctuation from the delimiter. */
+  const cells = (m, s) => encodeDetailed(s, m).flatMap((c) => c.pieces)
+    .map((p) => `<b style="background:rgba(126,224,176,.14);border-radius:4px;padding:2px 5px;margin-right:3px;display:inline-block">${escapeShow(p)}</b>`)
+    .join('');
+  return `<tr><th>number</th><th>GPT-2 style</th><th>GPT-4 style</th></tr>` +
+    NUMBERS.map((s) => {
+      const a = encode(s, two).length, b = encode(s, four).length;
+      const win = a < b ? ' style="color:var(--warn)"' : '';
+      return `<tr><td>${s}</td>` +
+        `<td class="pieces">${cells(two, s)} <span${win}>(${a})</span></td>` +
+        `<td class="pieces">${cells(four, s)} <span style="color:var(--dimmer)">(${b})</span></td></tr>`;
+    }).join('');
+}
+
+function renderNumbers() {
+  const four = style === 'gpt4' ? model : other;
+  const two = style === 'gpt4' ? other : model;
+  $('#numTable').innerHTML = numberTable(two, four);
+
+  /* Trained once and kept: it does not depend on anything the page's controls
+     change, and retraining it on every keystroke would be absurd. */
+  if (!datedPair) {
+    datedPair = {
+      two: trainBPE(DATED, { vocabSize: 420, style: 'gpt2' }),
+      four: trainBPE(DATED, { vocabSize: 420, style: 'gpt4' }),
+    };
+  }
+  $('#numTable2').innerHTML = numberTable(datedPair.two, datedPair.four);
+}
+
+/* ── the language tax ───────────────────────────────────────────────────── */
+
+const SAMPLES = [
+  { label: 'English', text: 'The lighthouse keeper watched the weather and the shipping.' },
+  { label: 'Spanish', text: 'El farero observaba el tiempo y la navegación.' },
+  { label: 'German',  text: 'Der Leuchtturmwärter beobachtete das Wetter und die Schifffahrt.' },
+  { label: 'Russian', text: 'Смотритель маяка наблюдал за погодой и судоходством.' },
+  { label: 'Hindi',   text: 'प्रकाशस्तंभ का रखवाला मौसम और जहाजरानी को देखता रहा।' },
+  { label: 'Japanese', text: '灯台守は天候と船の動きを見守っていた。' },
+];
+
+function renderTax() {
+  const rows = costBySample(SAMPLES, model);
+  const base = rows[0].tokens;
+  const max = Math.max(...rows.map((r) => r.tokens));
+  $('#tax-card').innerHTML = rows.map((r) => `
+    <div class="rowbar">
+      <span class="lang">${r.label}</span>
+      <span class="track"><span class="fill" style="width:${(r.tokens / max * 100).toFixed(1)}%">${r.tokens}</span></span>
+      <span class="mult">${r.tokens === base ? '—' : (r.tokens / base).toFixed(1) + '×'}</span>
+      <span class="sample">${escapeShow(r.text)}</span>
+    </div>`).join('');
+}
+
+/* ── wiring ─────────────────────────────────────────────────────────────── */
+
+/** Escape for HTML, and make whitespace visible — a token that is a newline
+    has to look like something or the display silently loses it. */
+function escapeShow(s) {
+  /* The order of these is not arbitrary, and the first version had it wrong.
+     The space-to-nbsp replacement ran LAST, which meant it also replaced the
+     spaces inside the <span style="..."> tags this function had itself just
+     inserted — producing invalid tags that the browser gave up on halfway
+     through, and a vocabulary chip with its count hanging outside its own
+     border. An escaping function has to finish escaping before it emits any
+     markup of its own. */
+  return s
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/ /g, ' ')
+    .replace(/\n/g, '<span style="opacity:.42">\\n</span>')
+    .replace(/\t/g, '<span style="opacity:.42">\\t</span>');
+}
+
+/** For the vocabulary chips, where a token has to be one glyph wide whatever
+    it is. Showing the leading space as ␣ is not only tidiness: it makes it
+    visible that the token BPE learned is " the" and not "the", which is the
+    most surprising thing about the shape of these vocabularies. */
+function chipText(s) {
+  return s
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/ /g, '<span style="opacity:.5">␣</span>')
+    .replace(/\n/g, '<span style="opacity:.5">⏎</span>')
+    .replace(/\t/g, '<span style="opacity:.5">⇥</span>');
+}
+
+function setStyle(next) {
+  style = next;
+  $('#p2').setAttribute('aria-pressed', String(next === 'gpt2'));
+  $('#p4').setAttribute('aria-pressed', String(next === 'gpt4'));
+  $('#preNote').innerHTML = `<b>${PATTERNS[style].label} pre-tokeniser:</b> ${PATTERNS[style].note}`;
+  train({ animate: false });
+}
+
+$('#go').addEventListener('click', () => train({ animate: true }));
+$('#p2').addEventListener('click', () => setStyle('gpt2'));
+$('#p4').addEventListener('click', () => setStyle('gpt4'));
+$('#vsize').addEventListener('input', (e) => { $('#vsizev').textContent = e.target.value; });
+$('#vsize').addEventListener('change', () => train({ animate: false }));
+$('#input').addEventListener('input', refresh);
+
+setStyle('gpt4');
+</script>
+</body>
+</html>
