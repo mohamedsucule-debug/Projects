@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="icon" href="../../favicon.svg" />
+<meta name="theme-color" content="#0a0d16" />
+<title>Agents — the loop is easy, the failure modes are not</title>
+<meta name="description" content="Step through a real tool-use loop turn by turn: the message blocks, the tool results, the context growing and what it costs. Then break it on purpose — a tool that throws, a loop that never ends, a result too big to send — and switch the guards off one at a time to see what each one was for." />
+<meta property="og:title" content="Agents — the loop is easy, the failure modes are not" />
+<meta property="og:description" content="Everybody writes the ten-line loop correctly. Everything hard is in what happens when a tool throws, a result is too big, or the model gets stuck — with the guards switchable so you can see what each one prevents." />
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --bg: #0a0d16; --panel: #0f1422; --raise: #141a2b;
+    --line: rgba(255,255,255,.09); --line2: rgba(255,255,255,.17);
+    --ink: #e9eefb; --dim: rgba(233,238,251,.56); --dimmer: rgba(233,238,251,.34);
+    --accent: #5fb8ff; --user: #a3e635; --asst: #5fb8ff; --tool: #ffc46b;
+    --good: #6cc48f; --bad: #e0736f;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans);
+    -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+
+  header.bar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 12px;
+    flex-wrap: wrap; padding: 10px 16px; border-bottom: 1px solid var(--line);
+    background: rgba(10,13,22,.88); backdrop-filter: blur(14px); }
+  .back { color: var(--dim); text-decoration: none; font: 600 11.5px/1 var(--mono);
+    letter-spacing: .07em; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; }
+  .back:hover { color: var(--ink); border-color: var(--line2); }
+  .bar .title { font-weight: 800; font-size: 15px; letter-spacing: -.012em; }
+  .bar .title small { font-weight: 500; color: var(--dimmer); margin-left: 9px; font-size: 12px; }
+  .grow { flex: 1 1 auto; }
+
+  main { max-width: 1060px; margin: 0 auto; padding: 0 20px 110px; }
+  .lede { padding: 46px 0 8px; }
+  .lede h1 { font-size: clamp(30px, 4.6vw, 46px); line-height: 1.06; letter-spacing: -.035em;
+    margin: 0 0 18px; max-width: 20ch; }
+  .lede h1 em { font-style: normal; color: var(--accent); }
+  .lede p { font-size: 17px; line-height: 1.65; color: var(--dim); max-width: 66ch; margin: 0 0 14px; }
+  .lede p b { color: var(--ink); font-weight: 650; }
+
+  section { margin-top: 58px; }
+  section > h2 { font: 700 11.5px/1 var(--mono); letter-spacing: .2em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 12px; }
+  section > .say { font-size: 15.5px; line-height: 1.65; color: var(--dim); max-width: 70ch; margin: 0 0 20px; }
+  section > .say b { color: var(--ink); font-weight: 650; }
+
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+  .card + .card { margin-top: 14px; }
+
+  .controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+  button.act { border: 1px solid var(--line2); background: rgba(255,255,255,.07); color: var(--ink);
+    border-radius: 9px; padding: 9px 14px; font: 650 12.5px/1 var(--sans); cursor: pointer; }
+  button.act:hover { background: rgba(255,255,255,.13); }
+  button.act:disabled { opacity: .4; cursor: default; }
+  button.act.go { border-color: rgba(95,184,255,.5); background: rgba(95,184,255,.14); color: #cfe9ff; }
+  select { background: var(--raise); border: 1px solid var(--line2); color: var(--ink);
+    border-radius: 9px; padding: 9px 11px; font: 600 12.5px/1 var(--sans); }
+
+  /* ── guards ─────────────────────────────────────────────── */
+  .guards { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+  .guard { display: flex; gap: 11px; align-items: flex-start; background: var(--raise);
+    border: 1px solid var(--line); border-radius: 10px; padding: 12px 13px; cursor: pointer;
+    transition: border-color .15s, opacity .15s; }
+  .guard.off { opacity: .55; border-color: rgba(224,115,111,.4); }
+  .guard input { margin: 2px 0 0; accent-color: var(--accent); flex: none; }
+  /* Both display:block. As inline spans the margin-top on .d did nothing and
+     the title ran straight into its own description with no break. */
+  .guard .t { display: block; font: 650 12.5px/1.3 var(--sans); }
+  .guard .d { display: block; font: 500 11.5px/1.5 var(--sans); color: var(--dimmer); margin-top: 5px; }
+
+  /* ── the transcript ─────────────────────────────────────── */
+  .turns { display: grid; gap: 10px; }
+  .msg { border-left: 2px solid var(--c); background: var(--raise); border-radius: 0 10px 10px 0;
+    padding: 11px 14px; animation: slide .25s cubic-bezier(.2,.8,.3,1); }
+  @keyframes slide { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+  .msg .role { font: 700 9.5px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase;
+    color: var(--c); margin-bottom: 8px; display: flex; gap: 10px; align-items: baseline; }
+  .msg .role span { color: var(--dimmer); letter-spacing: .08em; font-weight: 600; }
+  .msg .body { font: 500 13px/1.6 var(--sans); color: var(--dim); }
+  .msg .body b { color: var(--ink); font-weight: 650; }
+  .msg pre { margin: 7px 0 0; font: 600 12px/1.5 var(--mono); color: var(--ink);
+    background: #080b14; border: 1px solid var(--line); border-radius: 7px; padding: 9px 11px;
+    overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
+  .msg pre.err { border-color: rgba(224,115,111,.4); color: #ffb4b0; background: rgba(224,115,111,.07); }
+  .msg pre.cut { border-color: rgba(255,196,107,.4); }
+  .msg .cutnote { font: 600 10.5px/1 var(--mono); color: var(--tool); margin-top: 6px; }
+
+  .stop { margin-top: 12px; padding: 14px 16px; border-radius: 11px; font-size: 14px; line-height: 1.6;
+    display: flex; gap: 13px; align-items: flex-start; }
+  .stop .mark { font: 700 10.5px/1 var(--mono); letter-spacing: .1em; padding: 7px 10px;
+    border-radius: 7px; white-space: nowrap; flex: none; }
+  .stop.ok { background: rgba(108,196,143,.09); border: 1px solid rgba(108,196,143,.3); color: var(--dim); }
+  .stop.ok .mark { background: rgba(108,196,143,.2); color: #a8e6c1; }
+  .stop.no { background: rgba(224,115,111,.09); border: 1px solid rgba(224,115,111,.3); color: var(--dim); }
+  .stop.no .mark { background: rgba(224,115,111,.2); color: #ffb4b0; }
+  .stop b { color: var(--ink); font-weight: 650; }
+
+  .tiles { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line);
+    border-radius: 12px; overflow: hidden; margin-bottom: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+  .tile { background: var(--panel); padding: 13px 14px; }
+  .tile .k { font: 600 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dimmer); }
+  .tile .v { font: 700 23px/1.05 var(--sans); letter-spacing: -.03em; margin-top: 8px; }
+  .tile .v small { font: 600 11.5px/1 var(--mono); color: var(--dim); margin-left: 5px; }
+
+  figure { margin: 0; }
+  figcaption { font-size: 12.5px; color: var(--dimmer); margin-top: 10px; line-height: 1.55; }
+  svg.chart { display: block; width: 100%; height: auto; overflow: visible; }
+  svg.chart .grid { stroke: rgba(255,255,255,.07); }
+  svg.chart .axis { stroke: rgba(255,255,255,.16); }
+  svg.chart .tick { fill: var(--dimmer); font: 500 10.5px var(--mono); }
+  svg.chart .barA { fill: #3f8fd4; }
+  svg.chart .barB { fill: #bc8436; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px;
+    font: 600 11.5px/1 var(--mono); color: var(--dim); }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .legend i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+
+  .aside { margin-top: 14px; padding: 14px 16px; border-radius: 11px;
+    background: rgba(95,184,255,.07); border: 1px solid rgba(95,184,255,.22);
+    font-size: 13.5px; line-height: 1.62; color: var(--dim); }
+  .aside b { color: var(--ink); font-weight: 650; }
+  .aside.warn { background: rgba(255,196,107,.07); border-color: rgba(255,196,107,.26); }
+
+  table { width: 100%; border-collapse: collapse; font: 600 12.5px/1.35 var(--mono); }
+  th { font: 600 10px/1 var(--mono); letter-spacing: .13em; text-transform: uppercase;
+    color: var(--dimmer); text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line2); }
+  td { padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td .why { font: 500 11.5px/1.5 var(--sans); color: var(--dimmer); margin-top: 4px; }
+
+  footer { margin-top: 84px; padding-top: 26px; border-top: 1px solid var(--line);
+    color: var(--dimmer); font-size: 13px; line-height: 1.65; }
+  footer a { color: var(--dim); }
+
+  @media (max-width: 620px) {
+    main { padding: 0 15px 80px; }
+    .lede { padding-top: 30px; }
+    .tile .v { font-size: 19px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <a class="back" href="../../index.html">← PLAYGROUND</a>
+  <div class="title">Agents <small>the loop is easy, the failure modes are not</small></div>
+  <span class="grow"></span>
+</header>
+
+<main>
+
+  <div class="lede">
+    <h1>The loop is ten lines. <em>Everything hard is elsewhere.</em></h1>
+    <p>
+      Send the conversation; get back an answer or a request to call a tool; call it; append the
+      result; send it again. Everybody writes that correctly the first time.
+    </p>
+    <p>
+      Then a tool throws. Then one returns five kilobytes. Then the model asks for a tool that does
+      not exist, or passes a number where a string goes, or calls the same thing four times in a
+      row. <b>None of that is in the loop, and all of it is what running one of these actually
+      is.</b> Below you can break it on purpose and switch the guards off one at a time.
+    </p>
+  </div>
+
+  <!-- ── 1. the run ────────────────────────────────────────────────────── -->
+  <section id="run">
+    <h2>One · Step through it</h2>
+    <p class="say">
+      A real task over a real ledger: <b>300 expense lines</b> and five tools that genuinely run
+      over them. Pick something to go wrong, then step through and watch the message blocks
+      accumulate. The tool results really are computed, and the answer at the end really is the
+      number in the data.
+    </p>
+    <div class="card">
+      <div class="controls">
+        <label style="font-size:12.5px;color:var(--dim)">what goes wrong
+          <select id="fault"></select>
+        </label>
+        <button class="act go" id="step">Step ▸</button>
+        <button class="act" id="all">Run to the end</button>
+        <button class="act" id="reset">Reset</button>
+      </div>
+      <p id="faultNote" style="margin:0 0 16px;font-size:13px;line-height:1.6;color:var(--dimmer)"></p>
+      <div class="tiles" id="tiles"></div>
+      <div class="turns" id="turns"></div>
+      <div id="stop"></div>
+    </div>
+  </section>
+
+  <!-- ── 2. the guards ─────────────────────────────────────────────────── -->
+  <section id="guards">
+    <h2>Two · Switch the guards off</h2>
+    <p class="say">
+      Each of these exists because of one specific way a run goes wrong. Turn one off, re-run the
+      matching fault, and watch what it was preventing. <b>A harness is defined by what it
+      survives</b>, not by how neatly the happy path reads.
+    </p>
+    <div class="card">
+      <div class="guards" id="guardList"></div>
+      <div class="aside" id="guardSay"></div>
+    </div>
+  </section>
+
+  <!-- ── 3. what it costs ──────────────────────────────────────────────── -->
+  <section id="cost">
+    <h2>Three · Every turn pays for every turn before it</h2>
+    <p class="say">
+      The conversation is stateless on the wire. Turn four resends turns one, two and three —
+      <b>plus every tool definition, every time</b>. So the cost of an agent is not the number of
+      turns, it is roughly the square of it, and a chatty tool is expensive twice: once when its
+      output arrives, and again on every subsequent turn forever.
+    </p>
+    <p class="say">
+      The token counts below are real. They come from the byte-pair tokeniser on
+      <a href="../tokens/index.html" style="color:var(--accent)">the Tokens page</a>, trained on
+      this repository's own prose, running over the actual message text.
+    </p>
+    <div class="card">
+      <div class="legend">
+        <span><i style="background:#3f8fd4"></i>a clean run</span>
+        <span><i style="background:#bc8436"></i>the same task, pulling back every row</span>
+      </div>
+      <figure>
+        <svg class="chart" id="costChart" viewBox="0 0 900 260" role="img"
+             aria-label="Prompt tokens per turn, for a clean run and for one that fetches too much."></svg>
+        <figcaption id="costCaption"></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ── 4. honesty ────────────────────────────────────────────────────── -->
+  <section id="honest">
+    <h2>Four · What is real here and what is not</h2>
+    <div class="card">
+      <table>
+        <tr><th>piece</th><th>real?</th><th></th></tr>
+        <tr><td>the loop and the guards</td><td style="color:var(--good)">real</td>
+            <td><div class="why">The whole of <a href="harness.js" style="color:var(--dim)">harness.js</a>, with 29 tests. This is the part you would write.</div></td></tr>
+        <tr><td>the tools and the data</td><td style="color:var(--good)">real</td>
+            <td><div class="why">Five tools over 300 deterministic expense lines. They compute; they throw when they should; the agent's answer is checked against the ledger.</div></td></tr>
+        <tr><td>the message shapes</td><td style="color:var(--good)">real</td>
+            <td><div class="why">Content blocks, tool_use ids matched to tool_result ids, results returning as user messages. A test asserts no result ever answers a call that was not made.</div></td></tr>
+        <tr><td>the token counts</td><td style="color:var(--good)">real</td>
+            <td><div class="why">A byte-pair tokeniser running over the actual conversation text, not a length divided by four.</div></td></tr>
+        <tr><td>the model</td><td style="color:var(--bad)">a script</td>
+            <td><div class="why">There is no API key on this page and it is not going to ask you for one. The policy emits the same blocks a model would, on a schedule.</div></td></tr>
+      </table>
+      <div class="aside warn">
+        <b>Why a script is the right call here, not a compromise.</b> You cannot reliably get a
+        real model to pass an argument of the wrong type, or to call the same tool four times in a
+        row, at the moment you want to show what your harness does about it. Here it is a
+        dropdown. And the interface between the two is one function —
+        <code>policy({ messages, tools, turn }) → { content }</code>, the shape of a single
+        completion — so a real model drops in behind it without the harness knowing.
+        <b>That boundary is the thing worth designing</b>, and it is why it is a plain function
+        rather than anything clever.
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    The harness is <a href="harness.js">harness.js</a>, the tools are
+    <a href="tools.js">tools.js</a>, the scripted policy is <a href="policy.js">policy.js</a>.
+    <a href="../../tests/agents.test.mjs">29 tests</a>, including one that every tool result is
+    tied to the call it answers, and one that the agent's arithmetic matches the ledger.
+    Nothing is sent anywhere. <a href="README.md">Full write-up</a>.
+  </footer>
+
+</main>
+
+<script type="module">
+import { runAgent, STOP, DEFAULT_GUARDS } from './harness.js';
+import { buildTools, groundTruth } from './tools.js';
+import { scriptedPolicy, resetIds, TASK, FAULTS } from './policy.js';
+import { trainBPE, encode } from '../tokens/bpe.js';
+import { CORPUS } from '../tokens/corpus.js';
+
+const $ = (s) => document.querySelector(s);
+const tools = buildTools();
+
+/* A real tokeniser rather than length/4. The whole point of the cost section is
+   that these numbers are measured, and an estimate would quietly undercut it. */
+const tokeniser = trainBPE(CORPUS, { vocabSize: 700, style: 'gpt4' });
+const tokenCount = (text) => encode(text, tokeniser).length;
+
+const GUARD_COPY = {
+  validateArguments: {
+    t: 'Check arguments before calling',
+    d: 'Against the tool’s own schema. Catches a wrong type, a missing field, a value outside '
+     + 'an enum — and names what was expected, so the model can correct rather than guess.',
+  },
+  catchToolErrors: {
+    t: 'Hand tool failures back to the model',
+    d: 'As a tool_result marked as an error, instead of throwing. This is what lets an agent '
+     + 'apologise, pick different arguments and carry on.',
+  },
+  detectLoops: {
+    t: 'Stop identical repeated calls',
+    d: 'The same tool with the same arguments three times means the model is not learning '
+     + 'anything from the answer and will not on the fourth.',
+  },
+  maxResultBytes: {
+    t: 'Cap the size of a tool result',
+    d: 'Cut from the middle, keeping both ends, and say so in the text — a model told nothing '
+     + 'will report a partial answer as a complete one.',
+  },
+  maxTurns: {
+    t: 'Hard turn limit',
+    d: 'The one that cannot be switched off. Everything else is a way of not reaching it.',
+  },
+};
+
+let guards = { ...DEFAULT_GUARDS };
+let iterator = null, steps = [], finished = false;
+
+/* ── the run ────────────────────────────────────────────────────────────── */
+
+function reset() {
+  resetIds();
+  steps = [];
+  finished = false;
+  iterator = runAgent({
+    task: TASK,
+    tools,
+    policy: scriptedPolicy($('#fault').value),
+    guards,
+    tokenCount,
+  });
+  $('#turns').innerHTML = `
+    <div class="msg" style="--c:var(--user)">
+      <div class="role">user <span>the task</span></div>
+      <div class="body">${esc(TASK)}</div>
+    </div>`;
+  $('#stop').innerHTML = '';
+  $('#step').disabled = false;
+  $('#all').disabled = false;
+  renderTiles(null);
+}
+
+function step() {
+  if (finished) return false;
+  const next = iterator.next();
+  if (next.done) { finished = true; return false; }
+  steps.push(next.value);
+  render(next.value);
+  if (next.value.event === 'stop') {
+    finished = true;
+    $('#step').disabled = true;
+    $('#all').disabled = true;
+  }
+  return !finished;
+}
+
+function render(s) {
+  renderTiles(s);
+  if (s.event === 'stop') { renderStop(s); return; }
+
+  const last = s.messages[s.messages.length - (s.event === 'tool' ? 2 : 1)];
+  if (s.event === 'answer') {
+    add('assistant', `turn ${s.turn} · final answer`, 'var(--asst)',
+      `<b>${esc(s.text)}</b>`);
+    return;
+  }
+
+  const thoughts = last.content.filter((b) => b.type === 'text').map((b) => esc(b.text)).join(' ');
+  const calls = last.content.filter((b) => b.type === 'tool_use');
+  add('assistant', `turn ${s.turn} · ${s.promptTokens} prompt tokens`, 'var(--asst)',
+    (thoughts ? `${thoughts}` : '') +
+    calls.map((c) => `<pre>${esc(c.name)}(${esc(JSON.stringify(c.input))})</pre>`).join(''));
+
+  const results = s.messages[s.messages.length - 1].content;
+  add('tool', `${results.length} result${results.length === 1 ? '' : 's'}`, 'var(--tool)',
+    results.map((r) => {
+      const cls = r.is_error ? 'err' : (r.truncated ? 'cut' : '');
+      const body = String(r.content);
+      const shown = body.length > 420 ? body.slice(0, 420) + '…' : body;
+      return `<pre class="${cls}">${esc(shown)}</pre>` +
+        (r.truncated ? `<div class="cutnote">✂ cut down to fit the result cap</div>` : '');
+    }).join(''));
+}
+
+function add(role, meta, colour, body) {
+  $('#turns').insertAdjacentHTML('beforeend',
+    `<div class="msg" style="--c:${colour}">
+       <div class="role">${role} <span>${meta}</span></div>
+       <div class="body">${body}</div>
+     </div>`);
+}
+
+function renderStop(s) {
+  const ok = s.stopReason === STOP.ANSWERED;
+  const truth = groundTruth();
+  const right = ok && s.answer &&
+    s.answer.includes(truth.q2.toLocaleString('en-US', { minimumFractionDigits: 2 }));
+  $('#stop').innerHTML = `
+    <div class="stop ${ok ? 'ok' : 'no'}">
+      <span class="mark">${s.stopReason.replace(/_/g, ' ').toUpperCase()}</span>
+      <div>
+        ${ok
+          ? `Finished in <b>${s.usage.turns} turns</b> and
+             <b>${s.usage.promptTokens.toLocaleString()} prompt tokens</b>.
+             ${right
+                ? `The number in the answer matches the ledger exactly — Q2 cloud spend really
+                   is <b>$${truth.q2.toLocaleString('en-US', { minimumFractionDigits: 2 })}</b>,
+                   up ${truth.percentChange}% on Q1.`
+                : `It answered, but the number does not match the ledger.`}`
+          : `<b>${esc(s.note ?? 'The run ended without an answer.')}</b>
+             It burned <b>${s.usage.turns} turns</b> and
+             <b>${s.usage.promptTokens.toLocaleString()} prompt tokens</b> getting there.`}
+      </div>
+    </div>`;
+}
+
+function renderTiles(s) {
+  const u = s?.usage ?? { turns: 0, promptTokens: 0, toolCalls: 0, toolBytes: 0 };
+  $('#tiles').innerHTML = [
+    { k: 'turns', v: u.turns, s: `of ${guards.maxTurns}` },
+    { k: 'prompt tokens', v: u.promptTokens.toLocaleString(), s: 'cumulative' },
+    { k: 'tool calls', v: u.toolCalls },
+    { k: 'tool output', v: `${(u.toolBytes / 1024).toFixed(1)}`, s: 'KB raw' },
+  ].map((t) => `<div class="tile"><div class="k">${t.k}</div>` +
+    `<div class="v">${t.v}${t.s ? `<small>${t.s}</small>` : ''}</div></div>`).join('');
+}
+
+/* ── guards ─────────────────────────────────────────────────────────────── */
+
+function renderGuards() {
+  $('#guardList').innerHTML = Object.entries(GUARD_COPY).map(([key, copy]) => {
+    const fixed = key === 'maxTurns';
+    const on = fixed ? true : (key === 'maxResultBytes' ? guards[key] > 0 : guards[key]);
+    return `<label class="guard${on ? '' : ' off'}">
+      <input type="checkbox" data-guard="${key}" ${on ? 'checked' : ''} ${fixed ? 'disabled' : ''} />
+      <span><span class="t">${copy.t}</span><span class="d">${copy.d}</span></span>
+    </label>`;
+  }).join('');
+
+  const off = Object.entries(GUARD_COPY)
+    .filter(([k]) => k !== 'maxTurns')
+    .filter(([k]) => (k === 'maxResultBytes' ? guards[k] === 0 : !guards[k]));
+  $('#guardSay').innerHTML = off.length === 0
+    ? 'All on. Every fault above recovers and the agent answers correctly — which is what a '
+      + 'harness earning its keep looks like: the interesting things happened and nothing went wrong.'
+    : `<b>${off.length} guard${off.length === 1 ? '' : 's'} off.</b> Re-run the matching fault above `
+      + `and watch: ${off.map(([, c]) => c.t.toLowerCase()).join(', ')}.`;
+}
+
+/* ── cost ───────────────────────────────────────────────────────────────── */
+
+function measure(fault) {
+  resetIds();
+  const perTurn = [];
+  for (const s of runAgent({ task: TASK, tools, policy: scriptedPolicy(fault), guards: DEFAULT_GUARDS, tokenCount })) {
+    if (s.promptTokens) perTurn.push(s.promptTokens);
+  }
+  return perTurn;
+}
+
+function drawCost() {
+  const clean = measure('none');
+  const fat = measure('hugeResult');
+  const turns = Math.max(clean.length, fat.length);
+  const W = 900, H = 260, L = 58, R = 16, T = 16, B = 42;
+  const max = Math.max(...clean, ...fat) * 1.12;
+  const x = (i) => L + (i + 0.5) * ((W - L - R) / turns);
+  const y = (v) => T + (1 - v / max) * (H - T - B);
+  const bw = Math.min(46, (W - L - R) / turns / 2.6);
+  const ticks = niceTicks(0, max, 4);
+
+  const bars = (arr, cls, offset) => arr.map((v, i) =>
+    `<rect class="${cls}" x="${x(i) + offset - bw / 2}" y="${y(v)}" width="${bw}"
+       height="${Math.max(1, H - B - y(v))}" rx="3">
+       <title>turn ${i + 1}: ${v.toLocaleString()} prompt tokens</title></rect>`).join('');
+
+  $('#costChart').innerHTML = `
+    ${ticks.map((v) => `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" />`).join('')}
+    ${ticks.map((v) => `<text class="tick" x="${L - 9}" y="${y(v) + 3.5}" text-anchor="end">${v.toLocaleString()}</text>`).join('')}
+    ${bars(clean, 'barA', -bw * 0.58)}
+    ${bars(fat, 'barB', bw * 0.58)}
+    <line class="axis" x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}" />
+    ${Array.from({ length: turns }, (_, i) =>
+      `<text class="tick" x="${x(i)}" y="${H - B + 18}" text-anchor="middle">turn ${i + 1}</text>`).join('')}
+    <text class="tick" transform="translate(14,${(T + H - B) / 2}) rotate(-90)" text-anchor="middle"
+          style="letter-spacing:.12em">PROMPT TOKENS</text>`;
+
+  const cleanTotal = clean.reduce((a, b) => a + b, 0);
+  const fatTotal = fat.reduce((a, b) => a + b, 0);
+  $('#costCaption').innerHTML =
+    `Same task, same answer, same number of turns. Pulling every row back instead of asking the `
+    + `tool for a total costs <b style="color:var(--ink)">${fatTotal.toLocaleString()}</b> prompt `
+    + `tokens against <b style="color:var(--ink)">${cleanTotal.toLocaleString()}</b> — `
+    + `<b style="color:var(--ink)">${(fatTotal / cleanTotal).toFixed(1)}×</b>. `
+    + `The result arrives once and is then paid for on every turn after it.`;
+}
+
+function niceTicks(lo, hi, want) {
+  const step = Math.pow(10, Math.floor(Math.log10((hi - lo) / want)));
+  const s = [1, 2, 2.5, 5, 10].map((m) => m * step).find((v) => v >= (hi - lo) / want) ?? step * 10;
+  const out = [];
+  for (let v = 0; v <= hi; v += s) out.push(Math.round(v));
+  return out;
+}
+
+/* ── wiring ─────────────────────────────────────────────────────────────── */
+
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+$('#fault').innerHTML = Object.values(FAULTS)
+  .map((f) => `<option value="${f.id}">${f.label}</option>`).join('');
+
+function faultChanged() {
+  $('#faultNote').textContent = FAULTS[$('#fault').value].note;
+  reset();
+}
+
+$('#fault').addEventListener('change', faultChanged);
+$('#step').addEventListener('click', step);
+$('#all').addEventListener('click', () => { while (step()); });
+$('#reset').addEventListener('click', reset);
+
+$('#guardList').addEventListener('change', (e) => {
+  const key = e.target.dataset.guard;
+  if (!key) return;
+  guards = { ...guards, [key]: key === 'maxResultBytes'
+    ? (e.target.checked ? DEFAULT_GUARDS.maxResultBytes : 0)
+    : e.target.checked };
+  renderGuards();
+  reset();
+});
+
+renderGuards();
+faultChanged();
+drawCost();
+</script>
+</body>
+</html>

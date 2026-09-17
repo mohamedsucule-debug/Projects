@@ -1,13 +1,13 @@
 # Playground
 
-Twenty-nine things I built. All of them run in a browser — no install, no
-signup, no API key, no video of someone else using it.
+Thirty things I built. All of them run in a browser — no install, no signup,
+no API key, no video of someone else using it.
 
 **→ [Open the playground](https://mohamedsucule-debug.github.io/Projects/)**
 
 | | | |
 |---|---|---:|
-| **0** | [**Inside the models**](#0--inside-the-models) — how language models actually work | 3 |
+| **0** | [**Inside the models**](#0--inside-the-models) — how language models actually work | 4 |
 | **I** | [Fiction](#i--fiction) — things to read, and the two the site opens on | 3 |
 | **II** | [Physics you can touch](#ii--physics-you-can-touch) | 4 |
 | **III** | [Games](#iii--games) | 6 |
@@ -15,15 +15,16 @@ signup, no API key, no video of someone else using it.
 | **V** | [The serious ones](#v--the-serious-ones) — Covers, and six tools for engineers | 7 |
 
 Plain HTML, CSS and JavaScript. No framework, no build step, no dependencies.
-703 tests run in CI before anything here is published — including twenty
-gradient checks against finite differences, and a check that a 95% confidence
-interval really does contain the truth about 95% of the time.
+732 tests run in CI before anything here is published — including twenty
+gradient checks against finite differences, a check that a 95% confidence
+interval really does contain the truth about 95% of the time, and one that no
+tool result ever answers a call that was not made.
 
 ---
 
 ## 0 · Inside the models
 
-Three pieces on how language models work, built from the algorithm up rather
+Four pieces on how language models work, built from the algorithm up rather
 than from an API call. Everything runs in the browser: no key, no server,
 nothing sent anywhere.
 
@@ -68,6 +69,32 @@ lets BPE learn `2024` as one token and splits `1999` into `1·99·9`, where the
 middle token means nothing arithmetically; and the same sentence costs three
 times as much in Japanese. `decode(encode(x)) === x` is asserted for every byte
 value, for emoji and for Arabic.
+
+### [Agents](apps/agents/) — the loop is easy, the failure modes are not
+
+**[Open it](apps/agents/)** · Step through a real tool-use loop turn by turn
+over a real ledger, then break it on purpose: a tool that throws, a result too
+big to send, a model that calls the same thing four times. **Switch the guards
+off one at a time and watch what each one was holding back.**
+
+The loop is ten lines and everybody writes it correctly. Everything hard is
+elsewhere, so [`harness.js`](apps/agents/harness.js) is mostly guards —
+argument validation against each tool's schema, tool errors handed back as
+results rather than thrown, loop detection, result truncation from the *middle*
+so both ends survive, and a turn limit that cannot be switched off.
+
+Real: the loop, the guards, the tools, the data, the message shapes, and the
+token accounting — which runs an actual byte-pair tokeniser over the actual
+conversation rather than dividing a length by four. Not real: **the model**,
+which is a scripted policy, because there is no API key on that page and it is
+not going to ask you for one. The interface between the two is a single
+function with the shape of one completion, so a real model drops in behind it
+without the harness knowing. That boundary is the thing worth designing.
+
+Same task, same answer, same number of turns: pulling every row back instead of
+asking the tool for a total costs **3,554 prompt tokens against 673 — 5.3×**,
+because the conversation is stateless on the wire and every turn resends all of
+it.
 
 ### [Evals](apps/evals/) — 92% versus 89% is not a result
 
@@ -549,6 +576,10 @@ apps/tokens/
 apps/evals/
   stats.js              bootstrap, Wilson, McNemar, power — the statistics
   suite.js              two real parsers and the graders that score them
+apps/agents/
+  harness.js            the tool-use loop, and every guard around it
+  tools.js              five tools over 300 deterministic expense lines
+  policy.js             the scripted stand-in for a model, and the faults
 play/<name>/index.html  a toy — one file, no imports
 play/ace/
   engine.js             the rules: gravity, rocks, collision, scoring — DOM-free

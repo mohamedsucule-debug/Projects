@@ -542,11 +542,11 @@
   <div class="say">
     <!-- ↓↓ YOUR NAME AND TITLE — edit these two lines ↓↓ -->
     <p class="eyebrow"><b>Mohamed Sucule</b> &middot; software engineer</p>
-    <h1>Twenty-nine things I built. <em>All of them run right here.</em></h1>
+    <h1>Thirty things I built. <em>All of them run right here.</em></h1>
     <p class="sub">
       No videos, no screenshots, no &ldquo;request a demo&rdquo;. Both of these are live on
       this page right now &mdash; <b>click either one and you are in it.</b> Then keep going:
-      there are twenty-seven more below.
+      there are twenty-eight more below.
     </p>
     <!-- The three machine-learning pieces, above the fold, because they are the
          ones a reader looking for that will want first and they are three
@@ -556,6 +556,7 @@
       <a href="apps/tokens/index.html">Tokens</a>
       <a href="apps/attention/index.html">Attention</a>
       <a href="apps/evals/index.html">Evals</a>
+      <a href="apps/agents/index.html">Agents</a>
     </nav>
     <p class="facts">
       Plain HTML, CSS and JavaScript &middot; <b>no framework, no build step, no dependencies</b>
@@ -592,7 +593,7 @@
     </a>
   </div>
 
-  <a class="cue" href="#ml">three on machine learning, then twenty-four more <i>↓</i></a>
+  <a class="cue" href="#ml">four on machine learning, then twenty-four more <i>↓</i></a>
 </section>
 
 <div class="page">
@@ -604,14 +605,15 @@
     <header>
       <div class="tier"><span class="tick"></span><h2>Inside the models</h2><span class="rule"></span></div>
       <p class="note">
-        Three pieces on how language models actually work, built from the algorithm up rather
+        Four pieces on how language models actually work, built from the algorithm up rather
         than from an API call. A tokeniser that trains itself in front of you; a transformer
-        trained here with backpropagation written from nothing; and the statistics that decide
-        whether a change to one of these systems did anything at all.
+        trained here with backpropagation written from nothing; the statistics that decide
+        whether a change to one of these systems did anything at all; and an agent loop you
+        can break on purpose.
         <b>No key, no server, nothing sent anywhere</b> — same promise as everything else here.
       </p>
     </header>
-    <div class="grid" style="--min:320px">
+    <div class="grid" style="--min:420px">
 
       <a class="card reveal" href="apps/attention/index.html" style="--accent: 125,211,252; --d: 0ms">
         <div class="stage"><canvas id="mlAttention"></canvas></div>
@@ -654,6 +656,21 @@
             Two real parsers, eight hundred real inputs, graded live. Drag the sample size and
             watch the confidence interval cross zero. At a hundred items the better parser scores
             <b>worse</b> — which is what three points of noise looks like when you can drag it.
+          </p>
+        </div>
+      </a>
+
+      <a class="card reveal" href="apps/agents/index.html" style="--accent: 125,211,252; --d: 210ms">
+        <div class="stage"><canvas id="mlAgents"></canvas></div>
+        <span class="tag">break it on purpose</span>
+        <span class="play">open →</span>
+        <div class="meta">
+          <h2>Agents</h2>
+          <p>
+            The tool-use loop is ten lines and everybody writes it correctly. Everything hard is
+            what happens when a tool throws, a result is five kilobytes, or the model calls the
+            same thing four times. Step through a real loop over a real ledger, then switch the
+            guards off one at a time and watch what each one was holding back.
           </p>
         </div>
       </a>
@@ -1042,6 +1059,7 @@ mount(document.getElementById('machine'), machinePreview);
 mount(document.getElementById('mlAttention'), attentionPreview);
 mount(document.getElementById('mlTokens'), tokensPreview);
 mount(document.getElementById('mlEvals'), evalsPreview);
+mount(document.getElementById('mlAgents'), agentsPreview);
 
 for (const el of document.querySelectorAll('.chapter > header, #headline, .plate, .how > div, .card-me')) {
   el.classList.add('reveal');
@@ -1206,6 +1224,73 @@ function tokensPreview(api) {
     ctx.fillStyle = 'rgba(233,238,251,.35)';
     ctx.fillText(`${shown} MERGES LEARNED`, w - 12, 19);
     ctx.textAlign = 'left';
+  };
+}
+
+/** Agents: the real loop, running the real tools, one turn at a time. */
+function agentsPreview(api) {
+  let run = null, H = null;
+  Promise.all([
+    import('./apps/agents/harness.js'),
+    import('./apps/agents/tools.js'),
+    import('./apps/agents/policy.js'),
+  ]).then(([h, T, P]) => {
+    H = h;
+    /* The "tool throws" fault, because a card showing a clean run shows
+       nothing — the whole argument of the page is what the red block does. */
+    const tools = T.buildTools();
+    P.resetIds();
+    run = [...h.runAgent({ task: P.TASK, tools, policy: P.scriptedPolicy('toolThrows') })];
+  }).catch(() => { run = false; });
+
+  let t = 0;
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    ctx.fillStyle = '#080c16';
+    ctx.fillRect(0, 0, w, h);
+    if (!run) return;
+
+    t += 1 / 60;
+    /* One step every 1.6s, then a long hold on the finished transcript. */
+    const cycle = run.length * 1.6 + 5;
+    const upto = Math.min(run.length, 1 + Math.floor((t % cycle) / 1.6));
+
+    let y = 52;
+    const rows = [];
+    for (let i = 0; i < upto; i++) {
+      const s = run[i];
+      if (s.event === 'tool') {
+        const call = s.calls[0];
+        rows.push(['assistant', `${call.name}(…)`, '#5fb8ff']);
+        rows.push(['tool', s.results[0].is_error ? 'ERROR — no such vendor' : 'ok', 
+                   s.results[0].is_error ? '#e0736f' : '#ffc46b']);
+      } else if (s.event === 'answer') {
+        rows.push(['answer', '$21,866.02 · up 101.4%', '#7ee0b0']);
+      }
+    }
+
+    ctx.font = '650 9.5px ui-monospace, Menlo, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(233,238,251,.35)';
+    const usage = run[Math.min(upto, run.length) - 1]?.usage;
+    ctx.fillText(`${usage?.promptTokens ?? 0} PROMPT TOKENS`, w - 12, 19);
+    ctx.textAlign = 'left';
+
+    for (const [role, text, colour] of rows.slice(-6)) {
+      if (y > h - 14) break;
+      ctx.fillStyle = colour;
+      ctx.fillRect(12, y - 9, 2, 13);
+      ctx.font = '700 8px ui-monospace, Menlo, monospace';
+      ctx.fillText(role.toUpperCase(), 21, y - 1);
+      ctx.font = '600 10.5px ui-monospace, Menlo, monospace';
+      ctx.fillStyle = role === 'tool' && colour === '#e0736f'
+        ? '#ffb4b0' : 'rgba(233,238,251,.68)';
+      const max = w - 90;
+      let label = text;
+      while (ctx.measureText(label).width > max && label.length > 4) label = label.slice(0, -2);
+      ctx.fillText(label, 78, y - 1);
+      y += 21;
+    }
   };
 }
 
