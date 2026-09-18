@@ -138,14 +138,24 @@
   }
   .letters span.hit { background: rgba(255,143,163,.2); border-color: rgba(255,143,163,.5); color: #ffc3ce; }
 
-  .rowbar { display: grid; grid-template-columns: 8.5ch 1fr 6ch; align-items: center; gap: 10px; margin-top: 9px; }
+  /* minmax(0, 1fr), not 1fr. A grid track's automatic minimum is its content's
+     min-content width, so a `1fr` column silently refuses to shrink below the
+     longest word in it — and the sample sentences below include scripts that do
+     not break where a browser expects. The card measured 360px wide with 500px
+     of content inside it, which on a phone made the whole page zoom out to fit.
+     This is the single most common way a responsive grid quietly stops being
+     responsive. */
+  .rowbar { display: grid; grid-template-columns: 8.5ch minmax(0, 1fr) 6ch;
+    align-items: center; gap: 10px; margin-top: 9px; }
+  .rowbar > * { min-width: 0; }
   .rowbar .lang { font: 600 12px/1 var(--mono); color: var(--dim); }
   .rowbar .track { height: 24px; background: var(--raise); border-radius: 5px; overflow: hidden; border: 1px solid var(--line); }
   .rowbar .fill { height: 100%; background: linear-gradient(90deg, rgba(95,184,255,.85), rgba(201,166,255,.85));
     display: flex; align-items: center; justify-content: flex-end; padding-right: 7px;
     font: 700 11px/1 var(--mono); color: #06080f; transition: width .5s cubic-bezier(.2,.8,.3,1); }
   .rowbar .mult { font: 700 12px/1 var(--mono); color: var(--warn); text-align: right; }
-  .rowbar .sample { grid-column: 1 / -1; font: 500 12.5px/1.5 var(--mono); color: var(--dimmer); margin: 2px 0 6px; }
+  .rowbar .sample { grid-column: 1 / -1; font: 500 12.5px/1.5 var(--mono);
+    color: var(--dimmer); margin: 2px 0 6px; overflow-wrap: anywhere; }
 
   table.cmp { width: 100%; border-collapse: collapse; font: 600 13px/1 var(--mono); }
   table.cmp td, table.cmp th { padding: 9px 8px; border-bottom: 1px solid var(--line); text-align: left; }

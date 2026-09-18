@@ -117,6 +117,15 @@
     max-width: 96ch;
   }
   .door .facts b { color: var(--dim); font-weight: 600; }
+  /* The navigator is a pill in the corner of every page, which is discoverable
+     but not announced. One line here saves everybody the discovery. */
+  .door .hint { margin: 10px 0 0; font-size: 13px; line-height: 1.7; color: var(--mute); }
+  .door .hint i { font-style: normal; color: var(--dim); }
+  .door .hint kbd {
+    font: 650 11.5px/1 var(--mono); color: var(--dim);
+    border: 1px solid var(--line2); border-radius: 5px; padding: 3px 6px;
+    background: rgba(255,255,255,.05); margin: 0 2px;
+  }
 
   /* A row of three, directly under the headline. A reader who came here for
      machine learning should not have to scroll past a lighthouse to find out
@@ -570,7 +579,12 @@
     </nav>
     <p class="facts">
       Plain HTML, CSS and JavaScript &middot; <b>no framework, no build step, no dependencies</b>
-      &middot; 703 tests run in CI
+      &middot; 777 tests run in CI
+    </p>
+    <p class="hint">
+      Anywhere on this site, press <kbd>⌘K</kbd> and ask for what you want &mdash;
+      <i>&ldquo;something fun&rdquo;</i>, <i>&ldquo;the AI work&rdquo;</i>,
+      <i>&ldquo;I have 2 minutes&rdquo;</i>.
     </p>
   </div>
 
