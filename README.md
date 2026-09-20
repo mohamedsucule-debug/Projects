@@ -1,6 +1,6 @@
 # Playground
 
-Thirty-one things I built. All of them run in a browser — no install, no signup,
+Thirty things I built. All of them run in a browser — no install, no signup,
 no API key, no video of someone else using it.
 
 **→ [Open the playground](https://mohamedsucule-debug.github.io/Projects/)**
@@ -12,14 +12,13 @@ no API key, no video of someone else using it.
 | **II** | [Physics you can touch](#ii--physics-you-can-touch) | 4 |
 | **III** | [Games](#iii--games) | 6 |
 | **IV** | [Instruments](#iv--instruments) | 6 |
-| **V** | [The serious ones](#v--the-serious-ones) — Covers, Gobl, and six tools for engineers | 8 |
+| **V** | [The serious ones](#v--the-serious-ones) — Covers, and six tools for engineers | 7 |
 
 Plain HTML, CSS and JavaScript. No framework, no build step, no dependencies.
-860 tests run in CI before anything here is published — including twenty
+732 tests run in CI before anything here is published — including twenty
 gradient checks against finite differences, a check that a 95% confidence
-interval really does contain the truth about 95% of the time, one that no tool
-result ever answers a call that was not made, and one that a caption reading
-"not great for vegans" can never satisfy a vegan filter.
+interval really does contain the truth about 95% of the time, and one that no
+tool result ever answers a call that was not made.
 
 ---
 
@@ -519,58 +518,6 @@ screen.
 [Full write-up](apps/covers/README.md), including the bug where pressing play
 reset the restaurant sixty times a second, and the one where the system offered
 a time it would then refuse.
-
-### [Gobl](apps/gobl/) — Instagram for food, with a search that works
-
-**[Open it](apps/gobl/)** · Twenty-two restaurants, ninety-five reviews, twelve
-recipes and eight tribes, in a phone-shaped app you can filter by cuisine,
-neighbourhood, price, meal, queue, noise, dietary need and what people actually
-said. The photo grid is the easy half. **The half that decides whether anybody
-comes back is the search — and a restaurant search is three problems that
-shipping software gets wrong every day.** None of the three throws. All three
-produce a screen that looks completely fine.
-
-**A five from two people is not a five.** Sort any list by average rating and
-the top of it is the places nobody has been to. Every average here is pulled
-towards the site-wide average by six imaginary reviews, so `two 5s` comes out
-below `thirty 4.6s` — a rating has to be *earned* by volume before it can rank.
-The prior is computed from the data rather than typed in, and the restaurant
-page shows the sentence behind the number: *"3.63 average from 6 reviews, shown
-as 3.80: pulled up towards 3.97 because 6 reviews is not many."*
-
-**The facet count bug.** The number next to each filter option has to be
-computed with all the *other* filters applied and that one left out. Apply the
-filter you are counting and every unselected option reads zero — so the app
-says "there is nothing else" at the exact moment you want to change your mind.
-It is one line, it is the most common bug in faceted search, and there are
-three tests on it, including one that checks a count is exactly what you get if
-you click it, by clicking it.
-
-**"Vegan" is a promise about a kitchen, not a word near a photo.** Match text
-and a caption reading *"not great for vegans"* satisfies a vegan filter, because
-it contains the word. The filter reads a three-valued flag recorded per
-restaurant and nothing else. The test builds the trap on purpose — a steakhouse
-with nothing vegan and five reviews that all say the word — and asserts the
-filter returns nothing **and the search box still finds it**, because search is
-a suggestion and a filter is a promise.
-
-Three more decisions worth arguing about: **a tribe is a saved search**, not a
-hand-kept list, so anything that opens tomorrow and fits #LondonBrunch is in it
-the day it is posted; **where people disagreed is shown rather than averaged
-away**, because five fives and five twos is a 3.5 and so is everybody
-shrugging; and **tags are chosen from a fixed list, not extracted from text**,
-because every sentiment summary ever written gets *"the wait was not bad at
-all"* backwards and the reader cannot tell.
-
-**The bug this one actually had.** #CounterCulture filtered on `maxSeats`, the
-filter builder did not map that key, and the tribe silently contained every
-restaurant in the dataset — a saved search with no search in it. It looked
-completely normal. The test that catches it now does not check a count; it
-checks that every key any tribe filters on is one the builder understands.
-
-There are no photographs: every plate is drawn on a canvas from the dish id, so
-the repository contains no image files and it works with the network off.
-[Full write-up](apps/gobl/README.md).
 
 ### Six more, for engineers
 
