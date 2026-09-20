@@ -1,0 +1,1527 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="icon" href="../../favicon.svg" />
+<meta name="theme-color" content="#f8f4ea" />
+<title>Gobl — a food app you can actually search</title>
+<meta name="description" content="Instagram for food, with the search a food app is supposed to have: filter twenty-two restaurants and a hundred reviews by cuisine, neighbourhood, price, meal, wait, noise and what a kitchen can actually guarantee a vegan — and see what people thought, metric by metric, including where they disagreed." />
+<meta property="og:title" content="Gobl — a food app you can actually search" />
+<meta property="og:description" content="Every metric, filtered honestly: facet counts that stay useful, ratings that have to be earned before they rank, and dietary filters that read the kitchen rather than the caption." />
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    /* The brand: deep purple on cream, one lilac for everything secondary. */
+    --plum:   #6e2a7c;
+    --plum-d: #4b1450;
+    --lilac:  #ab6cba;
+    --lilac-w:#e9d6ec;
+    --cream:  #f8f4ea;
+    --card:   #fffdf7;
+    --ink:    #1a1419;
+    --dim:    #6f6672;
+    --mute:   #9a929d;
+    --line:   rgba(78,21,80,.12);
+    --line-2: rgba(78,21,80,.22);
+    --gold:   #c98a2a;
+    --good:   #2f7d55;
+    --warn:   #b8471f;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    --heavy: "Arial Black", "Helvetica Neue", ui-sans-serif, system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --shell: 468px;
+    --bar: 58px;
+    --nav: 62px;
+  }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--cream); color: var(--ink);
+    font: 15px/1.5 var(--sans); -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; background: none; border: 0; padding: 0; }
+  a { color: inherit; }
+  .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  /* ── the shell ─────────────────────────────────────────────────────────
+     Phone first, because that is what a food app is. On a wide screen the
+     same column stays the column — a feed stretched to 1600px is unreadable —
+     and the space either side is given to the filters and to the thing you
+     are looking at, rather than to more columns of cards. */
+  .app {
+    display: grid; grid-template-columns: 1fr; justify-items: center;
+    min-height: 100%;
+  }
+  .shell {
+    width: 100%; max-width: var(--shell); min-height: 100%;
+    background: var(--cream); position: relative;
+    padding-bottom: calc(var(--nav) + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 0 0 1px var(--line);
+  }
+  .rail { display: none; }
+
+  @media (min-width: 1040px) {
+    .app {
+      grid-template-columns: 300px minmax(0, var(--shell)) 1fr;
+      gap: 26px; justify-items: stretch;
+      max-width: 1400px; margin: 0 auto; padding: 0 22px;
+    }
+    .rail { display: block; padding: 22px 0 60px; }
+    .rail.right { max-width: 420px; }
+    .shell { box-shadow: none; padding-bottom: 60px; }
+    .bottomnav { display: none; }
+    .shell .topbar { position: sticky; }
+  }
+
+  /* ── top bar ───────────────────────────────────────────────────────── */
+  .topbar {
+    position: sticky; top: 0; z-index: 40; background: var(--cream);
+    border-bottom: 1px solid var(--line);
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .topbar .row {
+    height: var(--bar); display: flex; align-items: center; gap: 12px; padding: 0 14px;
+  }
+  .iconbtn {
+    width: 38px; height: 38px; display: grid; place-items: center; border-radius: 11px;
+    color: var(--plum-d);
+  }
+  .iconbtn:hover { background: rgba(110,42,124,.08); }
+  .iconbtn.on { background: var(--plum); color: #fff; }
+  .wordmark { flex: 1; display: flex; justify-content: center; }
+  .wordmark svg { height: 25px; display: block; }
+
+  .tabs { display: flex; border-bottom: 1px solid var(--line); }
+  .tabs button {
+    flex: 1; padding: 13px 0 11px; font-weight: 700; font-size: 15px; color: var(--mute);
+    border-bottom: 3px solid transparent; letter-spacing: .01em;
+  }
+  .tabs button.on { color: var(--plum); border-bottom-color: var(--plum); }
+
+  /* ── search ────────────────────────────────────────────────────────── */
+  .searchwrap { padding: 12px 14px; display: flex; gap: 9px; align-items: center; }
+  .search {
+    flex: 1; display: flex; align-items: center; gap: 9px; height: 42px; padding: 0 13px;
+    background: var(--card); border: 1px solid var(--line-2); border-radius: 21px;
+  }
+  .search svg { width: 18px; height: 18px; flex: none; color: var(--mute); }
+  .search input { flex: 1; border: 0; background: none; outline: none; min-width: 0; }
+  .search input::-webkit-search-cancel-button { filter: grayscale(1) opacity(.5); }
+  .search input::placeholder { color: var(--mute); }
+  .filterbtn {
+    height: 42px; padding: 0 15px; border-radius: 21px; background: var(--plum); color: #fff;
+    font-weight: 700; font-size: 13.5px; display: inline-flex; align-items: center; gap: 7px;
+  }
+  .filterbtn .count {
+    background: rgba(255,255,255,.28); border-radius: 9px; padding: 1px 7px; font-size: 12px;
+  }
+
+  /* what the query was understood to mean */
+  .read { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 10px; align-items: center; }
+  .read .lead { font-size: 12.5px; color: var(--dim); }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px;
+    background: var(--lilac-w); color: #5d2268; font-size: 12.5px; font-weight: 650; white-space: nowrap;
+  }
+  .chip.ghost { background: none; border: 1px solid var(--line-2); color: var(--dim); font-weight: 600; }
+  .chip.solid { background: var(--plum); color: #fff; }
+  .chip.warn  { background: #fbe4d8; color: #8c3612; }
+  .chip.good  { background: #d9ecdf; color: #1f5c3c; }
+  .chip button { color: inherit; opacity: .7; font-weight: 800; }
+  .chip button:hover { opacity: 1; }
+
+  /* ── cards ─────────────────────────────────────────────────────────── */
+  .feed { padding: 4px 0 24px; display: flex; flex-direction: column; gap: 14px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 18px; overflow: hidden;
+    margin: 0 10px;
+  }
+  @media (max-width: 520px) { .card { margin: 0; border-radius: 0; border-left: 0; border-right: 0; } }
+
+  .who { display: flex; align-items: center; gap: 10px; padding: 12px 14px 10px; }
+  .avatar {
+    width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--plum); color: #fff; font-weight: 800; font-size: 14px; flex: none;
+    letter-spacing: .02em;
+  }
+  .avatar.lilac { background: var(--lilac); }
+  .who .nm { font-weight: 750; font-size: 14.5px; }
+  .who .sub { color: var(--mute); font-size: 12.5px; }
+  .who .grow { flex: 1; }
+  .follow {
+    padding: 7px 15px; border-radius: 999px; background: var(--plum); color: #fff;
+    font-size: 12.5px; font-weight: 700;
+  }
+  .follow.on { background: var(--lilac-w); color: #5d2268; }
+
+  .shot { position: relative; aspect-ratio: 4 / 3; background: #2a2226; }
+  .shot canvas { width: 100%; height: 100%; display: block; }
+  .shot .place {
+    position: absolute; left: 10px; bottom: 10px; right: 10px;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .shot .place b {
+    background: rgba(20,12,18,.72); color: #fff; padding: 6px 11px; border-radius: 999px;
+    font-size: 12.5px; font-weight: 700; backdrop-filter: blur(6px);
+  }
+  .shot .place span {
+    background: rgba(255,253,247,.9); color: #3a2c3c; padding: 6px 10px; border-radius: 999px;
+    font-size: 11.5px; font-weight: 650;
+  }
+
+  .body { padding: 12px 14px 14px; }
+  /* Two copies of the same five glyphs, the coloured one clipped to a
+     percentage. A half star is a real half rather than a rounded one, because
+     rounding 4.4 up to four and a half stars is a small lie told constantly. */
+  .stars { position: relative; display: inline-block; font-size: 13.5px; letter-spacing: 1.5px; line-height: 1; }
+  .stars .back { color: rgba(78,21,80,.22); }
+  .stars .front {
+    position: absolute; left: 0; top: 0; overflow: hidden; white-space: nowrap;
+    color: var(--plum); display: block;
+  }
+  .scoreline { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-bottom: 8px; }
+  .scoreline .val { font-weight: 800; font-size: 14px; }
+  .scoreline .meta { color: var(--mute); font-size: 12.5px; }
+  .caption { margin: 0 0 10px; font-size: 14.5px; line-height: 1.55; }
+  .taglist { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .acts { display: flex; align-items: center; gap: 16px; color: var(--plum-d); padding-top: 4px; border-top: 1px solid var(--line); margin-top: 4px; padding-top: 10px; }
+  .acts button { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 650; }
+  .acts button.on { color: var(--plum); }
+  .acts .grow { flex: 1; }
+  .acts svg { width: 19px; height: 19px; }
+
+  /* ── restaurant result cards ───────────────────────────────────────── */
+  .result {
+    display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: stretch;
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 10px;
+    margin: 0 10px; text-align: left; width: calc(100% - 20px);
+  }
+  .result canvas { width: 96px; height: 96px; border-radius: 12px; display: block; }
+  .result h3 { margin: 0 0 3px; font-size: 15.5px; }
+  .result .sub { color: var(--dim); font-size: 12.5px; margin-bottom: 7px; }
+  .result .facts { display: flex; flex-wrap: wrap; gap: 5px; }
+  .result .big { font-weight: 800; font-size: 15px; color: var(--plum); }
+
+  /* ── metric bars ───────────────────────────────────────────────────── */
+  .metric { display: grid; grid-template-columns: 74px 1fr 34px; gap: 10px; align-items: center; margin-bottom: 7px; }
+  .metric .lbl { font-size: 12.5px; color: var(--dim); font-weight: 650; }
+  .metric .track { height: 9px; border-radius: 6px; background: rgba(78,21,80,.1); overflow: hidden; display: block; }
+  .metric .fill { display: block; height: 100%; background: var(--plum); border-radius: 6px; }
+  .metric .fill.split { background: repeating-linear-gradient(135deg, var(--warn) 0 6px, #e08a5c 6px 12px); }
+  .metric .n { font-size: 12.5px; font-weight: 750; text-align: right; }
+
+  .dist { display: flex; align-items: flex-end; gap: 3px; height: 34px; margin-top: 4px; }
+  .dist i { flex: 1; background: var(--lilac); border-radius: 3px 3px 0 0; min-height: 2px; display: block; }
+  .dist i.hot { background: var(--plum); }
+
+  /* ── panels ────────────────────────────────────────────────────────── */
+  .panel {
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    padding: 14px; margin: 0 10px 14px;
+  }
+  .panel h4 {
+    margin: 0 0 10px; font: 700 10.5px/1 var(--mono); letter-spacing: .16em;
+    text-transform: uppercase; color: var(--lilac);
+  }
+  .panel p { margin: 0 0 8px; font-size: 13.5px; color: var(--dim); line-height: 1.55; }
+  .panel p b, .panel p strong { color: var(--ink); }
+  .rail .panel { margin: 0 0 14px; }
+
+  .kv { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+  .kv:last-child { border-bottom: 0; }
+  .kv b { font-weight: 750; text-align: right; }
+  .kv b.chip { white-space: normal; text-align: right; max-width: 62%; }
+  .kv .why { color: var(--mute); font-size: 12px; display: block; font-weight: 400; }
+
+  /* ── filter sheet ──────────────────────────────────────────────────── */
+  .scrim {
+    position: fixed; inset: 0; background: rgba(26,20,25,.45); z-index: 60;
+    opacity: 0; pointer-events: none; transition: opacity .18s;
+  }
+  .scrim.on { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: fixed; left: 50%; transform: translate(-50%, 102%); bottom: 0; z-index: 61;
+    width: min(100%, 520px); max-height: 88vh; overflow-y: auto;
+    background: var(--cream); border-radius: 22px 22px 0 0; transition: transform .26s cubic-bezier(.2,.8,.2,1);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .sheet.on { transform: translate(-50%, 0); }
+  .sheet header {
+    position: sticky; top: 0; background: var(--cream); padding: 14px 16px 10px;
+    display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--line); z-index: 2;
+  }
+  .sheet header h3 { margin: 0; font-size: 16px; flex: 1; }
+  .sheet .grip { width: 42px; height: 4px; border-radius: 3px; background: var(--line-2); margin: 8px auto 0; }
+  .facet { padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .facet h5 {
+    margin: 0 0 9px; font: 700 10.5px/1 var(--mono); letter-spacing: .16em;
+    text-transform: uppercase; color: var(--lilac);
+  }
+  .opts { display: flex; flex-wrap: wrap; gap: 7px; }
+  .opt {
+    display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px;
+    border: 1px solid var(--line-2); background: var(--card); font-size: 13px; font-weight: 600;
+  }
+  .opt .c { color: var(--mute); font-size: 11.5px; font-family: var(--mono); }
+  .opt.on { background: var(--plum); border-color: var(--plum); color: #fff; }
+  .opt.on .c { color: rgba(255,255,255,.75); }
+  .opt.zero { opacity: .42; }
+  /* On because it was typed, not tapped. Dashed, so the two are never confused. */
+  .opt.typed { background: var(--lilac); border-color: var(--lilac); border-style: dashed; }
+  .sheet .foot {
+    position: sticky; bottom: 0; background: var(--cream); padding: 12px 16px;
+    border-top: 1px solid var(--line); display: flex; gap: 10px;
+  }
+  .btn {
+    flex: 1; height: 46px; border-radius: 14px; background: var(--plum); color: #fff;
+    font-weight: 750; font-size: 15px;
+  }
+  .btn.ghost { background: none; border: 1px solid var(--line-2); color: var(--dim); flex: 0 0 110px; }
+
+  input[type="range"] { width: 100%; accent-color: var(--plum); }
+
+  /* ── bottom nav ────────────────────────────────────────────────────── */
+  .bottomnav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); z-index: 50;
+    width: 100%; max-width: var(--shell);
+    background: var(--card); border-top: 1px solid var(--line);
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .bottomnav button {
+    height: var(--nav); display: grid; place-items: center; color: var(--plum-d); opacity: .5;
+  }
+  .bottomnav button.on { opacity: 1; }
+  .bottomnav svg { width: 23px; height: 23px; }
+
+  /* ── restaurant / recipe detail ────────────────────────────────────── */
+  .hero { position: relative; }
+  .strip { display: flex; gap: 6px; overflow-x: auto; padding: 0; scroll-snap-type: x mandatory; }
+  .strip canvas { width: 62%; aspect-ratio: 4/3; flex: none; scroll-snap-align: start; display: block; }
+  .detailhead { padding: 14px; }
+  .detailhead h2 { margin: 0 0 4px; font-size: 22px; letter-spacing: -.01em; }
+  .detailhead .sub { color: var(--dim); font-size: 13.5px; margin-bottom: 10px; }
+  .bigscore { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+  .bigscore .v { font-size: 34px; font-weight: 800; letter-spacing: -.02em; color: var(--plum); font-family: var(--mono); }
+  .bigscore .of { color: var(--mute); font-size: 13px; }
+
+  .dishrow { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+  .dishrow canvas { width: 46px; height: 46px; border-radius: 10px; flex: none; }
+  .dishrow .nm { font-size: 13.5px; font-weight: 650; }
+  .dishrow .sub { font-size: 12px; color: var(--mute); }
+  .dishrow .sc { margin-left: auto; font-weight: 800; color: var(--plum); font-family: var(--mono); }
+
+  .ingr { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.7; color: var(--dim); }
+  .ingr li::marker { color: var(--lilac); }
+  .steps { counter-reset: s; list-style: none; margin: 0; padding: 0; }
+  .steps li { position: relative; padding: 0 0 12px 30px; font-size: 13.5px; line-height: 1.6; }
+  .steps li::before {
+    counter-increment: s; content: counter(s);
+    position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%;
+    background: var(--lilac-w); color: #5d2268; font: 700 11px/21px var(--mono); text-align: center;
+  }
+
+  /* ── profile ───────────────────────────────────────────────────────── */
+  .profile { padding: 16px 14px 0; }
+  .pstats { display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; gap: 8px; }
+  .pstats b { display: block; font-size: 17px; font-weight: 800; }
+  .pstats span { font-size: 12px; color: var(--dim); }
+  .bigav { width: 74px; height: 74px; font-size: 24px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding: 3px 0; }
+  .grid3 button { position: relative; aspect-ratio: 1; }
+  .grid3 canvas { width: 100%; height: 100%; display: block; }
+
+  .empty { padding: 44px 24px; text-align: center; color: var(--dim); }
+  .empty b { display: block; color: var(--ink); margin-bottom: 6px; font-size: 16px; }
+
+  .sectionhead {
+    display: flex; align-items: baseline; gap: 9px; padding: 16px 14px 8px;
+  }
+  .sectionhead h3 { margin: 0; font-size: 16px; }
+  .sectionhead span { color: var(--mute); font-size: 12.5px; }
+  .sectionhead .grow { flex: 1; }
+  .linkish { color: var(--plum); font-weight: 700; font-size: 13px; }
+
+  .tribecard {
+    display: block; width: calc(100% - 20px); margin: 0 10px 10px; text-align: left;
+    border-radius: 16px; padding: 14px; border: 1px solid var(--line); background: var(--card);
+  }
+  .tribecard h3 { margin: 0 0 3px; font-size: 15.5px; }
+  .tribecard h3::before { content: '#'; color: var(--lilac); margin-right: 1px; }
+  .tribecard p { margin: 0 0 9px; font-size: 13px; color: var(--dim); }
+  .faces { display: flex; }
+  .faces .avatar { width: 26px; height: 26px; font-size: 11px; margin-right: -8px; border: 2px solid var(--card); }
+
+  /* Defined after .bottomnav rather than in the layout block at the top: two
+     rules of equal specificity, and the later one is the one that wins. */
+  @media (min-width: 1040px) { .bottomnav { display: none; } }
+
+  .rtitle { margin: 0 0 7px; font-size: 17px; line-height: 1.3; }
+
+  .note { font-size: 12.5px; color: var(--mute); padding: 0 14px 18px; line-height: 1.6; }
+  .note a { color: var(--plum); }
+
+  /* The site-wide navigator pins its pill to the bottom right, which on a
+     phone is exactly where this app's tab bar is. It exposes the pill as a
+     part for this reason, so it gets lifted above the bar from here rather
+     than forked or fought with. */
+  [data-navigator]::part(pill) {
+    bottom: calc(var(--nav) + 14px + env(safe-area-inset-bottom, 0px));
+  }
+  @media (min-width: 1040px) { [data-navigator]::part(pill) { bottom: 18px; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail left" id="railLeft"></aside>
+
+  <main class="shell">
+    <div class="topbar">
+      <div class="row">
+        <button class="iconbtn" id="menuBtn" aria-label="Filters"></button>
+        <div class="wordmark" id="wordmark"></div>
+        <button class="iconbtn" id="searchBtn" aria-label="Search"></button>
+      </div>
+      <div class="tabs" id="tabs" hidden></div>
+    </div>
+    <div id="view"></div>
+  </main>
+
+  <aside class="rail right" id="railRight"></aside>
+</div>
+
+<nav class="bottomnav" id="bottomnav"></nav>
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-label="Filters"></div>
+
+<script type="module">
+/* ───────────────────────────────────────────────────────────────────────────
+   The interface. Everything that decides WHAT you see lives in engine.js;
+   this file decides how it looks and owns the DOM, and the split is strict —
+   there is not one rating calculation in here, and there is not one line of
+   DOM in there. That is what makes the maths testable in Node with no browser
+   anywhere near it.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+import {
+  RESTAURANTS, POSTS, RECIPES, TRIBES, PEOPLE, CITIES, AREAS, MEALS, TAGS, DIETS,
+  PRICE_BANDS, METRICS, ME, restaurantById, dishById, personById, recipeById,
+  areaById, cityById, tribeById, TAG_LABEL, toGBP,
+} from './data.js';
+import {
+  EMPTY, makeContext, filterRestaurants, facetCounts, parseQuery, rank, explainScore,
+  dishRanking, tribeFilter, tribeMembership, summariseRecipe, filterRecipes, rankRecipes,
+  recipePrior, distanceKm, METRIC_IDS,
+} from './engine.js';
+import { drawDish } from './plates.js';
+
+const ctx = makeContext();
+const rPrior = recipePrior();
+
+/* ── state ─────────────────────────────────────────────────────────────────
+   One object, and every render reads from it. `filters` is the same shape the
+   engine takes, which is what lets a tribe be dropped straight into it. */
+const state = {
+  view: 'home',          // home · explore · tribes · saved · me · rest · recipe
+  tab: 'reviews',        // reviews · recipes  (on home)
+  base: { ...EMPTY },     // what the filter UI has been set to
+  filters: { ...EMPTY },  // base merged with whatever the typed query parsed to
+  typed: '',
+  read: [],
+  sheet: false,
+  current: null,         // restaurant or recipe id, when in a detail view
+  tribe: null,
+  saved: new Set(),
+  liked: new Set(),
+  following: new Set(['ayo', 'rhi', 'marcus']),
+  facet: null,
+};
+
+/* ── tiny DOM helpers ──────────────────────────────────────────────────── */
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, html) => {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (html != null) n.innerHTML = html;
+  return n;
+};
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const money = (n, city) => {
+  const cur = cityById.get(city)?.currency ?? '£';
+  if (n == null) return '—';
+  return cur === '¥' ? `¥${Math.round(n).toLocaleString()}` : `${cur}${n % 1 ? n.toFixed(2) : n}`;
+};
+const ago = (days) => (days === 0 ? 'today' : days === 1 ? 'yesterday'
+  : days < 7 ? `${days} days ago` : days < 14 ? 'last week'
+  : days < 60 ? `${Math.round(days / 7)} weeks ago` : `${Math.round(days / 30)} months ago`);
+const initials = (name) => name.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+
+const ICON = {
+  menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+  sliders: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 8h10M18 8h2M4 16h3M11 16h9"/><circle cx="16" cy="8" r="2.2"/><circle cx="9" cy="16" r="2.2"/></svg>',
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>',
+  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  home: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 3 10.4V21h6v-6h6v6h6V10.4z"/></svg>',
+  grid: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="5" rx="2"/><rect x="13" y="10" width="8" height="11" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/></svg>',
+  cutlery: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 2c-.6 0-1 .4-1 1v5a3 3 0 0 0 2 2.8V21a1 1 0 0 0 2 0V10.8A3 3 0 0 0 12 8V3a1 1 0 0 0-2 0v4H9V3a1 1 0 0 0-2 0v4H6V3c0-.6-.4-1-1-1z" transform="translate(1)"/><path d="M17.5 2C16 2 15 4.5 15 8c0 2.2.6 3.6 1.5 4.2V21a1 1 0 0 0 2 0V3c0-.6-.4-1-1-1z"/></svg>',
+  book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 4.7A2.7 2.7 0 0 1 6.7 2H19v15.4H6.7A2.7 2.7 0 0 0 4 20.1z"/><path d="M4 20.1a2.7 2.7 0 0 1 2.7-2.7H19V22H6.7A2.7 2.7 0 0 1 4 20.1z"/><path d="M8.6 6.6h6.1"/></svg>',
+  person: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9.2"/><circle cx="12" cy="9.6" r="3.2"/><path d="M5.8 19.4a6.4 6.4 0 0 1 12.4 0"/></svg>',
+  heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20s-7.5-4.6-7.5-9.6A4.4 4.4 0 0 1 12 7.6a4.4 4.4 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20z"/></svg>',
+  heartOn: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 20s-7.5-4.6-7.5-9.6A4.4 4.4 0 0 1 12 7.6a4.4 4.4 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20z"/></svg>',
+  chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.5 11.5a7.9 7.9 0 0 1-8.5 7.9c-.9 0-1.8-.1-2.6-.4L4 20.5l1.6-4.6a7.5 7.5 0 0 1-1.1-4A8 8 0 0 1 12.5 4a8 8 0 0 1 8 7.5z"/></svg>',
+  save: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6.5 3h11v18l-5.5-4.6L6.5 21z"/></svg>',
+  saveOn: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.5 3h11v18l-5.5-4.6L6.5 21z"/></svg>',
+  send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21 3 10.5 14M21 3l-6.8 18-3.7-7.3L3.5 10z"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.2V12l3.2 2"/></svg>',
+};
+
+/* The wordmark. GOBL in a heavy weight with a bite taken out of the O — the
+   bite is a cream-filled circle sitting on the letterform rather than a custom
+   path, which means it lands correctly whatever font the device actually has. */
+function wordmark(height = 25, colour = '#6e2a7c', lilac = '#ab6cba', bg = '#f8f4ea') {
+  return `<svg viewBox="0 0 168 40" height="${height}" role="img" aria-label="Gobl">
+    <text x="0" y="31" font-family="Arial Black, Helvetica Neue, system-ui, sans-serif"
+          font-size="38" font-weight="900" letter-spacing="-1.4" fill="${colour}">G<tspan fill="${lilac}">O</tspan>BL</text>
+    <circle cx="70" cy="30" r="7.6" fill="${bg}"/>
+    <circle cx="74.5" cy="22" r="4.2" fill="${bg}"/>
+  </svg>`;
+}
+
+/* ── pictures ──────────────────────────────────────────────────────────────
+   Ninety-five posts is ninety-five canvases, and drawing them all up front
+   costs about a second on a phone for pictures nobody has scrolled to yet. So
+   each one draws the first time it comes near the viewport and never again. */
+const drawn = new WeakSet();
+const painter = new IntersectionObserver((entries) => {
+  for (const e of entries) {
+    if (!e.isIntersecting || drawn.has(e.target)) continue;
+    paint(e.target);
+    painter.unobserve(e.target);
+  }
+}, { rootMargin: '400px' });
+
+function paint(canvas) {
+  const r = canvas.getBoundingClientRect();
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  const w = Math.max(1, Math.round((r.width || 240) * dpr));
+  const h = Math.max(1, Math.round((r.height || 180) * dpr));
+  canvas.width = w; canvas.height = h;
+  drawDish(canvas.getContext('2d'), w, h, {
+    archetype: canvas.dataset.kind, seed: canvas.dataset.seed,
+  });
+  drawn.add(canvas);
+}
+
+function plate(kind, seed) {
+  const c = el('canvas');
+  c.dataset.kind = kind; c.dataset.seed = seed;
+  painter.observe(c);
+  return c;
+}
+
+/* ── stars ─────────────────────────────────────────────────────────────── */
+function stars(score) {
+  const pct = Math.max(0, Math.min(100, (score / 5) * 100));
+  return `<span class="stars"><span class="back">★★★★★</span><span class="front" style="width:${pct.toFixed(1)}%">★★★★★</span></span>`;
+}
+
+/* ── cards ─────────────────────────────────────────────────────────────── */
+
+function postCard(post) {
+  const rest = restaurantById.get(post.restaurant);
+  const dish = dishById.get(post.dish);
+  const who = personById.get(post.author);
+  const overall = METRIC_IDS.reduce((a, id) => a + post.scores[id], 0) / 5;
+  const area = areaById.get(rest.area);
+
+  const card = el('article', 'card');
+
+  const head = el('div', 'who');
+  head.append(el('div', 'avatar', initials(who.name)));
+  head.append(el('div', '', `<div class="nm">${esc(who.name)}</div>
+    <div class="sub">${esc(who.bio)}</div>`));
+  head.append(el('div', 'grow'));
+  const foll = el('button', `follow${state.following.has(who.id) ? ' on' : ''}`,
+    state.following.has(who.id) ? 'Following' : 'Follow');
+  foll.onclick = () => {
+    state.following.has(who.id) ? state.following.delete(who.id) : state.following.add(who.id);
+    render();
+  };
+  head.append(foll);
+  card.append(head);
+
+  const shot = el('div', 'shot');
+  shot.append(plate(dish.archetype, post.dish + post.id));
+  const place = el('div', 'place');
+  place.append(el('b', '', esc(rest.name)));
+  place.append(el('span', '', `${esc(area.label)} · ${PRICE_BANDS[rest.band - 1].mark}`));
+  shot.append(place);
+  shot.onclick = () => go('rest', rest.id);
+  card.append(shot);
+
+  const body = el('div', 'body');
+  body.append(el('div', 'scoreline', `${stars(overall)}
+    <span class="val num">${overall.toFixed(1)}</span>
+    <span class="meta">${esc(dish.name)} · ${money(post.paid, rest.city)} a head · ${ago(post.daysAgo)}</span>`));
+  body.append(el('p', 'caption', esc(post.caption)));
+
+  const tags = el('div', 'taglist');
+  if (post.waited != null) {
+    tags.append(el('span', `chip ${post.waited > 30 ? 'warn' : 'good'}`,
+      post.waited === 0 ? 'walked straight in' : `waited ${post.waited} min`));
+  }
+  for (const t of post.tags) tags.append(el('span', 'chip', esc(TAG_LABEL.get(t) ?? t)));
+  body.append(tags);
+
+  /* The five scores, as the small print rather than the headline. A post is a
+     photo and a sentence first; the numbers are what the search runs on. */
+  const detail = el('div', '', METRICS.map((m) =>
+    `<span class="chip ghost">${m.label} ${post.scores[m.id]}</span>`).join(' '));
+  detail.className = 'taglist';
+  body.append(detail);
+
+  const acts = el('div', 'acts');
+  const like = el('button', state.liked.has(post.id) ? 'on' : '',
+    `${state.liked.has(post.id) ? ICON.heartOn : ICON.heart}<span class="num">${(post.likes + (state.liked.has(post.id) ? 1 : 0)).toLocaleString()}</span>`);
+  like.onclick = () => { state.liked.has(post.id) ? state.liked.delete(post.id) : state.liked.add(post.id); render(); };
+  acts.append(like);
+  acts.append(el('button', '', `${ICON.chat}<span class="num">${Math.round(post.likes / 7)}</span>`));
+  acts.append(el('div', 'grow'));
+  const save = el('button', state.saved.has(post.id) ? 'on' : '', state.saved.has(post.id) ? ICON.saveOn : ICON.save);
+  save.onclick = () => { state.saved.has(post.id) ? state.saved.delete(post.id) : state.saved.add(post.id); render(); };
+  acts.append(save);
+  acts.append(el('button', '', ICON.send));
+  body.append(acts);
+
+  card.append(body);
+  return card;
+}
+
+function recipeCard(recipe) {
+  const who = personById.get(recipe.author);
+  const s = summariseRecipe(recipe, rPrior);
+  const card = el('article', 'card');
+
+  const head = el('div', 'who');
+  head.append(el('div', 'avatar lilac', initials(who.name)));
+  head.append(el('div', '', `<div class="nm">${esc(who.name)}</div>
+    <div class="sub">${ago(recipe.cooks[0].daysAgo)}</div>`));
+  head.append(el('div', 'grow'));
+  const foll = el('button', `follow${state.following.has(who.id) ? ' on' : ''}`,
+    state.following.has(who.id) ? 'Following' : 'Follow');
+  foll.onclick = () => {
+    state.following.has(who.id) ? state.following.delete(who.id) : state.following.add(who.id);
+    render();
+  };
+  head.append(foll);
+  card.append(head);
+
+  const shot = el('div', 'shot');
+  shot.append(plate(recipe.archetype, 'recipe' + recipe.id));
+  shot.onclick = () => go('recipe', recipe.id);
+  card.append(shot);
+
+  const body = el('div', 'body');
+  body.append(el('h3', 'rtitle', esc(recipe.title)));
+  body.append(el('div', 'scoreline', `${stars(s.score)}
+    <span class="val num">${s.score.toFixed(1)}</span>
+    <span class="meta">${s.n} cooked it · ${recipe.minutes < 90 ? `${recipe.minutes} min` : `${(recipe.minutes / 60).toFixed(recipe.minutes % 60 ? 1 : 0)} hr`} · serves ${recipe.serves}</span>`));
+  const chips = el('div', 'taglist');
+  if (recipe.diet.vegan) chips.append(el('span', 'chip', 'vegan'));
+  else if (recipe.diet.vegetarian) chips.append(el('span', 'chip', 'vegetarian'));
+  if (recipe.diet.glutenFree) chips.append(el('span', 'chip', 'gluten free'));
+  for (const f of recipe.free) chips.append(el('span', 'chip', esc(f)));
+  body.append(chips);
+  body.append(el('p', 'caption', esc(recipe.blurb)));
+
+  const open = el('button', 'linkish', 'See the method →');
+  open.onclick = () => go('recipe', recipe.id);
+  body.append(open);
+  card.append(body);
+  return card;
+}
+
+function resultCard(hit) {
+  const r = hit.rest, s = hit.summary;
+  const card = el('button', 'result');
+  card.append(plate(r.dishes[0].archetype, 'result' + r.id));
+  const right = el('div');
+  right.append(el('h3', '', esc(r.name)));
+  right.append(el('div', 'sub',
+    `${esc(r.cuisine)} · ${esc(areaById.get(r.area).label)} · ${PRICE_BANDS[r.band - 1].mark}`));
+  const line = el('div', 'scoreline');
+  line.innerHTML = `${stars(s.overall)} <span class="big num">${s.overall.toFixed(1)}</span>
+    <span class="meta">${s.n} ${s.n === 1 ? 'review' : 'reviews'}</span>`;
+  right.append(line);
+  const facts = el('div', 'facts');
+  if (s.wait) facts.append(el('span', `chip ${s.wait.median > 30 ? 'warn' : 'ghost'}`, `${s.wait.median} min wait`));
+  if (s.spend != null) facts.append(el('span', 'chip ghost', `${money(s.spend, r.city)} a head`));
+  if (s.metrics.food.split.divisive || s.metrics.vibe.split.divisive) facts.append(el('span', 'chip warn', 'divisive'));
+  else if (s.tags[0]) facts.append(el('span', 'chip ghost', esc(s.tags[0].label)));
+  right.append(facts);
+  card.append(right);
+  card.onclick = () => go('rest', r.id);
+  return card;
+}
+
+/* ── the filter panel ──────────────────────────────────────────────────────
+   Built once and placed in two containers — the bottom sheet on a phone and
+   the left rail on a desktop — because two copies of a facet list is two
+   places for the counts to be wrong. */
+
+function facetBlock(title, options, isOn, toggle, isTyped = () => false) {
+  const b = el('div', 'facet');
+  b.append(el('h5', '', title));
+  const opts = el('div', 'opts');
+  for (const o of options) {
+    const on = isOn(o.value);
+    /* A value can be on because it was tapped here or because the search box
+       parsed it out of a sentence. Those look the same and behave differently
+       — tapping a typed one cannot untick it, because the word is still in the
+       box — so they are drawn differently and tapping a typed one clears the
+       box, which is the only honest thing a tap on it can do. */
+    const typed = on && isTyped(o.value);
+    const btn = el('button', `opt${on ? ' on' : ''}${typed ? ' typed' : ''}${!o.count && !on ? ' zero' : ''}`,
+      `${esc(o.label)}${o.count != null ? ` <span class="c">${o.count}</span>` : ''}`);
+    if (typed) btn.title = 'from what you typed — tap to clear the search box';
+    btn.onclick = () => {
+      if (typed) state.typed = '';
+      else toggle(o.value);
+      render();
+    };
+    opts.append(btn);
+  }
+  b.append(opts);
+  return b;
+}
+
+function toggleIn(key, value) {
+  const arr = state.base[key];
+  state.base[key] = arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value];
+}
+
+function filterPanel() {
+  const f = state.filters;
+  const wrap = el('div');
+
+  const counts = (facet) => facetCounts(facet, f, ctx);
+
+  const cityCounts = counts('cities');
+  wrap.append(facetBlock('City', CITIES.map((c) => ({ value: c.id, label: c.label, count: cityCounts.get(c.id) ?? 0 })),
+    (v) => f.cities.includes(v), (v) => toggleIn('cities', v), (v) => !state.base.cities.includes(v)));
+
+  /* Neighbourhoods are shown for the selected cities only — twenty of them
+     with fourteen reading zero is not a filter, it is a wall. */
+  const areaCounts = counts('areas');
+  const areas = AREAS.filter((a) => !f.cities.length || f.cities.includes(a.city));
+  wrap.append(facetBlock('Neighbourhood', areas.map((a) => ({ value: a.id, label: a.label, count: areaCounts.get(a.id) ?? 0 })),
+    (v) => f.areas.includes(v), (v) => toggleIn('areas', v), (v) => !state.base.areas.includes(v)));
+
+  const cuisineCounts = counts('cuisines');
+  const cuisines = [...new Set(RESTAURANTS.map((r) => r.cuisine))].sort();
+  wrap.append(facetBlock('Cuisine', cuisines.map((c) => ({ value: c, label: c, count: cuisineCounts.get(c) ?? 0 })),
+    (v) => f.cuisines.includes(v), (v) => toggleIn('cuisines', v), (v) => !state.base.cuisines.includes(v)));
+
+  const bandCounts = counts('bands');
+  wrap.append(facetBlock('Price', PRICE_BANDS.map((b) => ({
+    value: b.band, label: `${b.mark} ${b.typical}`, count: bandCounts.get(b.band) ?? 0,
+  })), (v) => f.bands.includes(v), (v) => toggleIn('bands', v), (v) => !state.base.bands.includes(v)));
+
+  const mealCounts = counts('meals');
+  wrap.append(facetBlock('Meal', MEALS.map((m) => ({ value: m, label: m, count: mealCounts.get(m) ?? 0 })),
+    (v) => f.meals.includes(v), (v) => toggleIn('meals', v), (v) => !state.base.meals.includes(v)));
+
+  /* The diet facet is the one that matters. The count is of kitchens that can
+     actually do it, and the second row is the strictness: "some" accepts a
+     kitchen with two dishes and a clue, "full" only accepts a whole menu. */
+  const dietCounts = counts('diet');
+  const diet = el('div', 'facet');
+  diet.append(el('h5', '', 'Dietary — the kitchen, not the caption'));
+  const dopts = el('div', 'opts');
+  for (const d of DIETS) {
+    const on = f.diet === d.id;
+    const typed = on && state.base.diet !== d.id;
+    const btn = el('button', `opt${on ? ' on' : ''}${typed ? ' typed' : ''}`,
+      `${d.label} <span class="c">${dietCounts.get(d.id) ?? 0}</span>`);
+    btn.onclick = () => {
+      if (typed) state.typed = '';
+      else state.base.diet = on ? null : d.id;
+      render();
+    };
+    dopts.append(btn);
+  }
+  diet.append(dopts);
+  if (f.diet) {
+    const strict = el('div', 'opts');
+    strict.style.marginTop = '8px';
+    for (const [level, label] of [['some', 'a few dishes, and they know which'], ['full', 'a whole menu']]) {
+      const on = f.dietLevel === level;
+      const btn = el('button', `opt${on ? ' on' : ''}`, label);
+      btn.onclick = () => { state.base.dietLevel = level; render(); };
+      strict.append(btn);
+    }
+    diet.append(strict);
+  }
+  wrap.append(diet);
+
+  const tagCounts = counts('tags');
+  wrap.append(facetBlock('What people said', TAGS.map((t) => ({ value: t.id, label: t.label, count: tagCounts.get(t.id) ?? 0 }))
+    .filter((o) => o.count > 0 || f.tags.includes(o.value)),
+  (v) => f.tags.includes(v), (v) => toggleIn('tags', v)));
+
+  /* The sliders. These are ceilings rather than sets, so they get their own
+     block — and each one shows the value as a sentence, because "≤ 3" means
+     nothing and "quiet enough to talk" means something. */
+  const NOISE = ['a library', 'conversation', 'raised voices', 'shouting', 'nothing heard'];
+  const sliders = el('div', 'facet');
+  sliders.append(el('h5', '', 'Ceilings'));
+
+  sliders.append(slider('Longest wait you will do', f.maxWait ?? 90, 0, 90, 5,
+    (v) => (v >= 90 ? 'any' : v === 0 ? 'no queue at all' : `${v} min`),
+    (v) => { state.base.maxWait = v >= 90 ? null : v; }));
+  sliders.append(slider('Most you want to spend', f.maxSpendGBP ?? 140, 5, 140, 5,
+    (v) => (v >= 140 ? 'any' : `£${v} a head`),
+    (v) => { state.base.maxSpendGBP = v >= 140 ? null : v; }));
+  sliders.append(slider('How loud you will tolerate', f.maxNoise ?? 5, 1, 5, 1,
+    (v) => (v >= 5 ? 'any' : NOISE[v - 1]),
+    (v) => { state.base.maxNoise = v >= 5 ? null : v; }));
+  sliders.append(slider('Minimum rating', f.minScore ?? 0, 0, 4.5, 0.5,
+    (v) => (v <= 0 ? 'any' : `${v.toFixed(1)}+`),
+    (v) => { state.base.minScore = v <= 0 ? null : v; }));
+  wrap.append(sliders);
+
+  return wrap;
+}
+
+function slider(label, value, min, max, step, format, set) {
+  const row = el('div');
+  row.style.cssText = 'margin-bottom:14px';
+  const head = el('div');
+  head.style.cssText = 'display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px';
+  head.innerHTML = `<span>${esc(label)}</span><b>${esc(format(value))}</b>`;
+  row.append(head);
+  const input = el('input');
+  input.type = 'range'; input.min = min; input.max = max; input.step = step; input.value = value;
+  input.oninput = () => { head.querySelector('b').textContent = format(Number(input.value)); };
+  input.onchange = () => { set(Number(input.value)); render(); };
+  row.append(input);
+  return row;
+}
+
+function activeCount() {
+  const f = state.filters;
+  return f.cities.length + f.areas.length + f.cuisines.length + f.bands.length + f.meals.length
+    + f.tags.length + (f.diet ? 1 : 0) + (f.maxWait != null ? 1 : 0) + (f.maxSpendGBP != null ? 1 : 0)
+    + (f.maxNoise != null ? 1 : 0) + (f.minScore != null ? 1 : 0);
+}
+
+function clearFilters() {
+  state.base = { ...EMPTY, sort: state.base.sort };
+  state.typed = '';
+  state.tribe = null;
+}
+
+/* ── what is in the feed ───────────────────────────────────────────────────
+   The feed is the same filter as the search, applied to posts instead of
+   places: if a restaurant is out, its posts are out. One filter, two views of
+   it — which is the only reason "#LondonBrunch" and "vegan, under £15, no
+   queue" can be the same mechanism. */
+function visibleRestaurants() {
+  return rank(filterRestaurants(state.filters, ctx), state.filters, ctx);
+}
+
+function visiblePosts() {
+  const allowed = new Set(visibleRestaurants().map((h) => h.rest.id));
+  return POSTS.filter((p) => allowed.has(p.restaurant)).sort((a, b) => a.daysAgo - b.daysAgo);
+}
+
+/* ── views ─────────────────────────────────────────────────────────────── */
+
+function viewHome() {
+  const host = el('div');
+  host.append(searchBar());
+
+  if (state.tab === 'recipes') {
+    const list = rankRecipes(filterRecipes({ q: state.filters.q, diet: state.filters.diet }));
+    if (!list.length) return host.append(emptyState()), host;
+    const feed = el('div', 'feed');
+    for (const r of list) feed.append(recipeCard(r));
+    host.append(feed);
+    host.append(el('p', 'note',
+      'Recipes are ranked by the same shrinkage the restaurants are: a five from two cooks sits below a 4.6 from thirty, on purpose.'));
+    return host;
+  }
+
+  const posts = visiblePosts();
+  if (state.tribe) host.append(tribeBanner());
+  if (!posts.length) return host.append(emptyState()), host;
+
+  const feed = el('div', 'feed');
+  for (const p of posts.slice(0, 40)) feed.append(postCard(p));
+  host.append(feed);
+  if (posts.length > 40) host.append(el('p', 'note', `${posts.length - 40} more posts match. Narrow it down, or keep scrolling in Explore.`));
+  return host;
+}
+
+function viewExplore() {
+  const host = el('div');
+  host.append(searchBar());
+  if (state.tribe) host.append(tribeBanner());
+
+  const hits = visibleRestaurants();
+
+  const head = el('div', 'sectionhead');
+  head.innerHTML = `<h3>${hits.length} place${hits.length === 1 ? '' : 's'}</h3>
+    <span>of ${RESTAURANTS.length}</span><div class="grow"></div>`;
+  const sortSel = el('select');
+  sortSel.style.cssText = 'border:1px solid var(--line-2);background:var(--card);border-radius:999px;padding:6px 10px;font-size:12.5px';
+  for (const s of [['best', 'Best rated'], ['talked', 'Most talked about'], ['value', 'Best value'],
+    ['cheapest', 'Cheapest'], ['quickest', 'Shortest wait'], ['newest', 'Newest posts']]) {
+    const o = el('option', '', s[1]); o.value = s[0];
+    if (state.filters.sort === s[0]) o.selected = true;
+    sortSel.append(o);
+  }
+  sortSel.onchange = () => { state.base.sort = sortSel.value; render(); };
+  head.append(sortSel);
+  host.append(head);
+
+  if (!hits.length) { host.append(emptyState()); return host; }
+
+  const list = el('div', 'feed');
+  for (const h of hits) list.append(resultCard(h));
+  host.append(list);
+  host.append(el('p', 'note',
+    'Counts next to each filter are worked out with the other filters applied and that one ignored — so they tell you what you would get if you changed your mind, which is the question you are actually asking.'));
+  return host;
+}
+
+function viewTribes() {
+  const host = el('div');
+  const head = el('div', 'sectionhead');
+  head.innerHTML = '<h3>Food tribes</h3><span>a tribe is a saved search</span>';
+  host.append(head);
+
+  for (const t of TRIBES) {
+    const f = tribeFilter(t);
+    const n = filterRestaurants(f, ctx).length;
+    const card = el('button', 'tribecard');
+    card.append(el('h3', '', esc(t.name)));
+    card.append(el('p', '', esc(t.blurb)));
+    const row = el('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px';
+    const faces = el('div', 'faces');
+    for (const m of t.members.slice(0, 4)) faces.append(el('div', 'avatar lilac', initials(personById.get(m).name)));
+    row.append(faces);
+    row.append(el('span', 'chip ghost', `${n} place${n === 1 ? '' : 's'}`));
+    row.append(el('span', 'chip ghost', `${t.members.length} members`));
+    card.append(row);
+    card.onclick = () => {
+      state.base = { ...tribeFilter(t), sort: 'best' };
+      state.typed = ''; state.read = [];
+      state.tribe = t.id;
+      state.view = 'home'; state.tab = 'reviews';
+      render(); scrollTo(0, 0);
+    };
+    host.append(card);
+  }
+
+  host.append(el('p', 'note',
+    'Nobody curates these. Each one is a filter — city, meal, price, wait — so anything that opens tomorrow and fits is in it the day it is posted. The cost of that is real: a tribe cannot include an oddity that does not match its own rule.'));
+  return host;
+}
+
+function tribeBanner() {
+  const t = tribeById.get(state.tribe);
+  const b = el('div', 'panel');
+  b.innerHTML = `<h4>Tribe feed</h4>
+    <p style="margin-bottom:6px"><b>#${esc(t.name)}</b> — ${esc(t.blurb)}</p>
+    <p style="margin:0">${t.members.length} members · showing everything that matches its saved search.</p>`;
+  const out = el('button', 'chip ghost', 'leave this feed');
+  out.style.marginTop = '8px';
+  out.onclick = () => { clearFilters(); render(); };
+  b.append(out);
+  return b;
+}
+
+function viewSaved() {
+  const host = el('div');
+  const head = el('div', 'sectionhead');
+  head.innerHTML = `<h3>Saved</h3><span>${state.saved.size} item${state.saved.size === 1 ? '' : 's'}</span>`;
+  host.append(head);
+  if (!state.saved.size) {
+    host.append(nothing('Nothing saved yet.', 'Tap the ribbon on any post and it lands here.'));
+    return host;
+  }
+  const feed = el('div', 'feed');
+  for (const id of state.saved) {
+    const post = POSTS.find((p) => p.id === id);
+    if (post) feed.append(postCard(post));
+  }
+  host.append(feed);
+  return host;
+}
+
+function viewMe() {
+  const host = el('div', 'profile');
+  const top = el('div');
+  top.style.cssText = 'display:flex;align-items:center;gap:16px;margin-bottom:14px';
+  top.append(el('div', 'avatar bigav', 'JB'));
+  const stats = el('div', 'pstats');
+  stats.style.flex = '1';
+  stats.innerHTML = `
+    <div><b class="num">${ME.following}</b><span>Following</span></div>
+    <div><b class="num">${(ME.followers / 1000).toFixed(1)}k</b><span>Followers</span></div>
+    <div><b class="num">${(ME.likes / 1000).toFixed(1)}k</b><span>Likes</span></div>`;
+  top.append(stats);
+  host.append(top);
+
+  const id = el('div');
+  id.style.cssText = 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px';
+  id.innerHTML = `<b style="font-size:17px">${esc(ME.name)}</b>
+    <span class="chip solid">${esc(ME.badge)}</span>
+    <span style="color:var(--mute);font-size:13px">${esc(ME.handle)}</span>`;
+  host.append(id);
+
+  const bio = el('ul');
+  bio.style.cssText = 'margin:0 0 8px;padding-left:18px;font-size:13.5px;color:var(--dim)';
+  bio.innerHTML = ME.bio.map((b) => `<li>${esc(b)}</li>`).join('');
+  host.append(bio);
+  host.append(el('p', 'note', `<b style="color:var(--ink)">Unpopular opinion:</b> ${esc(ME.unpopular)}`));
+
+  const tribes = el('div', 'taglist');
+  for (const t of ME.tribes) {
+    const tr = tribeById.get(t);
+    const c = el('button', 'chip', `#${esc(tr.name)}`);
+    c.onclick = () => {
+      state.base = { ...tribeFilter(tr), sort: 'best' };
+      state.typed = ''; state.tribe = tr.id; state.view = 'home'; state.tab = 'reviews';
+      render(); scrollTo(0, 0);
+    };
+    tribes.append(c);
+  }
+  host.append(tribes);
+
+  const liked = [...state.liked].map((id) => POSTS.find((p) => p.id === id)).filter(Boolean);
+  if (liked.length) {
+    const head = el('div', 'sectionhead');
+    head.innerHTML = '<h3>Liked</h3><span>everything you tapped a heart on</span>';
+    host.append(head);
+    host.append(gridOf(liked));
+  }
+
+  /* A profile that is empty until you tap something is a profile nobody comes
+     back to. Yours is never empty, because your tribes are saved searches and
+     a saved search always has something new in it — this grid is what the
+     three above are serving right now. */
+  const mine = new Set();
+  for (const id of ME.tribes) {
+    for (const r of filterRestaurants(tribeFilter(tribeById.get(id)), ctx)) mine.add(r.id);
+  }
+  const fromTribes = POSTS.filter((p) => mine.has(p.restaurant))
+    .sort((a, b) => a.daysAgo - b.daysAgo).slice(0, 12);
+  const head2 = el('div', 'sectionhead');
+  head2.innerHTML = `<h3>From your tribes</h3><span>${mine.size} places, live</span>`;
+  host.append(head2);
+  host.append(gridOf(fromTribes));
+  if (!liked.length) {
+    host.append(el('p', 'note',
+      'Tap a heart on anything and it lands in a grid above this one — the one part of this app that looks like the one you already use.'));
+  }
+  return host;
+}
+
+function gridOf(posts) {
+  const grid = el('div', 'grid3');
+  for (const p of posts) {
+    const b = el('button');
+    b.append(plate(dishById.get(p.dish).archetype, p.dish + p.id));
+    b.onclick = () => go('rest', p.restaurant);
+    grid.append(b);
+  }
+  return grid;
+}
+
+function nothing(title, sub = 'Take a filter off and try again.') {
+  const n = el('div', 'empty');
+  n.innerHTML = `<b>${esc(title)}</b>${esc(sub)}`;
+  return n;
+}
+
+/* Two completely different dead ends look identical on screen: a word nothing
+   is called, and a stack of filters with no overlap. Saying which one it was
+   is the difference between "this app is broken" and "ah, drop the price
+   ceiling" — so the message names the cause and the button undoes it. */
+function emptyState() {
+  const terms = state.filters.q.trim();
+  const filters = activeCount();
+  const n = el('div', 'empty');
+  if (terms && !filters) {
+    n.innerHTML = `<b>Nothing here is called “${esc(terms)}”.</b>
+      Try a dish, a cuisine, a neighbourhood — or “vegan brunch under £15”.`;
+  } else if (terms) {
+    n.innerHTML = `<b>No match for “${esc(terms)}” with those filters.</b>
+      One of the two has to give.`;
+  } else {
+    n.innerHTML = `<b>Nothing matches all ${filters} filters.</b>
+      Every one of them holds on its own — there is just no place that satisfies the lot.`;
+  }
+  const clear = el('button', 'chip solid', terms && !filters ? 'clear the search' : 'clear everything');
+  clear.onclick = () => { clearFilters(); render(); };
+  const row = el('div');
+  row.style.marginTop = '16px';
+  row.append(clear);
+  n.append(row);
+  return n;
+}
+
+/* ── the restaurant page ───────────────────────────────────────────────────
+   The point of the whole app. Not one star rating and a wall of paragraphs,
+   but: what is it, what did it score on each of the five things, where did
+   people DISAGREE, how long did they wait, what did they actually pay, what
+   can this kitchen guarantee you, and which dishes are the ones people rate
+   rather than the ones the menu leads with. */
+function viewRestaurant(id) {
+  const r = restaurantById.get(id);
+  const s = ctx.summaryOf(id);
+  const posts = [...ctx.postsOf(id)].sort((a, b) => a.daysAgo - b.daysAgo);
+  const host = el('div');
+
+  const strip = el('div', 'strip');
+  for (const d of r.dishes) strip.append(plate(d.archetype, 'hero' + d.id));
+  host.append(strip);
+
+  const head = el('div', 'detailhead');
+  head.append(el('h2', '', esc(r.name)));
+  head.append(el('div', 'sub',
+    `${esc(r.cuisine)} · ${esc(areaById.get(r.area).label)}, ${esc(cityById.get(r.city).label)} · ${PRICE_BANDS[r.band - 1].mark} ${PRICE_BANDS[r.band - 1].typical} · since ${r.opened}`));
+  head.append(el('div', 'bigscore',
+    `<span class="v">${s.overall.toFixed(1)}</span>${stars(s.overall)}<span class="of">from ${s.n} reviews</span>`));
+  head.append(el('p', 'note', esc(explainScore(s, ctx.prior))).cloneNode(true));
+  head.lastChild.style.padding = '0';
+  head.append(el('p', 'caption', esc(r.blurb)));
+
+  const chips = el('div', 'taglist');
+  for (const st of r.styles) chips.append(el('span', 'chip ghost', esc(st)));
+  for (const t of s.tags.filter((t) => t.share >= 0.4).slice(0, 3)) chips.append(el('span', 'chip', esc(t.label)));
+  head.append(chips);
+  host.append(head);
+
+  /* The five metrics, each with the distribution under it. The distribution is
+     the part other apps throw away, and it is the part that tells you whether
+     a 3.4 is "everyone thought it was fine" or "half of us loved it". */
+  const m = el('div', 'panel');
+  m.append(el('h4', '', 'What people thought'));
+  for (const metric of METRICS) {
+    const d = s.metrics[metric.id];
+    const row = el('div', 'metric');
+    row.innerHTML = `<span class="lbl">${metric.label}</span>
+      <span class="track"><span class="fill${d.split.divisive ? ' split' : ''}" style="width:${(d.score / 5 * 100).toFixed(1)}%"></span></span>
+      <span class="n num">${d.score.toFixed(1)}</span>`;
+    m.append(row);
+    if (d.split.divisive) {
+      m.append(el('p', '', `<b>Split room on ${metric.label}.</b> ${Math.round(d.split.high * 100)}% gave it 4 or 5, ${Math.round(d.split.low * 100)}% gave it 1 or 2. The average is the one number that describes nobody here.`));
+    }
+  }
+  const dist = el('div', 'dist');
+  const bins = s.metrics.food.dist;
+  const top = Math.max(1, ...bins);
+  bins.forEach((v, i) => {
+    const bar = el('i', i >= 3 ? 'hot' : '');
+    bar.style.height = `${(v / top) * 100}%`;
+    bar.title = `${v} gave food ${i + 1}/5`;
+    dist.append(bar);
+  });
+  m.append(el('div', '', '<span style="font-size:11.5px;color:var(--mute)">food scores, 1 → 5</span>'));
+  m.append(dist);
+  host.append(m);
+
+  /* The numbers nobody publishes. */
+  const facts = el('div', 'panel');
+  facts.append(el('h4', '', 'The practical bit'));
+  const NOISE = ['a library', 'conversation level', 'raised voices', 'shouting', 'nothing heard'];
+  const rows = [
+    ['Typical spend', `${money(s.spend, r.city)} a head`, `median of what ${s.n} people actually said they paid — not the menu`],
+    ['Queue', s.wait ? `${s.wait.median} min` : 'no queue reported', s.wait ? `median of ${s.wait.n} reports, worst was ${s.wait.worst} min` : 'nobody has mentioned waiting'],
+    ['Noise', NOISE[r.noise - 1], `${r.seats} seats · ${r.booking === 'book-ahead' ? 'book ahead' : 'walk in'}`],
+    ['Best for', s.tags.slice(0, 3).map((t) => t.label).join(', ') || '—', 'the tags reviewers picked, counted'],
+  ];
+  for (const [k, v, why] of rows) {
+    facts.append(el('div', 'kv', `<span>${esc(k)}<span class="why">${esc(why)}</span></span><b>${esc(v)}</b>`));
+  }
+  host.append(facts);
+
+  /* The dietary panel. Three values, stated plainly, with the wording that
+     makes the difference legible — and a line saying where it comes from. */
+  const diet = el('div', 'panel');
+  diet.append(el('h4', '', 'What this kitchen can actually do'));
+  for (const d of DIETS) {
+    const level = r.diet[d.id];
+    const say = level === 'full' ? 'a whole menu' : level === 'some' ? 'a few dishes, and they know which' : 'nothing — do not come hungry and hopeful';
+    diet.append(el('div', 'kv',
+      `<span>${esc(d.label)}</span><b class="chip ${level === 'full' ? 'good' : level === 'some' ? '' : 'warn'}">${esc(say)}</b>`));
+  }
+  diet.append(el('p', '',
+    'Recorded per kitchen, never read out of a caption. A review saying “not great for vegans” contains the word vegan, and a filter built on text would hand you this place.'));
+  host.append(diet);
+
+  const dishes = el('div', 'panel');
+  dishes.append(el('h4', '', 'Dishes, ranked by the people who ate them'));
+  for (const d of dishRanking(posts, ctx.prior)) {
+    const row = el('div', 'dishrow');
+    row.append(plate(d.dish.archetype, 'rank' + d.dish.id));
+    row.append(el('div', '', `<div class="nm">${esc(d.dish.name)}</div>
+      <div class="sub">${money(d.dish.price, r.city)} · ${d.n} ${d.n === 1 ? 'review' : 'reviews'}</div>`));
+    row.append(el('div', 'sc', d.score.toFixed(1)));
+    dishes.append(row);
+  }
+  dishes.append(el('p', '', 'Shrunk harder than the restaurant score — three reviews of a dish is thin, and this stops one enthusiast putting a side order at the top.'));
+  host.append(dishes);
+
+  const inTribes = tribeMembership(r.id, ctx);
+  if (inTribes.length) {
+    const tr = el('div', 'panel');
+    tr.append(el('h4', '', 'Turns up in'));
+    const list = el('div', 'taglist');
+    for (const t of inTribes) {
+      const c = el('button', 'chip', `#${esc(t.name)}`);
+      c.onclick = () => {
+        state.base = { ...tribeFilter(t), sort: 'best' };
+        state.typed = ''; state.tribe = t.id; state.view = 'home'; state.tab = 'reviews';
+        render(); scrollTo(0, 0);
+      };
+      list.append(c);
+    }
+    tr.append(list);
+    tr.append(el('p', '', 'Membership is computed, not curated: this place is in these tribes because it matches their saved searches right now.'));
+    host.append(tr);
+  }
+
+  const head2 = el('div', 'sectionhead');
+  head2.innerHTML = `<h3>${posts.length} posts</h3><span>newest first</span>`;
+  host.append(head2);
+  const feed = el('div', 'feed');
+  for (const p of posts) feed.append(postCard(p));
+  host.append(feed);
+  return host;
+}
+
+function viewRecipe(id) {
+  const r = recipeById.get(id);
+  const s = summariseRecipe(r, rPrior);
+  const who = personById.get(r.author);
+  const host = el('div');
+
+  const shot = el('div', 'shot');
+  shot.append(plate(r.archetype, 'recipe' + r.id));
+  host.append(shot);
+
+  const head = el('div', 'detailhead');
+  head.append(el('h2', '', esc(r.title)));
+  head.append(el('div', 'sub', `${esc(who.name)} · ${r.minutes < 90 ? `${r.minutes} min` : `${Math.round(r.minutes / 60)} hr`} · serves ${r.serves} · ${esc(r.difficulty)}`));
+  head.append(el('div', 'bigscore',
+    `<span class="v">${s.score.toFixed(1)}</span>${stars(s.score)}<span class="of">${s.n} people cooked it</span>`));
+  head.append(el('p', 'caption', esc(r.blurb)));
+  const chips = el('div', 'taglist');
+  if (r.diet.vegan) chips.append(el('span', 'chip', 'vegan'));
+  else if (r.diet.vegetarian) chips.append(el('span', 'chip', 'vegetarian'));
+  if (r.diet.glutenFree) chips.append(el('span', 'chip', 'gluten free'));
+  if (r.diet.halal) chips.append(el('span', 'chip', 'halal'));
+  for (const f of r.free) chips.append(el('span', 'chip ghost', esc(f)));
+  head.append(chips);
+  host.append(head);
+
+  const ing = el('div', 'panel');
+  ing.append(el('h4', '', 'Ingredients'));
+  ing.append(el('ul', 'ingr', r.ingredients.map((i) => `<li>${esc(i)}</li>`).join('')));
+  host.append(ing);
+
+  const st = el('div', 'panel');
+  st.append(el('h4', '', 'Method'));
+  st.append(el('ol', 'steps', r.steps.map((i) => `<li>${esc(i)}</li>`).join('')));
+  host.append(st);
+
+  const cooks = el('div', 'panel');
+  cooks.append(el('h4', '', 'People who actually made it'));
+  for (const c of r.cooks) {
+    const row = el('div', 'dishrow');
+    row.append(el('div', 'avatar lilac', initials(personById.get(c.by).name)));
+    row.append(el('div', '', `<div class="nm">${esc(personById.get(c.by).name)} ${stars(c.rating)}</div>
+      <div class="sub">${c.note ? esc(c.note) : ago(c.daysAgo)}</div>`));
+    cooks.append(row);
+  }
+  host.append(cooks);
+  return host;
+}
+
+/* ── search bar, and showing your own query back to you ────────────────────
+   Typing "cheap vegan brunch in peckham" sets four filters. If the app does
+   that silently it feels like magic right up until it guesses wrong, at which
+   point it feels broken and you cannot tell why. So it shows what it took the
+   words to mean, as chips, and every chip comes off. */
+function searchBar() {
+  const wrap = el('div');
+  const row = el('div', 'searchwrap');
+  const box = el('div', 'search');
+  box.innerHTML = ICON.search;
+  const input = el('input');
+  input.type = 'search';
+  input.placeholder = 'ramen · vegan brunch under £15 · quiet in soho';
+  input.value = state.typed;
+  input.oninput = () => { state.typed = input.value; scheduleResults(); };
+  box.append(input);
+  row.append(box);
+
+  const fb = el('button', 'filterbtn',
+    `${ICON.sliders}<span>Filters</span>${activeCount() ? `<span class="count num">${activeCount()}</span>` : ''}`);
+  fb.onclick = openSheet;
+  row.append(fb);
+  wrap.append(row);
+
+  if (state.read.length || activeCount()) {
+    const read = el('div', 'read');
+    if (state.read.length) read.append(el('span', 'lead', 'read as'));
+    for (const r of state.read) read.append(el('span', 'chip', esc(r)));
+    if (activeCount()) {
+      const clear = el('button', 'chip ghost', 'clear all ×');
+      clear.onclick = () => { clearFilters(); render(); };
+      read.append(clear);
+    }
+    wrap.append(read);
+  }
+  return wrap;
+}
+
+/* Re-rendering on every keystroke repaints every canvas on screen, which is
+   both slow and visibly flickery, so the results settle a moment after typing
+   stops. The view is then rebuilt wholesale — no surgery on a live tree — and
+   the caret is put back where it was, which is the whole reason the naive
+   version is tempting in the first place. */
+let typingTimer = null;
+function scheduleResults() {
+  clearTimeout(typingTimer);
+  typingTimer = setTimeout(() => {
+    const host = $('view');
+    const before = host.querySelector('.search input');
+    const caret = before ? before.selectionStart : null;
+    render();
+    const after = $('view').querySelector('.search input');
+    if (after && before) {
+      after.focus();
+      try { after.setSelectionRange(caret, caret); } catch { /* not a text input on every browser */ }
+    }
+  }, 130);
+}
+
+/* ── chrome ────────────────────────────────────────────────────────────── */
+
+function renderTabs() {
+  const tabs = $('tabs');
+  tabs.replaceChildren();
+  if (state.view !== 'home') { tabs.hidden = true; return; }
+  tabs.hidden = false;
+  for (const [id, label] of [['recipes', 'Recipes'], ['reviews', 'Reviews']]) {
+    const b = el('button', state.tab === id ? 'on' : '', label);
+    b.onclick = () => { state.tab = id; render(); scrollTo(0, 0); };
+    tabs.append(b);
+  }
+}
+
+function renderNav() {
+  const nav = $('bottomnav');
+  nav.replaceChildren();
+  const items = [
+    ['home', ICON.home, 'Feed'],
+    ['explore', ICON.grid, 'Explore'],
+    ['tribes', ICON.cutlery, 'Tribes'],
+    ['saved', ICON.book, 'Saved'],
+    ['me', ICON.person, 'You'],
+  ];
+  for (const [id, icon, label] of items) {
+    const b = el('button', state.view === id ? 'on' : '', icon);
+    b.setAttribute('aria-label', label);
+    b.onclick = () => go(id);
+    nav.append(b);
+  }
+}
+
+function renderRails() {
+  /* Desktop only. The left rail is the filter panel that is a sheet on a
+     phone; the right one explains the ranking, because a number people cannot
+     interrogate is a number they should not trust. */
+  const left = $('railLeft');
+  left.replaceChildren();
+  const brand = el('div', 'panel');
+  brand.innerHTML = `<div style="margin-bottom:8px">${wordmark(30)}</div>
+    <p style="margin:0">Every metric, filtered honestly. ${RESTAURANTS.length} places, ${POSTS.length} posts,
+    ${RECIPES.length} recipes — all of it in the page, none of it fetched.</p>`;
+  left.append(brand);
+  const fp = el('div', 'panel');
+  fp.style.padding = '0';
+  fp.append(filterPanel());
+  left.append(fp);
+
+  const right = $('railRight');
+  right.replaceChildren();
+  const how = el('div', 'panel');
+  how.innerHTML = `<h4>How the ranking works</h4>
+    <p>Every average is pulled towards the site-wide average of
+      <b class="num">${ctx.prior.overall.toFixed(2)}</b> by six imaginary reviews, so a
+      <b>5.0 from two people</b> sits below a <b>4.6 from thirty</b>. A rating has to be earned
+      before it can rank.</p>
+    <p>Facet counts are computed with the other filters applied and the counted one ignored —
+      the fix for the bug that makes every other option read zero the moment you pick one.</p>
+    <p>Dietary filters read a flag recorded per kitchen. A caption can never satisfy one.</p>`;
+  right.append(how);
+
+  const t = el('div', 'panel');
+  t.innerHTML = '<h4>Tribes</h4>';
+  const list = el('div', 'taglist');
+  for (const tr of TRIBES.slice(0, 6)) {
+    const c = el('button', 'chip', `#${esc(tr.name)}`);
+    c.onclick = () => {
+      state.base = { ...tribeFilter(tr), sort: 'best' };
+      state.typed = ''; state.tribe = tr.id; state.view = 'home'; state.tab = 'reviews';
+      render(); scrollTo(0, 0);
+    };
+    list.append(c);
+  }
+  t.append(list);
+  right.append(t);
+
+  const src = el('div', 'panel');
+  src.innerHTML = `<h4>Under it</h4>
+    <p>No backend, no framework, no image files — every plate on screen is drawn on a canvas
+      from the dish id. <a href="README.md">The write-up</a> covers the three bugs this is built
+      to not have.</p>`;
+  right.append(src);
+}
+
+function paintVisible() {
+  /* Anything already on screen when it is created never fires the observer, so
+     it is painted directly. */
+  for (const c of document.querySelectorAll('canvas')) {
+    if (drawn.has(c)) continue;
+    const r = c.getBoundingClientRect();
+    if (r.top < innerHeight + 400 && r.bottom > -400) paint(c);
+  }
+}
+
+/* ── the sheet ─────────────────────────────────────────────────────────── */
+function openSheet() { state.sheet = true; renderSheet(); }
+function closeSheet() { state.sheet = false; renderSheet(); }
+
+function renderSheet() {
+  const sheet = $('sheet');
+  const scrim = $('scrim');
+  sheet.classList.toggle('on', state.sheet);
+  scrim.classList.toggle('on', state.sheet);
+  if (!state.sheet) return;
+
+  sheet.replaceChildren();
+  sheet.append(el('div', 'grip'));
+  const head = el('div');
+  head.className = 'facet';
+  head.style.cssText = 'display:flex;align-items:center;gap:10px;padding:12px 16px';
+  const n = filterRestaurants(state.filters, ctx).length;
+  head.innerHTML = `<h3 style="margin:0;flex:1;font-size:16px">${n} place${n === 1 ? '' : 's'} match</h3>`;
+  const x = el('button', 'iconbtn', ICON.close);
+  x.onclick = closeSheet;
+  head.append(x);
+  sheet.append(head);
+  sheet.append(filterPanel());
+
+  const foot = el('div', 'foot');
+  const clear = el('button', 'btn ghost', 'Clear');
+  clear.onclick = () => { clearFilters(); render(); };
+  const done = el('button', 'btn', `Show ${n} place${n === 1 ? '' : 's'}`);
+  done.onclick = () => { closeSheet(); state.view = state.view === 'home' ? 'home' : 'explore'; render(); };
+  foot.append(clear); foot.append(done);
+  sheet.append(foot);
+}
+
+/* ── routing ───────────────────────────────────────────────────────────────
+   A hash, so the back button works — which on a phone is the button people
+   actually use, and a detail page you cannot back out of is the fastest way to
+   make an app feel broken. */
+function go(view, id = null) {
+  const hash = id ? `#/${view}/${id}` : `#/${view}`;
+  if (location.hash !== hash) location.hash = hash;
+  else applyHash();
+  scrollTo(0, 0);
+}
+
+function applyHash() {
+  const [, view, id] = (location.hash || '#/home').split('/');
+  const v = (view || 'home').replace('#', '') || 'home';
+  state.view = ['home', 'explore', 'tribes', 'saved', 'me', 'rest', 'recipe'].includes(v) ? v : 'home';
+  state.current = id ?? null;
+  render();
+}
+addEventListener('hashchange', applyHash);
+
+/* ── render ────────────────────────────────────────────────────────────── */
+function render() {
+  const parsed = parseQuery(state.typed, state.base);
+  state.filters = parsed.filters;
+  state.read = parsed.read;
+
+  $('wordmark').innerHTML = wordmark(25);
+  $('menuBtn').innerHTML = state.view === 'rest' || state.view === 'recipe' ? ICON.back : ICON.sliders;
+  $('menuBtn').onclick = () => (state.view === 'rest' || state.view === 'recipe' ? history.back() : openSheet());
+  $('searchBtn').innerHTML = ICON.search;
+  $('searchBtn').onclick = () => {
+    go('explore');
+    setTimeout(() => $('view').querySelector('input')?.focus(), 30);
+  };
+
+  renderTabs();
+  renderNav();
+  renderRails();
+
+  const host = $('view');
+  host.replaceChildren();
+  const body = {
+    home: viewHome,
+    explore: viewExplore,
+    tribes: viewTribes,
+    saved: viewSaved,
+    me: viewMe,
+    rest: () => (restaurantById.has(state.current) ? viewRestaurant(state.current) : nothing('No such place.')),
+    recipe: () => (recipeById.has(state.current) ? viewRecipe(state.current) : nothing('No such recipe.')),
+  }[state.view]();
+  host.append(body);
+
+  if (state.sheet) renderSheet();
+  requestAnimationFrame(paintVisible);
+}
+
+$('scrim').onclick = closeSheet;
+addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && state.sheet) closeSheet();
+  if (e.key === '/' && document.activeElement?.tagName !== 'INPUT') {
+    e.preventDefault();
+    go('explore');
+    setTimeout(() => $('view').querySelector('input')?.focus(), 30);
+  }
+});
+addEventListener('resize', () => { requestAnimationFrame(paintVisible); });
+
+applyHash();
+
+/* A handle, so the app can be driven from a script — which is how every screen
+   in this repo gets looked at after a change. */
+window.gobl = {
+  state, ctx, render, go,
+  filters: () => state.filters,
+  results: () => visibleRestaurants().map((h) => `${h.rest.name} ${h.summary.overall.toFixed(2)}`),
+  type: (q) => { state.typed = q; render(); return state.read; },
+};
+</script>
+<script type="module" src="../../shared/navigator.js"></script>
+</body>
+</html>

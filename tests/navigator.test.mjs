@@ -248,7 +248,13 @@ const EXPECTED = [
   ['colour palette', ['oklch-studio']],
   ['drop a photo in', ['portrait']],
   ['make a beat', ['beats']],
-  ['restaurant', ['covers']],
+  /* Two pieces are about restaurants now — the booking system and the review
+     app — so the bare word is genuinely ambiguous and either answer is right.
+     What must not be ambiguous is the qualified version of each. */
+  ['restaurant', ['covers', 'gobl']],
+  ['restaurant booking', ['covers']],
+  ['restaurant reviews', ['gobl']],
+  ['where to eat', ['gobl']],
   ['slow request', ['trace-explorer']],
 ];
 

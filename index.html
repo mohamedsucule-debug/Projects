@@ -561,7 +561,7 @@
   <div class="say">
     <!-- ↓↓ YOUR NAME AND TITLE — edit these two lines ↓↓ -->
     <p class="eyebrow"><b>Mohamed Sucule</b> &middot; software engineer</p>
-    <h1>Thirty things I built. <em>All of them run right here.</em></h1>
+    <h1>Thirty-one things I built. <em>All of them run right here.</em></h1>
     <p class="sub">
       No videos, no screenshots, no &ldquo;request a demo&rdquo;. Both of these are live on
       this page right now &mdash; <b>click either one and you are in it.</b> Then keep going:
@@ -757,6 +757,31 @@
       </div>
     </a>
 
+    <a class="headline" id="goblCard" href="apps/gobl/index.html" style="--accent: 171,108,186">
+      <div class="shot"><canvas></canvas></div>
+      <div class="said">
+        <p class="kicker">The newest one, and the one people ask for by name</p>
+        <h2>Gobl — Instagram for food, with a search that works</h2>
+        <p>
+          Twenty-two restaurants, ninety-five reviews and eight tribes. Filter by cuisine,
+          neighbourhood, price, meal, queue, noise and what a kitchen can actually guarantee a
+          vegan — then see what people thought, <b>metric by metric, including where they
+          disagreed.</b>
+        </p>
+        <p>
+          Every restaurant app ships the same three bugs. This one is built to not have them,
+          and each one has a test named after it.
+        </p>
+        <ul>
+          <li><b>A five from two people is not a five.</b> Every average is pulled towards the site average, so a rating has to be earned by volume before it can top a list</li>
+          <li><b>Filter counts that stay useful</b> — the number next to every option is what you would get if you picked it, checked by picking it</li>
+          <li><b>&ldquo;Vegan&rdquo; reads the kitchen, never the caption</b> — because &ldquo;not great for vegans&rdquo; contains the word, and somebody gets ill</li>
+          <li>No backend and no image files: every plate on screen is drawn from the dish id</li>
+        </ul>
+        <div class="go">OPEN IT →</div>
+      </div>
+    </a>
+
     <div class="plate"><canvas id="machine"></canvas></div>
     <div class="deep" id="deepList"></div>
   </section>
@@ -832,11 +857,12 @@
     </div>
     <p class="colophon">
       No frameworks, no build step, no dependencies — every page here is plain HTML, CSS and
-      JavaScript, about 27,000 lines of it, with the engine behind Ace, Morph, Portrait, Loom,
-      Nightshift, The Room, Covers, the transformer, the tokeniser and each of the tools
-      unit-tested: 703 tests, run in CI before anything is published — including twenty gradient
-      checks against finite differences, and a check that a 95% confidence interval really does
-      contain the truth 95% of the time. The commit history is the full record.
+      JavaScript, about 38,000 lines of it, with the engine behind Ace, Morph, Portrait, Loom,
+      Nightshift, The Room, Covers, Gobl, the transformer, the tokeniser and each of the tools
+      unit-tested: 860 tests, run in CI before anything is published — including twenty gradient
+      checks against finite differences, a check that a 95% confidence interval really does
+      contain the truth 95% of the time, and one that a caption reading &ldquo;not great for
+      vegans&rdquo; can never satisfy a vegan filter. The commit history is the full record.
     </p>
   </footer>
 </div>
@@ -1096,6 +1122,7 @@ for (const [i, toy] of TOYS.entries()) {
 
 /* Covers and the strip above the serious ones. */
 mount(document.querySelector('#headline canvas'), coversPreview, { margin: '160px' });
+mount(document.querySelector('#goblCard canvas'), goblPreview, { margin: '160px' });
 mount(document.getElementById('machine'), machinePreview);
 
 /* The three machine-learning cards. */
@@ -2029,6 +2056,115 @@ function mercuryPreview(api) {
    app itself, so the card can never show a restaurant the product does not
    have. The clock is wound forward faster than real time and looped, which
    makes the card do the one thing a screenshot cannot: fill the room up. */
+/* ── Gobl ────────────────────────────────────────────────────────────────────
+   A search box typing a query, and a grid of plates answering it. The plates
+   are the real ones — plates.js, the same file the app draws with — rendered
+   once into offscreen canvases and then blitted, because they are far too
+   expensive to draw sixty times a second and they never change anyway.
+
+   The point being made in six seconds is the one the app is about: you type a
+   constraint, the count drops, and what is left is what actually fits. */
+function goblPreview(api) {
+  let tiles = null;
+  import('./apps/gobl/plates.js').then((P) => {
+    const KINDS = ['ramen', 'pancakes', 'burger', 'taco', 'pastry', 'dosa',
+                   'oysters', 'grill', 'pizza', 'eggs', 'curry', 'dumplings'];
+    tiles = KINDS.map((kind) => {
+      const c = document.createElement('canvas');
+      c.width = c.height = 180;
+      P.drawDish(c.getContext('2d'), 180, 180, { archetype: kind, seed: 'home-' + kind });
+      return c;
+    });
+  }).catch(() => null);
+
+  /* Each phase is a real query with the number the app actually returns for
+     it — typed out, held, then replaced. */
+  const PHASES = [
+    { q: 'vegan brunch', keep: [1, 4, 5, 9], n: 4 },
+    { q: 'under £15, no queue', keep: [2, 3, 5, 8, 11], n: 7 },
+    { q: 'quiet, in soho', keep: [0, 6], n: 3 },
+    { q: 'best ramen', keep: [0], n: 2 },
+  ];
+
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    ctx.fillStyle = '#f8f4ea';
+    ctx.fillRect(0, 0, w, h);
+    if (!tiles) return;
+
+    const t = api.t / 60;
+    const per = 4.2;
+    const phase = PHASES[Math.floor(t / per) % PHASES.length];
+    const into = (t % per) / per;
+    const typed = phase.q.slice(0, Math.min(phase.q.length, Math.ceil(into * 3.4 * phase.q.length)));
+    const settled = into > 0.34;
+
+    /* the search bar */
+    const pad = Math.max(10, w * 0.035);
+    const barH = Math.min(34, h * 0.13);
+    ctx.fillStyle = '#fffdf7';
+    ctx.strokeStyle = 'rgba(78,21,80,.22)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(pad, pad, w - pad * 2 - barH * 2.6, barH, barH / 2);
+    ctx.fill(); ctx.stroke();
+
+    ctx.fillStyle = '#6e2a7c';
+    ctx.beginPath();
+    ctx.arc(pad + barH * 0.55, pad + barH / 2, barH * 0.16, 0, Math.PI * 2);
+    ctx.lineWidth = 2; ctx.strokeStyle = '#9a929d'; ctx.stroke();
+
+    ctx.fillStyle = '#1a1419';
+    ctx.font = `600 ${Math.round(barH * 0.42)}px ui-sans-serif, system-ui, sans-serif`;
+    ctx.textBaseline = 'middle';
+    ctx.fillText(typed + (settled ? '' : '|'), pad + barH * 0.95, pad + barH / 2 + 1);
+
+    /* the filter button, and the count that answers */
+    ctx.fillStyle = '#6e2a7c';
+    ctx.beginPath();
+    ctx.roundRect(w - pad - barH * 2.4, pad, barH * 2.4, barH, barH / 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = `700 ${Math.round(barH * 0.4)}px ui-sans-serif, system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(settled ? `${phase.n} places` : 'Filters', w - pad - barH * 1.2, pad + barH / 2 + 1);
+    ctx.textAlign = 'left';
+
+    /* the grid — everything that does not match fades back rather than
+       vanishing, which is what the app does and is the more honest animation:
+       the things you filtered out did not stop existing. */
+    const cols = 4, rows = 3;
+    const gap = Math.max(4, w * 0.014);
+    const room = h - (pad * 2 + barH) - pad;
+    const cw = (w - pad * 2 - gap * (cols - 1)) / cols;
+    const ch = Math.min(cw, (room - gap * (rows - 1)) / rows);
+    /* Centred in what is left rather than hung from the search bar: the card
+       is a different shape at every width, and a grid pinned to the top leaves
+       a slab of empty cream under it on a wide one. */
+    const top = pad * 2 + barH + Math.max(0, (room - (ch * rows + gap * (rows - 1))) / 2);
+
+    for (let i = 0; i < cols * rows; i++) {
+      const x = pad + (i % cols) * (cw + gap) + Math.max(0, (w - pad * 2 - (cw * cols + gap * (cols - 1))) / 2);
+      const y = top + Math.floor(i / cols) * (ch + gap);
+      const kept = !settled || phase.keep.includes(i);
+      ctx.save();
+      ctx.globalAlpha = kept ? 1 : 0.16;
+      ctx.beginPath();
+      ctx.roundRect(x, y, cw, ch, Math.min(10, cw * 0.12));
+      ctx.clip();
+      ctx.drawImage(tiles[i % tiles.length], x, y, cw, ch);
+      ctx.restore();
+      if (kept && settled) {
+        ctx.strokeStyle = 'rgba(110,42,124,.85)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(x + 1, y + 1, cw - 2, ch - 2, Math.min(10, cw * 0.12));
+        ctx.stroke();
+      }
+    }
+  };
+}
+
 function coversPreview(api) {
   let M = null;
   Promise.all([

@@ -118,6 +118,19 @@ export const ATLAS = [
            'constraint solving', 'planner', 'optimisation'],
   },
 
+  {
+    id: 'gobl', title: 'Gobl', href: 'apps/gobl/index.html',
+    kind: 'product', depth: 'study', minutes: 8,
+    blurb: 'Instagram for food, with the search a food app is supposed to have — and the '
+         + 'three bugs every restaurant app ships, deliberately not shipped.',
+    hook: 'A five from two people is not a five, and the ranking here knows it.',
+    tags: ['product', 'app', 'real software', 'food', 'restaurant', 'restaurants', 'review',
+           'reviews', 'social', 'instagram', 'feed', 'search', 'filter', 'filters', 'facets',
+           'faceted search', 'ranking', 'rating', 'ratings', 'stars', 'recommendation',
+           'vegan', 'vegetarian', 'dietary', 'allergy', 'recipes', 'cooking', 'eating out',
+           'where to eat', 'bayesian', 'statistics', 'startup', 'consumer', 'mobile', 'phone'],
+  },
+
   /* ── games ────────────────────────────────────────────────────────────── */
   {
     id: 'ace', title: 'Ace', href: 'play/ace/index.html',
