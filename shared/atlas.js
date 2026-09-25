@@ -44,6 +44,17 @@ export const ATLAS = [
            'book a table', 'impressive', 'best'],
   },
 
+  {
+    id: 'handbook', title: 'Ask the Handbook', href: 'apps/handbook/index.html',
+    kind: 'ai', depth: 'play', minutes: 4,
+    blurb: 'A knowledge assistant that answers staff questions from company documents, quotes '
+         + 'its source, and says “the handbook doesn’t say” rather than guess.',
+    hook: 'Ask about holidays or a stolen laptop — then paste in your own documents.',
+    tags: ['ai', 'rag', 'retrieval', 'search', 'knowledge base', 'chatbot', 'assistant', 'hr', 'policies',
+           'handbook', 'documents', 'citations', 'hallucination', 'evals', 'bm25', 'embeddings', 'semantic search',
+           'internal tools', 'client work', 'product', 'business', 'startup', 'impressive'],
+  },
+
   /* ── machine learning ─────────────────────────────────────────────────── */
   {
     id: 'attention', title: 'Attention', href: 'apps/attention/index.html',
