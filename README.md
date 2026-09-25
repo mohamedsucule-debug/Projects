@@ -1,12 +1,14 @@
 # Playground
 
-Thirty things I built. All of them run in a browser — no install, no signup,
-no API key, no video of someone else using it.
+Four AI products a business could ask me to build, and thirty more things I built
+for fun and to learn. All of them run in a browser — no install, no signup, no
+API key, no video of someone else using it.
 
 **→ [Open the playground](https://mohamedsucule-debug.github.io/Projects/)**
 
 | | | |
 |---|---|---:|
+| **★** | [**Four AI products**](#-four-ai-products) — a receptionist, a knowledge assistant, a sales coach, a claims desk | 4 |
 | **0** | [**Inside the models**](#0--inside-the-models) — how language models actually work | 4 |
 | **I** | [Fiction](#i--fiction) — things to read, and the two the site opens on | 3 |
 | **II** | [Physics you can touch](#ii--physics-you-can-touch) | 2 |
@@ -15,10 +17,44 @@ no API key, no video of someone else using it.
 | **V** | [The serious ones](#v--the-serious-ones) — Covers, and six tools for engineers | 7 |
 
 Plain HTML, CSS and JavaScript. No framework, no build step, no dependencies.
-Over 750 tests run in CI before anything here is published — including twenty
+Over 850 tests run in CI before anything here is published — including twenty
 gradient checks against finite differences, a check that a 95% confidence
 interval really does contain the truth about 95% of the time, and one that no
 tool result ever answers a call that was not made.
+
+---
+
+## ★ Four AI products
+
+I'm a forward deployed engineer: I sit with a client, find the work that is costing
+them, and ship the software that does it. These four start from a sentence a client
+might say and end as working software. Each one is measured, with the results (the
+bad ones included) on its page. Each runs entirely in the browser, and nothing
+typed into it is sent anywhere. The businesses are invented; the software is not.
+
+| | The brief | What it is | Measured |
+|---|---|---|---|
+| **[Front Desk](apps/frontdesk/)** | "We miss calls during service." | An AI phone receptionist that books straight into the [Covers](apps/covers/) table plan, offers the nearest free times, tells the kitchen about allergies, and hands over to a person when it should. | 75 of 82 new phrasings understood first time; 400 random callers, no double-bookings |
+| **[Ask the Handbook](apps/handbook/)** | "Staff ask HR the same questions all day." | Answers from the company's own documents, quoting the sentence and its source, and says "the handbook doesn't say" instead of guessing. Paste in your own documents. | 4 answers made up in 164 test questions, 31 of them unanswerable on purpose |
+| **[Call Coach](apps/callcoach/)** | "Our reps lose deals on the same objections." | A live assistant for sales calls: the battlecard on screen the moment a prospect objects, then MEDDICC notes, a CRM record and the follow-up email, all from what was said. | 27 of 28 new lines tagged exactly right, first time; every quote in its notes checked against the call |
+| **[Claims Desk](apps/claims/)** | "Our handlers spend their day retyping claims." | Reads an insurance claim (email, scanned form, invoice) with OCR in the browser, checks it against the policy and itself, and recommends approve, decline or refer, with evidence for every line. | 11 of 11 fields read from each scan; on 180 smudged scans a misread only ever sends a claim to a person |
+
+How they're built, and what each one gets wrong, is in its own README. Across all
+four, the same few rules apply:
+
+- **The right tool for the job, not the biggest model.** Where a purpose-built parser,
+  a search index or a rule is faster, cheaper, testable and can't make things up, it
+  does the work. The on-device models (speech recognition, sentence embeddings, OCR)
+  handle what those can't: listening, understanding meaning, reading a scan.
+- **Measured on questions it never saw.** Each has a held-out test set, written
+  after it was built and run once. The first-run score is recorded in the code and
+  never edited, even when it's bad. Ask the Handbook's two rounds scored 25/41 and
+  21/43, and its README explains what that taught me.
+- **Safe when unsure.** The receptionist hands over to a person, the handbook says it
+  doesn't know, and the claims desk refers anything it can't read.
+
+The small models load from jsDelivr and the Hugging Face hub the first time a page
+asks for them. The OCR engine is served from this repository.
 
 ---
 

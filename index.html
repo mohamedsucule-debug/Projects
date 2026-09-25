@@ -5,18 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" href="favicon.svg" />
 <meta name="theme-color" content="#f3efe5" />
-<title>Playground — thirty things I built, all of them running, marked up by hand</title>
-<meta name="description" content="A transformer trained from scratch with hand-written backpropagation, and the exact step it learned to copy. A byte-pair tokeniser that trains itself in front of you. The statistics that decide whether a change to a model did anything at all. Plus a lighthouse, a locked-room murder and a restaurant booking system. Thirty things, all running in your browser, and a page of errata listing everything that was wrong with them." />
-<meta property="og:title" content="Playground — thirty things, all of them running right here" />
-<meta property="og:description" content="Four pieces on how language models actually work — a transformer trained with backpropagation written from nothing, a tokeniser you train yourself, the statistics nobody runs, and an agent loop you can break. Plus twenty-six other things, all live in the page, and the errata." />
+<title>Mohamed Sucule — four AI products, built for real work, all running here</title>
+<meta name="description" content="Forward deployed and AI engineer. Four AI products a business could ask me to build — a phone receptionist that books into a real table plan, a knowledge assistant that cites or refuses, a live sales-call coach and an insurance claims desk that reads scans — each working, measured, and running in your browser. Plus thirty more things built for fun and to learn." />
+<meta property="og:title" content="Four AI products, built for real work — all of them running right here" />
+<meta property="og:description" content="A phone receptionist, a knowledge assistant, a sales-call coach and a claims desk — each one working, measured on questions it never saw, and running in your browser with nothing sent anywhere. Plus thirty more to play with." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://mohamedsucule-debug.github.io/Projects/" />
 <meta property="og:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Playground — thirty things, all of them running right here" />
-<meta name="twitter:description" content="Watch an induction head form in a transformer trained from scratch. Train a tokeniser in 380ms. Then a lighthouse in a gale, a locked-room murder, and a page of errata. All in the browser, nothing to install." />
+<meta name="twitter:title" content="Four AI products, built for real work — all of them running right here" />
+<meta name="twitter:description" content="Ring an AI receptionist, ask a handbook that admits what it doesn't know, listen in on a coached sales call, and watch a claims desk read a scan. All in the browser, nothing to install." />
 <meta name="twitter:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <link rel="canonical" href="https://mohamedsucule-debug.github.io/Projects/" />
 <!-- Fonts are served from this repo rather than a font CDN. Every piece here
@@ -214,6 +214,84 @@
     border-bottom: 1px solid var(--rule-2); padding-bottom: 2px;
   }
   .quiet-link:hover { color: var(--red); border-color: var(--red); }
+  a.stamp { display: inline-block; text-decoration: none; }
+  button.quiet-link { background: none; border: 0; border-bottom: 1px solid var(--rule-2); cursor: pointer; padding: 0 0 2px; }
+  #surprise .face { min-width: 17ch; text-align: left; }
+
+  /* ── §1, the four products ──────────────────────────────────────────────
+     Each one opens on the sentence a client would actually say, then a
+     small picture of the thing working, set in the app's own type, then what
+     it does in plain English and what was measured. A recruiter should get
+     each of them from the brief and the picture alone. */
+  .cases { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px; }
+  a.case { display: flex; flex-direction: column; text-decoration: none; color: inherit; background: #fbf9f3; outline: 1px solid var(--ink); transition: transform .25s cubic-bezier(.2,.7,.3,1), box-shadow .25s; }
+  a.case:hover { transform: translateY(-4px); box-shadow: 0 26px 44px -26px rgba(40,28,10,.55); }
+  .case .brief { margin: 0; padding: 18px 22px 16px; font: italic 400 clamp(19px, 1.7vw, 23px)/1.3 var(--display); color: var(--ink-2); border-bottom: 1px solid var(--rule); }
+  .case .brief::before { content: 'THE BRIEF'; display: block; font: 600 10px/1 var(--mono); font-style: normal; letter-spacing: .16em; color: var(--red); margin-bottom: 8px; }
+  .case .mock { margin: 18px 22px 0; min-height: 214px; background: #fff; border: 1px solid var(--rule-2); font-size: 15px; line-height: 1.45; overflow: hidden; }
+  .case .said { padding: 18px 22px 22px; display: flex; flex-direction: column; flex: 1; }
+  .case .k { font: 600 10.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+  .case h3 { margin: 10px 0 8px; font: 400 clamp(40px, 4vw, 56px)/.95 var(--display); letter-spacing: -.02em; }
+  .case h3 em { color: var(--red); }
+  .case p { margin: 0; font-size: 17px; line-height: 1.5; color: var(--ink-2); }
+  .case ul { margin: 12px 0 0; padding-left: 18px; font-size: 15.5px; line-height: 1.5; color: var(--ink-2); }
+  .case ul li + li { margin-top: 3px; }
+  .case .measured { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--rule-2); font: 500 12px/1.55 var(--mono); color: var(--ink); letter-spacing: .01em; }
+  .case .measured::before { content: 'MEASURED  '; color: var(--green, #2c7a4b); font-weight: 700; letter-spacing: .12em; white-space: pre; }
+  .case .go { margin-top: auto; padding-top: 16px; font: 700 11.5px/1 var(--mono); letter-spacing: .14em; color: var(--red); }
+
+  /* the four little pictures */
+  .m-bar { display: flex; gap: 8px; align-items: center; padding: 8px 12px; background: var(--ink); color: #f3efe5; font: 600 10px/1 var(--mono); letter-spacing: .08em; }
+  .m-bar i { width: 7px; height: 7px; border-radius: 50%; background: #ff5a3d; }
+  .m-bar span:last-child { margin-left: auto; opacity: .7; }
+  .m-body { padding: 10px 12px; }
+  .m-line { display: grid; grid-template-columns: 62px 1fr; gap: 8px; padding: 5px 0; border-bottom: 1px dashed var(--rule); }
+  .m-line:last-child { border-bottom: 0; }
+  .m-line b { font: 600 9px/1.9 var(--mono); letter-spacing: .1em; color: var(--ink-3); text-transform: uppercase; }
+  .m-line.ai b { color: var(--red); }
+  .m-hl { border-bottom: 2px solid; padding: 0 1px; }
+  .m-hl.p { border-color: #2f5d9c; background: rgba(47,93,156,.09); } .m-hl.d { border-color: #2c7a4b; background: rgba(44,122,75,.09); }
+  .m-hl.t { border-color: #b06a10; background: rgba(176,106,16,.1); } .m-hl.n { border-color: #cf2e1b; background: rgba(207,46,27,.08); }
+  .m-chips { display: flex; flex-wrap: wrap; gap: 5px; padding: 8px 12px 10px; border-top: 1px solid var(--rule); }
+  .m-chips span { font: 600 9.5px/1 var(--mono); letter-spacing: .06em; padding: 5px 6px; border: 1px solid var(--rule-2); color: var(--ink-2); }
+  .m-chips span.ok { color: #2c7a4b; border-color: #2c7a4b; }
+  .m-q { font: 600 10px/1.4 var(--mono); letter-spacing: .06em; color: var(--ink-3); text-transform: uppercase; margin-bottom: 6px; }
+  .m-q::before { content: 'Q · '; color: var(--red); }
+  .m-short { font: 400 26px/1.05 var(--display); margin-bottom: 8px; }
+  .m-quote { border-left: 3px solid var(--red); padding-left: 10px; }
+  .m-src { margin-top: 8px; font: 600 10px/1.3 var(--mono); color: var(--ink-2); }
+  .m-src::before { content: '§ '; color: var(--red); }
+  .m-no { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--rule); color: var(--ink-3); font-size: 14px; }
+  .m-tag { display: inline-block; margin-top: 6px; font: 600 9px/1 var(--mono); letter-spacing: .08em; padding: 4px 5px; border: 1px solid #cf2e1b; color: #cf2e1b; }
+  .m-card { margin-top: 10px; border: 1px solid var(--rule-2); padding: 8px 10px; background: #fbf9f3; }
+  .m-card small { display: block; font: 600 9px/1.2 var(--mono); letter-spacing: .1em; color: var(--ink-3); text-transform: uppercase; margin-top: 5px; }
+  .m-card small:first-child { margin-top: 0; color: #cf2e1b; }
+  .m-scan { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px; background: #e9e6de; min-height: 214px; }
+  .m-paper { background: #fbf9f2; box-shadow: 0 3px 8px -4px rgba(0,0,0,.35); padding: 10px 11px; font: 500 10.5px/1.7 var(--mono); color: #2c2a26; transform: rotate(-.6deg); }
+  .m-paper b { display: block; font: 700 11px/1.3 Georgia, serif; margin-bottom: 6px; }
+  .m-paper .box { outline: 2px solid #cf2e1b; background: rgba(207,46,27,.12); outline-offset: 1px; }
+  .m-paper .okb { outline: 1.5px solid rgba(44,122,75,.7); outline-offset: 1px; }
+  .m-verdict { align-self: end; }
+  .m-verdict .v { font: 400 22px/1.05 var(--display); color: #b06a10; }
+  .m-verdict small { display: block; font-size: 12.5px; color: var(--ink-2); margin-top: 4px; }
+
+  .howi { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin-top: 54px; border-top: 1px solid var(--ink); counter-reset: h; }
+  .howi div { padding: 16px 18px 4px 0; margin-right: 18px; border-right: 1px solid var(--rule); counter-increment: h; }
+  .howi div:last-child { border-right: 0; margin-right: 0; }
+  .howi div::before { content: counter(h, decimal-leading-zero); display: block; font: 600 11px/1 var(--mono); color: var(--red); letter-spacing: .1em; margin-bottom: 10px; }
+  .howi b { display: block; font: 400 25px/1.1 var(--display); margin-bottom: 6px; }
+  .howi p { margin: 0; font-size: 16px; line-height: 1.55; color: var(--ink-2); }
+  .howi-h { margin: 70px 0 0; font: 500 11.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); }
+  @media (max-width: 900px) {
+    .cases { grid-template-columns: minmax(0, 1fr); }
+    .howi { grid-template-columns: minmax(0, 1fr); }
+    .howi div { border-right: 0; margin-right: 0; border-bottom: 1px solid var(--rule); padding-bottom: 14px; }
+  }
+  @media (max-width: 520px) {
+    .case .brief, .case .said { padding-left: 16px; padding-right: 16px; }
+    .case .mock { margin: 14px 16px 0; }
+    .m-scan { grid-template-columns: minmax(0, 1fr); }
+  }
 
   /* The specification: four claims, each checked somewhere in the repo, set
      like the spec box on the back of a manual rather than as four giant
@@ -631,47 +709,49 @@
 
   <nav class="top" aria-label="Sections">
     <a class="brand" href="#top">Playground</a>
-    <a href="#ml"><span class="sec">&sect;1</span>The models</a>
-    <a href="#stories"><span class="sec">&sect;2</span>Stories</a>
-    <a href="#run"><span class="sec">&sect;3</span>Everything else</a>
-    <a href="#deep"><span class="sec">&sect;4</span>The serious ones</a>
+    <a href="#work"><span class="sec">&sect;1</span>For clients</a>
+    <a href="#stories"><span class="sec">&sect;2</span>Check these out</a>
+    <a href="#run"><span class="sec">&sect;3</span>Games &amp; apps</a>
+    <a href="#ml"><span class="sec">&sect;4</span>The models</a>
+    <a href="#deep"><span class="sec">&sect;5</span>Engineering</a>
     <a class="keep" href="#errata">Errata</a>
     <a class="keep write" href="#contact">Write to me</a>
   </nav>
 
   <div class="title">
     <!-- ↓↓ YOUR NAME AND TITLE — edit this line ↓↓ -->
-    <p class="byline"><b>Mohamed Sucule</b> &mdash; software engineer &mdash; thirty pieces, 2026</p>
+    <p class="byline"><b>Mohamed Sucule</b> &mdash; forward deployed engineer &middot; AI engineer &mdash; 2026</p>
     <h1 class="headline">
-      <span class="sr">Thirty things I built. All of them run right here.</span>
-      <span aria-hidden="true"><span class="fix"><span data-pen="strike" style="--pd:.7s">Twenty-nine</span><span class="ins hand later" style="--pd:1.25s">thirty</span></span> things I built.</span>
+      <span class="sr">Four AI products, built for real work. All of them run right here.</span>
+      <span aria-hidden="true">Four AI <span class="fix"><span data-pen="strike" style="--pd:.7s">demos</span><span class="ins hand later" style="--pd:1.25s">products</span></span>, built for real work.</span>
       <span aria-hidden="true"><em>All of them <span data-pen="underline2" style="--pd:1.7s">run right here.</span></em></span>
     </h1>
 
     <div class="under">
       <div>
         <p class="sub">
-          No videos, no screenshots, no &ldquo;request a demo&rdquo;. Every figure on this page is
-          the real thing, running in your browser &mdash; <b>click any of it and you are in it.</b>
-          Then read the errata: it is the list of everything here that was wrong.
+          I sit with a client, find the work that is costing them, and ship the software that does
+          it &mdash; usually with AI in it, always with the tests to prove it. Below are four things
+          a business could ask me to build: a phone receptionist, a knowledge assistant, a sales
+          coach and a claims desk. <b>Each one works. Click it and you are in it.</b>
         </p>
         <div class="actions">
-          <button class="stamp" id="surprise" type="button"><span class="face">Surprise me</span></button>
-          <a class="quiet-link" href="#ml">or start with the machine learning &darr;</a>
+          <a class="stamp" href="#work"><span class="face">See the four</span></a>
+          <button class="quiet-link" id="surprise" type="button"><span class="face">or surprise me</span></button>
         </div>
       </div>
       <div class="aside">
       <p class="headline-note hand later" style="--pd:2.2s">
         <svg viewBox="0 0 60 56" aria-hidden="true"><path d="M52 54 C 50 30, 36 12, 8 6 M20 1 L7 6 L17 16" /></svg>
-        live &mdash; not a screenshot, not a video. every one of them, see Fig. 1
+        live &mdash; not a screenshot, not a video. nothing you type leaves your browser
       </p>
       <div class="spec">
         <p class="hd">Specification</p>
         <dl>
-          <div><dt>Pieces, every one running</dt><dd data-atlas-count>30</dd></div>
-          <div><dt>Parameters, trained from nothing</dt><dd>45,440</dd></div>
-          <div><dt>Tests, run before publishing</dt><dd>750+</dd></div>
-          <div><dt>Frameworks, build steps, deps</dt><dd>0</dd></div>
+          <div><dt>AI products, working</dt><dd data-ai-count>4</dd></div>
+          <div><dt>More pieces, every one running</dt><dd data-atlas-count>30</dd></div>
+          <div><dt>Tests, run before publishing</dt><dd>850+</dd></div>
+          <div><dt>Servers, API keys, frameworks</dt><dd>0</dd></div>
         </dl>
       </div>
       </div>
@@ -680,12 +760,130 @@
 
   <div class="foot" aria-hidden="true">
     <span class="bar"><i style="background:#00a3e0"></i><i style="background:#e5007e"></i><i style="background:#ffe600"></i><i style="background:#17140f"></i><i style="background:#17140f;opacity:.6"></i><i style="background:#17140f;opacity:.3"></i><i style="background:#cf2e1b"></i></span>
-    <a class="cue" href="#sheet">Fig. 1 &mdash; four on machine learning, then twenty-six more &darr;</a>
+    <a class="cue" href="#work">The four products, then thirty more to play with &darr;</a>
     <span>p. i</span>
   </div>
 </header>
 
 <div class="page">
+
+  <!-- ── §1 for clients ──────────────────────────────────────────────────────
+       The four products. Each one opens on the sentence a client would say,
+       because that is where every real project starts. -->
+  <section class="section" id="work" style="--accent: 207,46,27">
+    <header>
+      <div class="runhead"><span class="no">&sect; 1</span><span>For clients</span><span class="nm">four products</span></div>
+      <h2>Four things a business could <em>ask me to build</em></h2>
+      <p class="lede">
+        Each one starts from a sentence a client might say, and ends as working software &mdash;
+        not a mock-up: open it and use it. Each one is measured, and the results are on its page,
+        the bad ones included. And each runs in your browser: <b>no account, no API key, nothing
+        you type sent anywhere.</b> The businesses are invented; the software is not.
+      </p>
+    </header>
+
+    <div class="cases">
+      <a class="case reveal" href="apps/frontdesk/index.html">
+        <p class="brief">&ldquo;We miss calls during service, and when we do pick up it&rsquo;s someone who should be serving.&rdquo;</p>
+        <div class="mock" aria-hidden="true">
+          <div class="m-bar"><i></i><span>ON A CALL</span><span>Bartlett &amp; Vine · 00:42</span></div>
+          <div class="m-body">
+            <div class="m-line"><b>Priya</b><span>Have you got a table for <span class="m-hl p">two</span> <span class="m-hl d">tonight</span>, around <span class="m-hl t">half eight</span>? It&rsquo;s our <span class="m-hl n">anniversary</span>.</span></div>
+            <div class="m-line ai"><b>Front desk</b><span>I&rsquo;m afraid 8:30 is fully booked for two. I can do 9 o&rsquo;clock or 9:15 &mdash; would either of those work?</span></div>
+          </div>
+          <div class="m-chips"><span>2 people</span><span>Tonight</span><span>21:00</span><span>anniversary</span><span class="ok">✓ booked · table 11</span></div>
+        </div>
+        <div class="said">
+          <span class="k">Case 1 · Voice AI · Restaurants</span>
+          <h3>Front <em>Desk</em></h3>
+          <p>An AI receptionist that answers the phone, works out what the caller wants, checks the real table plan and books them in.</p>
+          <ul>
+            <li>Offers the nearest free times when the one asked for has gone</li>
+            <li>Takes allergies and birthdays, and tells the kitchen</li>
+            <li>Hands over to a person for big parties, complaints and anything it can&rsquo;t follow</li>
+          </ul>
+          <p class="measured" data-proof="frontdesk">75 of 82 phrasings it had never seen, understood first time · 400 random callers, no double-bookings</p>
+          <span class="go">LISTEN IN ON A CALL &rarr;</span>
+        </div>
+      </a>
+
+      <a class="case reveal" href="apps/handbook/index.html" style="--d:70ms">
+        <p class="brief">&ldquo;Staff ask HR the same questions all day. The answers are in the handbook &mdash; nobody reads it.&rdquo;</p>
+        <div class="mock" aria-hidden="true">
+          <div class="m-body">
+            <div class="m-q">Can I claim for alcohol?</div>
+            <div class="m-short">No &mdash; with exceptions.</div>
+            <div class="m-quote">Alcohol is not reimbursed, except at a client dinner that a director has approved in advance.</div>
+            <div class="m-src">Expenses › Meals · updated 20 Nov 2025</div>
+            <div class="m-no"><span class="m-q" style="display:block">Can I bring my dog to the office?</span>The handbook doesn&rsquo;t say. It never mentions &ldquo;dog&rdquo;.</div>
+          </div>
+        </div>
+        <div class="said">
+          <span class="k">Case 2 · Knowledge assistant · Internal tools</span>
+          <h3>Ask the <em>Handbook</em></h3>
+          <p>Answers staff questions from the company&rsquo;s own documents, quoting the exact sentence and where it came from.</p>
+          <ul>
+            <li>Says &ldquo;the handbook doesn&rsquo;t say&rdquo; instead of guessing</li>
+            <li>Knows when a policy was replaced, and says what the old one said</li>
+            <li>Paste in your own documents and ask them anything</li>
+          </ul>
+          <p class="measured" data-proof="handbook">made up 4 answers in 164 test questions, 31 of them unanswerable on purpose · every answer cites its source</p>
+          <span class="go">ASK IT SOMETHING &rarr;</span>
+        </div>
+      </a>
+
+      <a class="case reveal" href="apps/callcoach/index.html">
+        <p class="brief">&ldquo;Our reps lose deals on the same objections, and nobody writes up their calls properly.&rdquo;</p>
+        <div class="mock" aria-hidden="true">
+          <div class="m-bar"><i></i><span>ON A CALL</span><span>Covers × Marlow Hospitality</span></div>
+          <div class="m-body">
+            <div class="m-line"><b>Jamie</b><span>That&rsquo;s more than double what we pay now, though.<br /><span class="m-tag">PRICE OBJECTION</span></span></div>
+            <div class="m-card"><small>Coach · Price</small>Usually &ldquo;I can&rsquo;t see the return yet&rdquo;, not &ldquo;we can&rsquo;t afford it&rdquo;.<small>Ask</small>What does a no-show cost you on a Saturday?</div>
+          </div>
+        </div>
+        <div class="said">
+          <span class="k">Case 3 · Sales AI · Revenue teams</span>
+          <h3>Call <em>Coach</em></h3>
+          <p>A live assistant for sales calls: the right answer on screen the moment a prospect objects, and the notes written when the call ends.</p>
+          <ul>
+            <li>Spots objections, competitors, pains and buying signals as they&rsquo;re said</li>
+            <li>Nudges the rep who is pitching before they&rsquo;ve found a problem</li>
+            <li>Writes the CRM record and follow-up email from what was actually said</li>
+          </ul>
+          <p class="measured" data-proof="callcoach">27 of 28 new lines tagged exactly right, first time · every quote in its notes checked against the call</p>
+          <span class="go">LISTEN TO THE CALLS &rarr;</span>
+        </div>
+      </a>
+
+      <a class="case reveal" href="apps/claims/index.html" style="--d:70ms">
+        <p class="brief">&ldquo;Claims come in as emails, scans and invoices. Our handlers spend their day retyping them.&rdquo;</p>
+        <div class="mock m-scan" aria-hidden="true">
+          <div class="m-paper"><b>VELO DEPOT — RECEIPT</b>Receipt no: VD-77310<br /><span class="box">Date: 04/03/2026</span><br /><span class="okb">Customer: T Hale</span><br />Road bike, size 56 <span style="float:right">£2,450.00</span><br /><span class="okb" style="float:right">Total paid £2,450.00</span></div>
+          <div class="m-verdict"><div class="v">Refer to a person</div><small>The receipt is dated three days <i>after</i> the theft, and the bike was stolen nine days after the policy started.</small></div>
+        </div>
+        <div class="said">
+          <span class="k">Case 4 · Document AI · Insurance</span>
+          <h3>Claims <em>Desk</em></h3>
+          <p>Reads an insurance claim &mdash; email, scanned form, invoice &mdash; checks it against the policy and itself, and recommends a decision with the evidence for every line.</p>
+          <ul>
+            <li>Reads the scans with text recognition, on your device</li>
+            <li>Approve, decline with the clause quoted, or refer to a person</li>
+            <li>A person approves; every override goes on the record</li>
+          </ul>
+          <p class="measured" data-proof="claims">11 of 11 fields read from each scan · 180 smudged scans, and a misread only ever sends a claim to a person</p>
+          <span class="go">OPEN A CLAIM &rarr;</span>
+        </div>
+      </a>
+    </div>
+
+    <p class="howi-h">How I work with a client</p>
+    <div class="howi">
+      <div><b>Sit with the people who do the job</b><p>The brief is rarely the problem. The receptionist knows which calls go wrong; the claims handler knows which forms waste an afternoon.</p></div>
+      <div><b>Find the number that matters</b><p>Missed calls, hours of admin, claims touched twice. Pick the one that costs the most, and agree how to measure it before building anything.</p></div>
+      <div><b>Ship something real, fast</b><p>Working software they can try on real work within weeks &mdash; not a slide deck, and not a demo that only works on the day.</p></div>
+      <div><b>Measure it in the open</b><p>A test set built from their own data, run on every change. When it gets something wrong, they see it before their customers do.</p></div>
+    </div>
+  </section>
 
   <!-- ── fig. 1 ──────────────────────────────────────────────────────────────
        The contact sheet. Built by script from the atlas, so it can never list
@@ -697,16 +895,71 @@
     </div>
     <figcaption>
       <span class="fn">Fig. 1</span>
-      <span>Contact sheet. Every piece on this site, running, and the author&rsquo;s picks in grease
-      pencil &mdash; <b id="liveCount">&hellip;</b> of them running as you read this.
+      <span>Contact sheet. Thirty more things I built for fun and to learn, every one of them running
+      &mdash; games along the top, the engineering at the bottom, my picks in grease pencil, and
+      <b id="liveCount">&hellip;</b> of them running as you read this.
       <span class="fine">Hold the loupe over a frame to look closer;</span> click a frame to go in.</span>
     </figcaption>
   </figure>
 
-  <!-- ── §1 inside the models ────────────────────────────────────────────── -->
+  <!-- ── §2 stories ──────────────────────────────────────────────────────── -->
+  <section class="section" id="stories" style="--accent: 255,209,102">
+    <header>
+      <div class="runhead"><span class="no">&sect; 2</span><span>Check these out</span><span class="nm">two figures</span></div>
+      <h2>Two to get <em>lost in</em></h2>
+      <p class="lede">
+        Off the clock: a murder you solve by looking at things, and a short story drawn from
+        scratch as you scroll. <b>Point at one and it takes the room.</b>
+      </p>
+    </header>
+    <div class="panes reveal">
+      <a class="pane light" href="apps/room/index.html" style="--accent: 224,177,100">
+        <canvas id="paneRoom"></canvas>
+        <div class="edge">
+          <span class="k"><span class="fn" data-fig></span> &middot; a murder &middot; ten minutes</span>
+          <h3>The <em>Room</em></h3>
+          <p>
+            Edmund Harkness is dead at his desk and the door was locked from inside.
+            <b>Look at nineteen things</b>, question four people, and the notebook works out
+            for itself which two of them cannot both be true. Then name somebody.
+          </p>
+          <span class="go">SOLVE IT &rarr;</span>
+        </div>
+      </a>
+      <a class="pane" href="apps/lamplighter/index.html" style="--accent: 255,209,102">
+        <canvas id="paneLamp"></canvas>
+        <div class="edge">
+          <span class="k"><span class="fn" data-fig></span> &middot; a short story &middot; five minutes</span>
+          <h3>The <em>Lamplighter</em></h3>
+          <p>
+            One night, and a keeper about to be replaced by a machine. <b>Scroll and the sun
+            goes down</b>, the gale gets up, the rain comes sideways, and the light keeps
+            turning. Not a photograph in it &mdash; the sea and the sky are worked out from scratch.
+          </p>
+          <span class="go">READ IT &rarr;</span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <!-- ── §3 games and apps ───────────────────────────────────────────────── -->
+  <section class="section" id="run">
+    <header>
+      <div class="runhead"><span class="no">&sect; 3</span><span>Games &amp; apps</span><span class="nm">seventeen figures</span></div>
+      <h2>Things to put your <em>hands on</em></h2>
+      <p class="lede">
+        Games first, then small apps you would actually use, then physics you can put your
+        finger in and one horror story. <b>Nothing here has a menu or a tutorial</b>: the first
+        ten seconds teach you the rest.
+      </p>
+    </header>
+    <div class="figs" id="toys" style="--min:330px"></div>
+  </section>
+
+  <!-- ── §4 inside the models ────────────────────────────────────────────── -->
   <section class="section" id="ml" style="--accent: 125,211,252">
     <header>
-      <div class="runhead"><span class="no">&sect; 1</span><span>Inside the models</span><span class="nm">four figures</span></div>
+      <div class="runhead"><span class="no">&sect; 4</span><span>Inside the models</span><span class="nm">four figures</span></div>
       <h2>How language models <em>actually</em> work</h2>
       <p class="lede">
         Four pieces built from the algorithm up rather than from an API call. A tokeniser that
@@ -781,65 +1034,10 @@
     </p>
   </section>
 
-  <!-- ── §2 stories ──────────────────────────────────────────────────────── -->
-  <section class="section" id="stories" style="--accent: 255,209,102">
-    <header>
-      <div class="runhead"><span class="no">&sect; 2</span><span>Stories</span><span class="nm">two figures</span></div>
-      <h2>Two to get <em>lost in</em></h2>
-      <p class="lede">
-        A short story drawn from scratch as you scroll, and a murder you solve by looking at
-        things. <b>Point at one and it takes the room.</b>
-      </p>
-    </header>
-    <div class="panes reveal">
-      <a class="pane" href="apps/lamplighter/index.html" style="--accent: 255,209,102">
-        <canvas id="paneLamp"></canvas>
-        <div class="edge">
-          <span class="k"><span class="fn" data-fig></span> &middot; a short story &middot; five minutes</span>
-          <h3>The <em>Lamplighter</em></h3>
-          <p>
-            One night, and a keeper about to be replaced by a machine. <b>Scroll and the sun
-            goes down</b>, the gale gets up, the rain comes sideways, and the light keeps
-            turning. Not a photograph in it &mdash; the sea and the sky are worked out from scratch.
-          </p>
-          <span class="go">READ IT &rarr;</span>
-        </div>
-      </a>
-      <a class="pane light" href="apps/room/index.html" style="--accent: 224,177,100">
-        <canvas id="paneRoom"></canvas>
-        <div class="edge">
-          <span class="k"><span class="fn" data-fig></span> &middot; a murder &middot; ten minutes</span>
-          <h3>The <em>Room</em></h3>
-          <p>
-            Edmund Harkness is dead at his desk and the door was locked from inside.
-            <b>Look at nineteen things</b>, question four people, and the notebook works out
-            for itself which two of them cannot both be true. Then name somebody.
-          </p>
-          <span class="go">SOLVE IT &rarr;</span>
-        </div>
-      </a>
-    </div>
-  </section>
-
-  <!-- ── §3 everything else ──────────────────────────────────────────────── -->
-  <section class="section" id="run">
-    <header>
-      <div class="runhead"><span class="no">&sect; 3</span><span>Everything else</span><span class="nm">seventeen figures</span></div>
-      <h2>Things to put your <em>hands on</em></h2>
-      <p class="lede">
-        Games, apps you would actually use, physics you can put your finger in, and one
-        horror story. <b>Shuffled on purpose</b> — two of a kind in a row gets
-        boring, so there never are two. Nothing here has a menu or a tutorial: the first
-        ten seconds teach you the rest.
-      </p>
-    </header>
-    <div class="figs" id="toys" style="--min:330px"></div>
-  </section>
-
-  <!-- ── §4 the serious ones ─────────────────────────────────────────────── -->
+  <!-- ── §5 the serious ones ─────────────────────────────────────────────── -->
   <section class="section" id="deep">
     <header>
-      <div class="runhead"><span class="no">&sect; 4</span><span>The serious ones</span><span class="nm">one figure, six entries</span></div>
+      <div class="runhead"><span class="no">&sect; 5</span><span>Engineering</span><span class="nm">one figure, six entries</span></div>
       <h2>Systems that <em>refuse to be simple</em></h2>
       <p class="lede">
         Same approach, harder subjects, and these take longer than ten seconds to get into.
@@ -884,7 +1082,7 @@
        write-up, and none of them would have thrown. -->
   <section class="section" id="errata">
     <header>
-      <div class="runhead"><span class="no">&sect; 5</span><span>Errata</span><span class="nm">eleven corrections</span></div>
+      <div class="runhead"><span class="no">&sect; 6</span><span>Errata</span><span class="nm">eleven corrections</span></div>
       <h2>Everything here that was <em>wrong</em></h2>
       <p class="lede">
         I build fast and I am hard to satisfy. With modern tooling a working version exists in
@@ -897,7 +1095,7 @@
       <li class="reveal">
         <span class="en">E1</span>
         <div>
-          <p class="where"><a href="apps/attention/index.html">Attention</a> &middot; &sect;1</p>
+          <p class="where"><a href="apps/attention/index.html">Attention</a> &middot; &sect;4</p>
           <p class="for"><i>For</i> <s>an induction head, scoring 0.92</s> <i>read</i> <ins>a positional copy head</ins></p>
           <p class="why">It had memorised &ldquo;attend to <i>i</i> &minus; 31&rdquo; off the positional embeddings and never looked at a token. The period is now drawn fresh for every sequence, and the model is scored across all of them.</p>
           <p class="how">Caught by <b>distrusting a beautiful number</b></p>
@@ -906,7 +1104,7 @@
       <li class="reveal" style="--d:70ms">
         <span class="en">E2</span>
         <div>
-          <p class="where"><a href="apps/attention/index.html">Attention</a> &middot; &sect;1</p>
+          <p class="where"><a href="apps/attention/index.html">Attention</a> &middot; &sect;4</p>
           <p class="for"><i>For</i> <s>a head that works better at longer periods</s> <i>read</i> <ins>a bad measurement</ins></p>
           <p class="why">The score only counted the nearest earlier match, so at period 12 it saw about a fifth of the head&rsquo;s attention. Fixed, the spread across periods fell from 0.437 to 0.132: one head, matching on content.</p>
           <p class="how">Caught by <b>asking why the curve was so smooth</b></p>
@@ -942,7 +1140,7 @@
       <li class="reveal" style="--d:70ms">
         <span class="en">E6</span>
         <div>
-          <p class="where">This page &middot; &sect;4</p>
+          <p class="where">This page &middot; &sect;5</p>
           <p class="for"><i>For</i> <s>six quiet links</s> <i>read</i> <ins>six links in shouting capitals</ins></p>
           <p class="why">A heading and a list both claimed the same <code>id</code>, so the heading&rsquo;s letter-spaced capitals landed on every tool&rsquo;s name. The browser does not complain about a duplicate id; there is now a test that does.</p>
           <p class="how">Caught by <b>looking at it</b></p>
@@ -951,7 +1149,7 @@
       <li class="reveal">
         <span class="en">E7</span>
         <div>
-          <p class="where"><a href="apps/tokens/index.html">Tokens</a> &middot; &sect;1</p>
+          <p class="where"><a href="apps/tokens/index.html">Tokens</a> &middot; &sect;4</p>
           <p class="for"><i>For</i> <s>fits a phone</s> <i>read</i> <ins>516 pixels wide on a 390-pixel phone</ins></p>
           <p class="why">A <code>1fr</code> grid column&rsquo;s smallest size is its longest unbreakable line, so the column refused to shrink and pushed the page off the side. <code>minmax(0, 1fr)</code> and it behaves.</p>
           <p class="how">Caught by <b>opening every page at phone width</b></p>
@@ -1009,9 +1207,9 @@
     </div>
     <h2>Seen enough? <em>Write to me.</em></h2>
     <p>
-      I build things end to end and I care how they feel to use &mdash; and then I go looking for
-      what is wrong with them. If there is something you would like built like this, or taken
-      apart like the transformer was, this is the fastest way to reach me.
+      I build things end to end, I care how they feel to use, and then I go looking for what is
+      wrong with them. If your team has a problem like one of the four at the top of this page
+      &mdash; or one nobody has built software for yet &mdash; this is the fastest way to reach me.
     </p>
     <a class="mail" href="mailto:mohamedsucule@gmail.com">mohamedsucule@gmail.com</a>
     <div class="actions">
@@ -1026,9 +1224,9 @@
     <p>
       Set in Instrument Serif, Newsreader, JetBrains Mono and Caveat, served from this repository.
       No frameworks, no build step, no dependencies — every page here is plain HTML, CSS and
-      JavaScript, with the engine behind Ace, Nightshift, The Room, Covers, the transformer, the
+      JavaScript, with the engines behind Front Desk, Ask the Handbook, Call Coach, Claims Desk, Ace, Nightshift, The Room, Covers, the transformer, the
       tokeniser, the QR encoder, the tuner, Minesweeper, Sudoku, Split and each of the tools
-      unit-tested: over 750 tests, run in CI
+      unit-tested, along with the four AI products: over 850 tests, run in CI
       before anything is published — including twenty gradient checks against finite differences,
       and a check that a 95% confidence interval really does contain the truth 95% of the time.
       The commit history is the full record.
@@ -1063,19 +1261,15 @@ const MONO = '"JetBrains Mono Var", ui-monospace, Menlo, monospace';
 const SERIF = '"Instrument Serif", Georgia, serif';
 
 /* ── the run ─────────────────────────────────────────────────────────────────
-   One order, hand-picked, and the rule behind it is that no two neighbours are
-   the same kind of thing. Five games in a row are five good things and one
-   monotonous stretch of page: by the third you have stopped reading the words
-   and started scrolling past pictures. Mixed, every card is a change of
-   subject, and the reader keeps going because they cannot guess what is next.
+   One order, hand-picked: games first, because that is what people came to
+   this part of the page for; then the small apps somebody would actually
+   use; then the physics toys, the instruments and one horror story. It used
+   to be shuffled so that no two neighbours were the same kind, which read
+   well and hid the games among everything else — and the note that came
+   back was "put the games at the top".
 
-   `kind` is only here to keep that promise honest — it is checked below rather
-   than trusted, because this list gets reordered by hand and an accidental pair
-   is invisible until somebody scrolls past it and feels bored without knowing
-   why.
-
-   The Lamplighter and The Room are not in this list: they are the two panes of
-   the front door. Putting them here as well would be the same thing twice. */
+   The Room and The Lamplighter are not in this list: they are the two panes
+   of §2. Putting them here as well would be the same thing twice. */
 const TOYS = [
   {
     href: 'play/sweeper/index.html', tag: 'no guessing', kind: 'game', wide: true,
@@ -1085,49 +1279,16 @@ const TOYS = [
     preview: sweeperPreview,
   },
   {
-    href: 'apps/qr/index.html', tag: 'real app', kind: 'app',
-    note: 'read back by zxing: 56 of 56',
-    title: 'QR codes',
-    blurb: 'Type a link, some text or a Wi-Fi password and it is a QR code before you finish typing. Download it as PNG or SVG. The encoder is written from scratch — error correction and all — and nothing you type leaves the page.',
-    preview: qrPreview,
-  },
-  {
-    href: 'play/ace/index.html', tag: 'game', kind: 'game', wide: true,
-    title: 'Ace',
-    blurb: 'Tap to fly a paper plane through a canyon. Do not hit the rocks. That is the whole game, and you will understand it before you have finished reading this.',
-    preview: acePreview
-  },
-  {
-    href: 'apps/nightshift/index.html', tag: 'read it alone', kind: 'story',
-    note: 'it reads you back',
-    title: 'Nightshift',
-    blurb: 'A coastal watch log from one night in 1987, transcribed from the original daybook. It opens with the weather and the shipping and it does not stay there. Read it to the end — it is reading you back.',
-    preview: nightshiftPreview
-  },
-  {
     href: 'play/sudoku/index.html', tag: 'with reasons', kind: 'game',
     title: 'Sudoku',
     blurb: 'A daily puzzle at three levels, each checked for exactly one answer and a way to it without guessing. Stuck? The hint names the technique — a hidden single, a pointing pair, an X-Wing — and shows you where.',
     preview: sudokuPreview,
   },
   {
-    href: 'apps/split/index.html', tag: 'real app', kind: 'app',
-    title: 'Split',
-    blurb: 'Who paid for what on a trip or at dinner, and the fewest bank transfers that settle everyone up — to the penny, uneven splits and all. Share the whole group with one link. Nothing is uploaded.',
-    preview: splitPreview,
-  },
-  {
-    href: 'play/stack/index.html', tag: 'game', kind: 'game',
-    title: 'Stack',
-    blurb: 'A block slides past. Tap. Whatever hangs over the edge is sliced off and falls away, so every sloppy drop makes the next one harder. Land it dead centre and you lose nothing.',
-    preview: stackPreview
-  },
-  {
-    href: 'play/sandbox/index.html', tag: 'sandbox', kind: 'physics',
-    note: 'now set it on fire',
-    title: 'Sandbox',
-    blurb: 'Pour sand. Add water. Set it on fire and watch the smoke rise. Ten materials that all behave the way you would expect them to, which is the whole trick.',
-    preview: sandPreview
+    href: 'play/ace/index.html', tag: 'game', kind: 'game', wide: true,
+    title: 'Ace',
+    blurb: 'Tap to fly a paper plane through a canyon. Do not hit the rocks. That is the whole game, and you will understand it before you have finished reading this.',
+    preview: acePreview
   },
   {
     href: 'play/tangle/index.html', tag: 'daily puzzle', kind: 'game',
@@ -1137,11 +1298,10 @@ const TOYS = [
     preview: tanglePreview
   },
   {
-    href: 'apps/tuner/index.html', tag: 'real app', kind: 'app', wide: true,
-    note: 'hears a note with its fundamental missing',
-    title: 'Tuner',
-    blurb: 'Play a note into your microphone and see how sharp or flat it is, to the cent — guitar, bass, ukulele, violin or cello. The pitch detection is written from nothing, and a string you can tune is built in for when there is no microphone.',
-    preview: tunerPreview,
+    href: 'play/stack/index.html', tag: 'game', kind: 'game',
+    title: 'Stack',
+    blurb: 'A block slides past. Tap. Whatever hangs over the edge is sliced off and falls away, so every sloppy drop makes the next one harder. Land it dead centre and you lose nothing.',
+    preview: stackPreview
   },
   {
     href: 'play/orbit/index.html', tag: 'game', kind: 'game',
@@ -1150,23 +1310,10 @@ const TOYS = [
     preview: cometPreview
   },
   {
-    href: 'apps/mercury/index.html', tag: 'touch it', kind: 'physics', gl: true, wide: true,
-    note: 'no 3D model, no texture — just maths',
-    title: 'Mercury',
-    blurb: 'A sheet of liquid metal under a sunset sky. Drag it and it ripples, and the ripples bend the reflections as they spread. There is no 3D model and no texture in it — every pixel is worked out from scratch, sixty times a second.',
-    preview: mercuryPreview
-  },
-  {
     href: 'play/tether/index.html', tag: 'game', kind: 'game',
     title: 'Tether',
     blurb: 'You swing round a planet on a tether. Tap and you let go, flying off exactly the way you were already pointing. If the line passes close enough to another planet, it catches you. One decision: when.',
     preview: tetherPreview
-  },
-  {
-    href: 'play/beats/index.html', tag: 'music', kind: 'instrument',
-    title: 'Beat Lab',
-    blurb: 'A drum machine with no sound files in it — every kick and snare is generated from scratch. Press play, tap the squares, make something.',
-    preview: beatsPreview
   },
   {
     href: 'play/sumo/index.html', tag: 'two players', kind: 'game',
@@ -1176,10 +1323,50 @@ const TOYS = [
     preview: sumoPreview
   },
   {
+    href: 'apps/qr/index.html', tag: 'real app', kind: 'app',
+    note: 'read back by zxing: 56 of 56',
+    title: 'QR codes',
+    blurb: 'Type a link, some text or a Wi-Fi password and it is a QR code before you finish typing. Download it as PNG or SVG. The encoder is written from scratch — error correction and all — and nothing you type leaves the page.',
+    preview: qrPreview,
+  },
+  {
+    href: 'apps/split/index.html', tag: 'real app', kind: 'app',
+    title: 'Split',
+    blurb: 'Who paid for what on a trip or at dinner, and the fewest bank transfers that settle everyone up — to the penny, uneven splits and all. Share the whole group with one link. Nothing is uploaded.',
+    preview: splitPreview,
+  },
+  {
+    href: 'apps/tuner/index.html', tag: 'real app', kind: 'app', wide: true,
+    note: 'hears a note with its fundamental missing',
+    title: 'Tuner',
+    blurb: 'Play a note into your microphone and see how sharp or flat it is, to the cent — guitar, bass, ukulele, violin or cello. The pitch detection is written from nothing, and a string you can tune is built in for when there is no microphone.',
+    preview: tunerPreview,
+  },
+  {
     href: 'apps/sift/index.html', tag: 'your data', kind: 'app',
     title: 'Sift',
     blurb: 'Drop a spreadsheet in and it tells you what is actually in it: what each column holds, where the gaps are, what the numbers look like. Then sort and filter a hundred thousand rows without it stuttering. Nothing is uploaded.',
     preview: siftPreview
+  },
+  {
+    href: 'play/sandbox/index.html', tag: 'sandbox', kind: 'physics',
+    note: 'now set it on fire',
+    title: 'Sandbox',
+    blurb: 'Pour sand. Add water. Set it on fire and watch the smoke rise. Ten materials that all behave the way you would expect them to, which is the whole trick.',
+    preview: sandPreview
+  },
+  {
+    href: 'apps/mercury/index.html', tag: 'touch it', kind: 'physics', gl: true, wide: true,
+    note: 'no 3D model, no texture — just maths',
+    title: 'Mercury',
+    blurb: 'A sheet of liquid metal under a sunset sky. Drag it and it ripples, and the ripples bend the reflections as they spread. There is no 3D model and no texture in it — every pixel is worked out from scratch, sixty times a second.',
+    preview: mercuryPreview
+  },
+  {
+    href: 'play/beats/index.html', tag: 'music', kind: 'instrument',
+    title: 'Beat Lab',
+    blurb: 'A drum machine with no sound files in it — every kick and snare is generated from scratch. Press play, tap the squares, make something.',
+    preview: beatsPreview
   },
   {
     href: 'play/island/index.html', tag: 'generator', kind: 'instrument',
@@ -1187,15 +1374,16 @@ const TOYS = [
     blurb: 'Press the button, get a brand new world: coastline, mountains, forests, rivers and a name. Every island comes from a single random number.',
     preview: islandPreview
   },
-
+  {
+    href: 'apps/nightshift/index.html', tag: 'read it alone', kind: 'story',
+    note: 'it reads you back',
+    title: 'Nightshift',
+    blurb: 'A coastal watch log from one night in 1987, transcribed from the original daybook. It opens with the weather and the shipping and it does not stay there. Read it to the end — it is reading you back.',
+    preview: nightshiftPreview
+  },
 ];
 
 /* The one rule the order exists to keep, checked rather than remembered. */
-for (let i = 1; i < TOYS.length; i++) {
-  if (TOYS[i].kind === TOYS[i - 1].kind) {
-    console.warn(`${TOYS[i - 1].title} and ${TOYS[i].title} are both "${TOYS[i].kind}" and sit next to each other`);
-  }
-}
 
 /* ── one canvas, one live miniature ──────────────────────────────────────────
    Five different things on this page hang a live scene on a canvas: the
@@ -1410,11 +1598,11 @@ const PREVIEW = {
   qr: qrPreview, split: splitPreview, tuner: tunerPreview, sweeper: sweeperPreview, sudoku: sudokuPreview,
 };
 const SHEET = [
-  'attention', 'lamplighter', 'ace', 'sandbox', 'room', 'tokens',
-  'comet', 'covers', 'mercury', 'evals', 'tangle', 'sudoku',
-  'nightshift', 'regex-lab', 'stack', 'qr', 'agents', 'island',
-  'raft-lab', 'tether', 'beats', 'sweeper', 'query-planner', 'sumo',
-  'split', 'trace-explorer', 'sift', 'diff-forge', 'tuner', 'oklch-studio',
+  'room', 'sweeper', 'ace', 'sudoku', 'tangle', 'stack',
+  'comet', 'sumo', 'tether', 'lamplighter', 'nightshift', 'sandbox',
+  'qr', 'split', 'tuner', 'beats', 'island', 'mercury',
+  'attention', 'tokens', 'evals', 'agents', 'covers', 'sift',
+  'regex-lab', 'raft-lab', 'query-planner', 'trace-explorer', 'diff-forge', 'oklch-studio',
 ];
 const PICKS = {
   attention: ['ring', 'start here'],
