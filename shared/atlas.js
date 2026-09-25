@@ -15,6 +15,7 @@
    whole job of a search box is to meet people where their vocabulary is. */
 
 export const KINDS = {
+  ai:         { label: 'AI product',       accent: '255,106,82'  },
   ml:         { label: 'machine learning', accent: '125,211,252' },
   fiction:    { label: 'fiction',          accent: '255,209,102' },
   game:       { label: 'game',             accent: '255,77,141'  },
@@ -30,6 +31,19 @@ export const KINDS = {
      play  — worth a few minutes with your hands on it
      study — it rewards actually reading, and has a write-up */
 export const ATLAS = [
+  /* ── AI products: the things a client would ask for ────────────────────── */
+  {
+    id: 'frontdesk', title: 'Front Desk', href: 'apps/frontdesk/index.html',
+    kind: 'ai', depth: 'play', minutes: 4,
+    blurb: 'An AI phone receptionist for a busy restaurant. It checks the real table plan, '
+         + 'offers the nearest free times and books straight into the host-stand system.',
+    hook: 'Listen in on a Saturday night, or ring it yourself.',
+    tags: ['ai', 'voice', 'voice ai', 'agent', 'ai agent', 'receptionist', 'phone', 'call', 'chatbot',
+           'conversational', 'restaurant', 'booking', 'reservation', 'nlu', 'speech', 'whisper',
+           'client work', 'product', 'business', 'automation', 'customer service', 'startup',
+           'book a table', 'impressive', 'best'],
+  },
+
   /* ── machine learning ─────────────────────────────────────────────────── */
   {
     id: 'attention', title: 'Attention', href: 'apps/attention/index.html',

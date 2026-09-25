@@ -12,7 +12,11 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test, assert } from './harness.mjs';
-import { ATLAS, byId } from '../shared/atlas.js';
+import { ATLAS as EVERYTHING, byId } from '../shared/atlas.js';
+
+/* The AI products are presented on their own at the top of the page; the
+   contact sheet and its counts are everything else. */
+const ATLAS = EVERYTHING.filter((e) => e.kind !== 'ai');
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const html = readFileSync(join(root, 'index.html'), 'utf8');
