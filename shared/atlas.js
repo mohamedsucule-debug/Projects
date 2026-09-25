@@ -20,6 +20,7 @@ export const KINDS = {
   game:       { label: 'game',             accent: '255,77,141'  },
   physics:    { label: 'physics',          accent: '125,211,252' },
   instrument: { label: 'instrument',       accent: '163,230,53'  },
+  app:        { label: 'app',              accent: '45,212,191'  },
   product:    { label: 'product',          accent: '90,169,255'  },
   tool:       { label: 'engineering tool', accent: '154,165,184' },
 };
@@ -170,6 +171,25 @@ export const ATLAS = [
            'share', 'streak', 'logic', 'quiet'],
   },
 
+  {
+    id: 'sweeper', title: 'Minesweeper', href: 'play/sweeper/index.html',
+    kind: 'game', depth: 'play', minutes: 5,
+    blurb: 'Classic Minesweeper, except every board is proven solvable by logic before you '
+         + 'see it, so it never comes down to a coin flip.',
+    hook: 'Lose, and it shows you the square you could have proved safe.',
+    tags: ['game', 'minesweeper', 'mines', 'puzzle', 'logic', 'classic', 'windows', 'brain',
+           'think', 'no guessing', 'fair', 'solver', 'hint', 'play', 'fun', 'bored', 'deduction'],
+  },
+  {
+    id: 'sudoku', title: 'Sudoku', href: 'play/sudoku/index.html',
+    kind: 'game', depth: 'play', minutes: 10,
+    blurb: 'A daily Sudoku at three levels, each with exactly one answer and a way to it '
+         + 'that needs no guessing.',
+    hook: 'The hint names the technique and shows you where it applies.',
+    tags: ['game', 'sudoku', 'puzzle', 'daily', 'numbers', 'logic', 'brain', 'newspaper',
+           'think', 'relaxing', 'calm', 'hint', 'learn', 'techniques', 'solver', 'play', 'crossword'],
+  },
+
   /* ── physics ──────────────────────────────────────────────────────────── */
   {
     id: 'sandbox', title: 'Sandbox', href: 'play/sandbox/index.html',
@@ -181,15 +201,6 @@ export const ATLAS = [
            'kids', 'destroy'],
   },
   {
-    id: 'topple', title: 'Topple', href: 'apps/topple/index.html',
-    kind: 'physics', depth: 'skim', minutes: 3,
-    blurb: 'A perfectly ordinary web page — until you swipe across it and everything '
-         + 'your finger touches comes loose and falls.',
-    hook: 'Then hit rebuild and watch it put itself back together.',
-    tags: ['physics', 'fun', 'satisfying', 'destroy', 'break', 'demolish', 'gravity',
-           'rigid body', 'swipe', 'surprising', 'toy', 'party trick', 'wow'],
-  },
-  {
     id: 'mercury', title: 'Mercury', href: 'apps/mercury/index.html',
     kind: 'physics', depth: 'skim', minutes: 3,
     blurb: 'A sheet of liquid metal under a sunset sky. Drag it and the ripples bend the '
@@ -198,37 +209,8 @@ export const ATLAS = [
     tags: ['physics', 'beautiful', 'pretty', 'shader', 'webgl', 'gpu', 'liquid', 'metal',
            'ripples', 'reflection', 'raymarching', 'satisfying', 'relaxing', 'wow', 'art'],
   },
-  {
-    id: 'flow', title: 'Flow', href: 'play/flow/index.html',
-    kind: 'physics', depth: 'skim', minutes: 3,
-    blurb: 'Twenty thousand particles riding an invisible current. Push them around and '
-         + 'save the result as a picture.',
-    hook: 'The prettiest thing here that you can hang on a wall.',
-    tags: ['physics', 'particles', 'flow field', 'generative', 'art', 'beautiful', 'pretty',
-           'relaxing', 'calm', 'paint', 'draw', 'wallpaper', 'save', 'export'],
-  },
 
   /* ── instruments ──────────────────────────────────────────────────────── */
-  {
-    id: 'portrait', title: 'Portrait', href: 'play/portrait/index.html',
-    kind: 'instrument', depth: 'play', minutes: 4,
-    blurb: 'Drop in a photo of your face and watch six thousand dots crawl out of random '
-         + 'noise until it is unmistakably you.',
-    hook: 'It never leaves your device.',
-    tags: ['photo', 'image', 'picture', 'face', 'selfie', 'upload', 'art', 'generative',
-           'stipple', 'dots', 'make something', 'personal', 'yours', 'privacy', 'offline',
-           'beautiful', 'wow', 'share'],
-  },
-  {
-    id: 'loom', title: 'Loom', href: 'play/loom/index.html',
-    kind: 'instrument', depth: 'play', minutes: 6,
-    blurb: 'Make a picture by wiring boxes together. One makes fog, one bends whatever it '
-         + 'is given, one swaps grey for colour.',
-    hook: 'The last box is the picture.',
-    tags: ['node editor', 'graph', 'nodes', 'wiring', 'visual programming', 'blender',
-           'touchdesigner', 'generative', 'art', 'make something', 'creative', 'shader',
-           'texture', 'noise', 'tinker', 'build'],
-  },
   {
     id: 'beats', title: 'Beat Lab', href: 'play/beats/index.html',
     kind: 'instrument', depth: 'play', minutes: 4,
@@ -249,17 +231,38 @@ export const ATLAS = [
            'fantasy', 'names', 'pretty', 'art', 'relaxing', 'button', 'again', 'seed'],
   },
   {
-    id: 'morph', title: 'Morph', href: 'play/morph/index.html',
-    kind: 'instrument', depth: 'skim', minutes: 3,
-    blurb: 'One gallery, seven layouts, and not one CSS transition anywhere.',
-    hook: 'Switch again before the tiles land and they bend into the new arrangement mid-flight.',
-    tags: ['animation', 'motion', 'layout', 'interface', 'ui', 'ux', 'design', 'spring',
-           'physics', 'transition', 'gallery', 'grid', 'frontend', 'css', 'satisfying',
-           'interaction design', 'polish'],
+    id: 'qr', title: 'QR codes', href: 'apps/qr/index.html',
+    kind: 'app', depth: 'play', minutes: 2,
+    blurb: 'Type a link, some text, a Wi-Fi password or an email and it is a QR code before '
+         + 'you finish typing. The encoder is written from scratch.',
+    hook: 'Tick "show how it is built" — most of a QR code is not your data.',
+    tags: ['qr', 'qr code', 'barcode', 'wifi', 'wi-fi', 'password', 'link', 'url', 'share', 'print',
+           'poster', 'menu', 'generator', 'useful', 'practical', 'app', 'reed solomon',
+           'error correction', 'encoding', 'download', 'svg', 'png', 'privacy', 'offline', 'make a qr code'],
+  },
+  {
+    id: 'split', title: 'Split', href: 'apps/split/index.html',
+    kind: 'app', depth: 'play', minutes: 3,
+    blurb: 'Who paid for what on a trip or at dinner, and the fewest bank transfers that '
+         + 'settle everybody up, to the penny.',
+    hook: 'Share the whole group with one link. Nothing is uploaded.',
+    tags: ['money', 'bill', 'split the bill', 'expenses', 'trip', 'holiday', 'flat', 'rent', 'friends',
+           'group', 'who owes', 'owe', 'settle up', 'splitwise', 'payments', 'useful', 'practical',
+           'app', 'algorithm', 'optimisation', 'finance', 'share', 'dinner'],
+  },
+  {
+    id: 'tuner', title: 'Tuner', href: 'apps/tuner/index.html',
+    kind: 'app', depth: 'play', minutes: 2,
+    blurb: 'Play a note into your microphone and see how sharp or flat it is, to the cent. '
+         + 'Guitar, bass, ukulele, violin or cello.',
+    hook: 'No microphone? There is an out-of-tune string on the page to fix.',
+    tags: ['music', 'guitar', 'bass', 'ukulele', 'violin', 'cello', 'tuner', 'tune', 'pitch',
+           'microphone', 'audio', 'sound', 'notes', 'in tune', 'useful', 'practical', 'app',
+           'signal processing', 'dsp', 'yin', 'tune my guitar'],
   },
   {
     id: 'sift', title: 'Sift', href: 'apps/sift/index.html',
-    kind: 'instrument', depth: 'play', minutes: 5,
+    kind: 'app', depth: 'play', minutes: 5,
     blurb: 'Drop a spreadsheet in and it tells you what is actually in it: what each column '
          + 'holds, where the gaps are, what the numbers look like.',
     hook: 'A hundred thousand rows without stuttering. Nothing is uploaded.',

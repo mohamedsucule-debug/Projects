@@ -670,7 +670,7 @@
         <dl>
           <div><dt>Pieces, every one running</dt><dd data-atlas-count>30</dd></div>
           <div><dt>Parameters, trained from nothing</dt><dd>45,440</dd></div>
-          <div><dt>Tests, run before publishing</dt><dd>800+</dd></div>
+          <div><dt>Tests, run before publishing</dt><dd>750+</dd></div>
           <div><dt>Frameworks, build steps, deps</dt><dd>0</dd></div>
         </dl>
       </div>
@@ -827,8 +827,8 @@
       <div class="runhead"><span class="no">&sect; 3</span><span>Everything else</span><span class="nm">seventeen figures</span></div>
       <h2>Things to put your <em>hands on</em></h2>
       <p class="lede">
-        Games, physics you can put your finger in, instruments that make you something,
-        and one horror story. <b>Shuffled on purpose</b> — two of a kind in a row gets
+        Games, apps you would actually use, physics you can put your finger in, and one
+        horror story. <b>Shuffled on purpose</b> — two of a kind in a row gets
         boring, so there never are two. Nothing here has a menu or a tutorial: the first
         ten seconds teach you the rest.
       </p>
@@ -884,7 +884,7 @@
        write-up, and none of them would have thrown. -->
   <section class="section" id="errata">
     <header>
-      <div class="runhead"><span class="no">&sect; 5</span><span>Errata</span><span class="nm">ten corrections</span></div>
+      <div class="runhead"><span class="no">&sect; 5</span><span>Errata</span><span class="nm">eleven corrections</span></div>
       <h2>Everything here that was <em>wrong</em></h2>
       <p class="lede">
         I build fast and I am hard to satisfy. With modern tooling a working version exists in
@@ -942,28 +942,28 @@
       <li class="reveal" style="--d:70ms">
         <span class="en">E6</span>
         <div>
-          <p class="where"><a href="play/loom/index.html">Loom</a> &middot; &sect;3</p>
-          <p class="for"><i>For</i> <s>Contrast</s> <i>read</i> <ins>Brightness</ins></p>
-          <p class="why">The knob applied a gamma curve, so turning it up raised the mean from 0.501 to 0.587 instead of spreading the values out &mdash; the opposite of what its own label promised.</p>
-          <p class="how">Caught by <b>looking at it, then measuring it</b></p>
+          <p class="where">This page &middot; &sect;4</p>
+          <p class="for"><i>For</i> <s>six quiet links</s> <i>read</i> <ins>six links in shouting capitals</ins></p>
+          <p class="why">A heading and a list both claimed the same <code>id</code>, so the heading&rsquo;s letter-spaced capitals landed on every tool&rsquo;s name. The browser does not complain about a duplicate id; there is now a test that does.</p>
+          <p class="how">Caught by <b>looking at it</b></p>
         </div>
       </li>
       <li class="reveal">
         <span class="en">E7</span>
         <div>
-          <p class="where"><a href="play/portrait/index.html">Portrait</a> &middot; &sect;3</p>
-          <p class="for"><i>For</i> <s>six thousand dots</s> <i>read</i> <ins>six thousand dots under a pixel wide</ins></p>
-          <p class="why">The radius was divided by a canvas scale that had already been applied. The data was right the whole time; it just could not be seen.</p>
-          <p class="how">Caught by <b>looking at it</b></p>
+          <p class="where"><a href="apps/tokens/index.html">Tokens</a> &middot; &sect;1</p>
+          <p class="for"><i>For</i> <s>fits a phone</s> <i>read</i> <ins>516 pixels wide on a 390-pixel phone</ins></p>
+          <p class="why">A <code>1fr</code> grid column&rsquo;s smallest size is its longest unbreakable line, so the column refused to shrink and pushed the page off the side. <code>minmax(0, 1fr)</code> and it behaves.</p>
+          <p class="how">Caught by <b>opening every page at phone width</b></p>
         </div>
       </li>
       <li class="reveal" style="--d:70ms">
         <span class="en">E8</span>
         <div>
-          <p class="where"><a href="play/morph/index.html">Morph</a> &middot; &sect;3</p>
-          <p class="for"><i>For</i> <s>in front of its backdrop</s> <i>read</i> <ins>behind it</ins></p>
-          <p class="why">The container carries <code>perspective</code> for the 3D layouts, which makes a stacking context &mdash; and no <code>z-index</code> inside one can lift a child above something outside it.</p>
-          <p class="how">Caught by <b>looking at it</b></p>
+          <p class="where"><a href="apps/qr/index.html">QR codes</a> &middot; &sect;3</p>
+          <p class="for"><i>For</i> <s>a bug in the encoder</s> <i>read</i> <ins>a bug in the test</ins></p>
+          <p class="why">Two checks failed: a capacity of 666 and a format word, both typed from memory. The encoder said 669 and a different word; an independent QR reader had already decoded fifty-six of its codes without a fault. The test was wrong, and was corrected against the published table.</p>
+          <p class="how">Caught by <b>not assuming the test is the one that is right</b></p>
         </div>
       </li>
       <li class="reveal">
@@ -979,9 +979,18 @@
         <span class="en">E10</span>
         <div>
           <p class="where">This page &middot; p. i</p>
-          <p class="for"><i>For</i> <s>777 tests, 703 tests and 732 tests</s> <i>read</i> <ins>over 800</ins></p>
-          <p class="why">Three counts of the same suite in three places on the front page and the README, and every one of them stale. They now say a number that stays true as the suite grows.</p>
+          <p class="for"><i>For</i> <s>777 tests, 703 tests and 732 tests</s> <i>read</i> <ins>over 750</ins></p>
+          <p class="why">Three counts of the same suite in three places on the front page and the README, and every one of them stale. Then five pieces were cut and took their tests with them, and "over 800" went stale too. Now the test runner reads every count the site claims and fails if any of them is more than it just ran.</p>
           <p class="how">Caught by <b>reading this proof</b></p>
+        </div>
+      </li>
+      <li class="reveal">
+        <span class="en">E11</span>
+        <div>
+          <p class="where">The collection &middot; throughout</p>
+          <p class="for"><i>For</i> <s>Topple, Flow, Morph, Portrait and Loom</s> <i>read</i> <ins>Minesweeper, Sudoku, QR codes, Split and a Tuner</ins></p>
+          <p class="why">Five pieces that were clever to build and that nobody could tell the point of: a fake web page to knock over, a particle screensaver, a layout-animation demo and two picture makers. Replaced by two games and three things a person would actually use &mdash; each still built from the algorithm up.</p>
+          <p class="how">Caught by <b>somebody saying so</b></p>
         </div>
       </li>
     </ol>
@@ -1017,8 +1026,9 @@
     <p>
       Set in Instrument Serif, Newsreader, JetBrains Mono and Caveat, served from this repository.
       No frameworks, no build step, no dependencies — every page here is plain HTML, CSS and
-      JavaScript, with the engine behind Ace, Morph, Portrait, Loom, Nightshift, The Room, Covers,
-      the transformer, the tokeniser and each of the tools unit-tested: over 800 tests, run in CI
+      JavaScript, with the engine behind Ace, Nightshift, The Room, Covers, the transformer, the
+      tokeniser, the QR encoder, the tuner, Minesweeper, Sudoku, Split and each of the tools
+      unit-tested: over 750 tests, run in CI
       before anything is published — including twenty gradient checks against finite differences,
       and a check that a 95% confidence interval really does contain the truth 95% of the time.
       The commit history is the full record.
@@ -1042,11 +1052,15 @@
    than the two parts that actually depend on it. */
 const loadModules = Promise.all([
   import('./shared/briefings.js'),
-  import('./play/loom/engine.js'),
-  import('./play/loom/presets.js'),
-  import('./play/portrait/engine.js'),
-  import('./play/morph/engine.js'),
 ]);
+
+/* Colours and faces for the newest previews. Up here rather than beside them
+   because the previews are called while the page is still being built, and a
+   const further down the script does not exist yet at that moment — which is
+   exactly how the first of them once took every figure after it down. */
+const PAPER = '#f7f4ec', INK = '#17140f', RED = '#cf2e1b', FAINT = 'rgba(23,20,15,.45)';
+const MONO = '"JetBrains Mono Var", ui-monospace, Menlo, monospace';
+const SERIF = '"Instrument Serif", Georgia, serif';
 
 /* ── the run ─────────────────────────────────────────────────────────────────
    One order, hand-picked, and the rule behind it is that no two neighbours are
@@ -1064,113 +1078,116 @@ const loadModules = Promise.all([
    the front door. Putting them here as well would be the same thing twice. */
 const TOYS = [
   {
+    href: 'play/sweeper/index.html', tag: 'no guessing', kind: 'game', wide: true,
+    note: 'every board solvable by logic',
+    title: 'Minesweeper',
+    blurb: 'Classic Minesweeper, except every board is played by a solver before you see it and thrown away unless it can be finished by reasoning. It never comes down to a coin flip — and when you lose, it rings the square you could have proved safe.',
+    preview: sweeperPreview,
+  },
+  {
+    href: 'apps/qr/index.html', tag: 'real app', kind: 'app',
+    note: 'read back by zxing: 56 of 56',
+    title: 'QR codes',
+    blurb: 'Type a link, some text or a Wi-Fi password and it is a QR code before you finish typing. Download it as PNG or SVG. The encoder is written from scratch — error correction and all — and nothing you type leaves the page.',
+    preview: qrPreview,
+  },
+  {
     href: 'play/ace/index.html', tag: 'game', kind: 'game', wide: true,
     title: 'Ace',
     blurb: 'Tap to fly a paper plane through a canyon. Do not hit the rocks. That is the whole game, and you will understand it before you have finished reading this.',
-    preview: acePreview,
+    preview: acePreview
   },
   {
     href: 'apps/nightshift/index.html', tag: 'read it alone', kind: 'story',
     note: 'it reads you back',
     title: 'Nightshift',
     blurb: 'A coastal watch log from one night in 1987, transcribed from the original daybook. It opens with the weather and the shipping and it does not stay there. Read it to the end — it is reading you back.',
-    preview: nightshiftPreview,
+    preview: nightshiftPreview
   },
   {
-    href: 'apps/topple/index.html', tag: 'knock it over', kind: 'physics',
-    title: 'Topple',
-    blurb: 'A perfectly ordinary web page — until you swipe across it, and everything your finger touches comes loose and falls. Cut the legs out and watch the rest collapse on top. Then hit rebuild and watch it put itself back together, one row at a time.',
-    preview: topplePreview,
+    href: 'play/sudoku/index.html', tag: 'with reasons', kind: 'game',
+    title: 'Sudoku',
+    blurb: 'A daily puzzle at three levels, each checked for exactly one answer and a way to it without guessing. Stuck? The hint names the technique — a hidden single, a pointing pair, an X-Wing — and shows you where.',
+    preview: sudokuPreview,
   },
   {
-    href: 'play/portrait/index.html', tag: 'your photo', kind: 'instrument', wide: true,
-    note: 'never leaves your device',
-    title: 'Portrait',
-    blurb: 'Drop in a photo of your face and watch six thousand dots crawl out of random noise until it is unmistakably you. It never leaves your device.',
-    preview: portraitPreview,
+    href: 'apps/split/index.html', tag: 'real app', kind: 'app',
+    title: 'Split',
+    blurb: 'Who paid for what on a trip or at dinner, and the fewest bank transfers that settle everyone up — to the penny, uneven splits and all. Share the whole group with one link. Nothing is uploaded.',
+    preview: splitPreview,
   },
   {
-    href: 'play/orbit/index.html', tag: 'game', kind: 'game',
-    title: 'Comet',
-    blurb: 'Move the mouse. Collect the gold. Do not touch the red. Fill the bar to clear a level, then do it again with mines and a spinning bar in the way. The levels never run out.',
-    preview: cometPreview,
+    href: 'play/stack/index.html', tag: 'game', kind: 'game',
+    title: 'Stack',
+    blurb: 'A block slides past. Tap. Whatever hangs over the edge is sliced off and falls away, so every sloppy drop makes the next one harder. Land it dead centre and you lose nothing.',
+    preview: stackPreview
   },
   {
     href: 'play/sandbox/index.html', tag: 'sandbox', kind: 'physics',
     note: 'now set it on fire',
     title: 'Sandbox',
     blurb: 'Pour sand. Add water. Set it on fire and watch the smoke rise. Ten materials that all behave the way you would expect them to, which is the whole trick.',
-    preview: sandPreview,
-  },
-  {
-    href: 'play/beats/index.html', tag: 'music', kind: 'instrument',
-    title: 'Beat Lab',
-    blurb: 'A drum machine with no sound files in it — every kick and snare is generated from scratch. Press play, tap the squares, make something.',
-    preview: beatsPreview,
-  },
-  {
-    href: 'play/stack/index.html', tag: 'game', kind: 'game',
-    title: 'Stack',
-    blurb: 'A block slides past. Tap. Whatever hangs over the edge is sliced off and falls away, so every sloppy drop makes the next one harder. Land it dead centre and you lose nothing.',
-    preview: stackPreview,
-  },
-  {
-    href: 'apps/mercury/index.html', tag: 'touch it', kind: 'physics', gl: true, wide: true,
-    note: 'no 3D model, no texture — just maths',
-    title: 'Mercury',
-    blurb: 'A sheet of liquid metal under a sunset sky. Drag it and it ripples, and the ripples bend the reflections as they spread. There is no 3D model and no texture in it — every pixel is worked out from scratch, sixty times a second.',
-    preview: mercuryPreview,
-  },
-  {
-    href: 'play/island/index.html', tag: 'generator', kind: 'instrument',
-    title: 'Islandsmith',
-    blurb: 'Press the button, get a brand new world: coastline, mountains, forests, rivers and a name. Every island comes from a single random number.',
-    preview: islandPreview,
+    preview: sandPreview
   },
   {
     href: 'play/tangle/index.html', tag: 'daily puzzle', kind: 'game',
     note: 'same board for everyone today',
     title: 'Tangle',
     blurb: 'Tap a tile to turn it. The board is solved when no connector is left dangling. Everybody in the world gets the same board each day, and finishing gives you a line you can paste into a group chat.',
-    preview: tanglePreview,
+    preview: tanglePreview
   },
   {
-    href: 'play/loom/index.html', tag: 'node editor', kind: 'instrument', wide: true,
-    title: 'Loom',
-    blurb: 'Make a picture by wiring boxes together. One makes fog, one bends whatever it is given, one swaps grey for colour. The last box is the picture.',
-    preview: loomPreview,
+    href: 'apps/tuner/index.html', tag: 'real app', kind: 'app', wide: true,
+    note: 'hears a note with its fundamental missing',
+    title: 'Tuner',
+    blurb: 'Play a note into your microphone and see how sharp or flat it is, to the cent — guitar, bass, ukulele, violin or cello. The pitch detection is written from nothing, and a string you can tune is built in for when there is no microphone.',
+    preview: tunerPreview,
+  },
+  {
+    href: 'play/orbit/index.html', tag: 'game', kind: 'game',
+    title: 'Comet',
+    blurb: 'Move the mouse. Collect the gold. Do not touch the red. Fill the bar to clear a level, then do it again with mines and a spinning bar in the way. The levels never run out.',
+    preview: cometPreview
+  },
+  {
+    href: 'apps/mercury/index.html', tag: 'touch it', kind: 'physics', gl: true, wide: true,
+    note: 'no 3D model, no texture — just maths',
+    title: 'Mercury',
+    blurb: 'A sheet of liquid metal under a sunset sky. Drag it and it ripples, and the ripples bend the reflections as they spread. There is no 3D model and no texture in it — every pixel is worked out from scratch, sixty times a second.',
+    preview: mercuryPreview
   },
   {
     href: 'play/tether/index.html', tag: 'game', kind: 'game',
     title: 'Tether',
     blurb: 'You swing round a planet on a tether. Tap and you let go, flying off exactly the way you were already pointing. If the line passes close enough to another planet, it catches you. One decision: when.',
-    preview: tetherPreview,
+    preview: tetherPreview
   },
   {
-    href: 'play/flow/index.html', tag: 'toy', kind: 'physics',
-    title: 'Flow',
-    blurb: 'Twenty thousand particles riding an invisible current. Push them around with your mouse and save the result as a picture.',
-    preview: flowPreview,
-  },
-  {
-    href: 'play/morph/index.html', tag: 'interface', kind: 'instrument',
-    title: 'Morph',
-    blurb: 'One gallery, seven layouts, and not one CSS transition. Switch again before the tiles land and they bend into the new arrangement mid-flight.',
-    preview: morphPreview,
+    href: 'play/beats/index.html', tag: 'music', kind: 'instrument',
+    title: 'Beat Lab',
+    blurb: 'A drum machine with no sound files in it — every kick and snare is generated from scratch. Press play, tap the squares, make something.',
+    preview: beatsPreview
   },
   {
     href: 'play/sumo/index.html', tag: 'two players', kind: 'game',
     note: 'one key each',
     title: 'Sumo',
     blurb: 'Two people, one keyboard, one key each. Hold it: your arrow stops turning and you charge that way. Knock the other one out of the ring before it closes under you. There is a bot if you are on your own.',
-    preview: sumoPreview,
+    preview: sumoPreview
   },
   {
-    href: 'apps/sift/index.html', tag: 'your data', kind: 'instrument',
+    href: 'apps/sift/index.html', tag: 'your data', kind: 'app',
     title: 'Sift',
     blurb: 'Drop a spreadsheet in and it tells you what is actually in it: what each column holds, where the gaps are, what the numbers look like. Then sort and filter a hundred thousand rows without it stuttering. Nothing is uploaded.',
-    preview: siftPreview,
+    preview: siftPreview
   },
+  {
+    href: 'play/island/index.html', tag: 'generator', kind: 'instrument',
+    title: 'Islandsmith',
+    blurb: 'Press the button, get a brand new world: coastline, mountains, forests, rivers and a name. Every island comes from a single random number.',
+    preview: islandPreview
+  },
+
 ];
 
 /* The one rule the order exists to keep, checked rather than remembered. */
@@ -1389,23 +1406,22 @@ const PREVIEW = {
   lamplighter: lamplighterPreview, room: roomPreview, nightshift: nightshiftPreview,
   covers: coversPreview, ace: acePreview, comet: cometPreview, stack: stackPreview,
   tether: tetherPreview, sumo: sumoPreview, tangle: tanglePreview, sandbox: sandPreview,
-  topple: topplePreview, mercury: mercuryPreview, flow: flowPreview, portrait: portraitPreview,
-  loom: loomPreview, beats: beatsPreview, island: islandPreview, morph: morphPreview,
-  sift: siftPreview,
+  mercury: mercuryPreview, beats: beatsPreview, island: islandPreview, sift: siftPreview,
+  qr: qrPreview, split: splitPreview, tuner: tunerPreview, sweeper: sweeperPreview, sudoku: sudokuPreview,
 };
 const SHEET = [
   'attention', 'lamplighter', 'ace', 'sandbox', 'room', 'tokens',
-  'comet', 'covers', 'mercury', 'evals', 'tangle', 'loom',
-  'nightshift', 'regex-lab', 'stack', 'flow', 'agents', 'island',
-  'raft-lab', 'tether', 'beats', 'topple', 'query-planner', 'sumo',
-  'morph', 'trace-explorer', 'sift', 'diff-forge', 'portrait', 'oklch-studio',
+  'comet', 'covers', 'mercury', 'evals', 'tangle', 'sudoku',
+  'nightshift', 'regex-lab', 'stack', 'qr', 'agents', 'island',
+  'raft-lab', 'tether', 'beats', 'sweeper', 'query-planner', 'sumo',
+  'split', 'trace-explorer', 'sift', 'diff-forge', 'tuner', 'oklch-studio',
 ];
 const PICKS = {
   attention: ['ring', 'start here'],
   lamplighter: ['ring', 'read this one'],
   room: ['ring', 'whodunnit?'],
   covers: ['ring', 'the big one'],
-  tokens: ['tick'], evals: ['tick'], agents: ['tick'], mercury: ['tick'], portrait: ['tick'],
+  tokens: ['tick'], evals: ['tick'], agents: ['tick'], sweeper: ['tick'], qr: ['tick'],
 };
 
 /* The six engineering tools are words rather than scenes, so their frames
@@ -1650,6 +1666,7 @@ const ACCENT = {
   story: '255,209,102',
   physics: '125,211,252',
   instrument: '163,230,53',
+  app: '45,212,191',
 };
 
 const toysHost = document.getElementById('toys');
@@ -2686,9 +2703,6 @@ function mercuryPreview(api) {
   };
 }
 
-/** Topple, in miniature: the real physics engine, knocking over a tiny page.
-    The shapes are drawn rather than being DOM, but every position and angle
-    comes from the same solver the real one uses. */
 /* The headline runs the real floor plan, sharing floor.js and plan.js with the
    app itself, so the card can never show a restaurant the product does not
    have. The clock is wound forward faster than real time and looped, which
@@ -3121,101 +3135,6 @@ function nightshiftPreview(api) {
   };
 }
 
-function topplePreview(api) {
-  let E = null, world = null, parts = [], phase = 0, at = 0;
-  import('./apps/topple/engine.js').then((m) => { E = m; }).catch(() => null);
-
-  const LAYOUT = [
-    // x, y, w, h as fractions of the card, and how to draw it
-    [0.06, 0.10, 0.16, 0.055, 'logo'],
-    [0.30, 0.11, 0.10, 0.035, 'dim'],
-    [0.44, 0.11, 0.10, 0.035, 'dim'],
-    [0.80, 0.10, 0.14, 0.055, 'pill'],
-    [0.22, 0.30, 0.24, 0.10, 'head'],
-    [0.50, 0.30, 0.28, 0.10, 'head'],
-    [0.28, 0.46, 0.44, 0.045, 'dim'],
-    [0.34, 0.545, 0.32, 0.045, 'dim'],
-    [0.32, 0.65, 0.16, 0.075, 'cta'],
-    [0.52, 0.65, 0.16, 0.075, 'ghost'],
-    [0.06, 0.80, 0.26, 0.14, 'card'],
-    [0.37, 0.80, 0.26, 0.14, 'card'],
-    [0.68, 0.80, 0.26, 0.14, 'card'],
-  ];
-
-  const build = () => {
-    const { w, h } = api;
-    world = new E.World({ width: w, height: h });
-    parts = LAYOUT.map(([fx, fy, fw, fh, kind]) => {
-      const bw = fw * w, bh = fh * h;
-      const home = { x: (fx + fw / 2) * w, y: (fy + fh / 2) * h };
-      return { kind, home, body: world.add(new E.Body({ x: home.x, y: home.y, w: bw, h: bh })) };
-    });
-    phase = 0; at = 0;
-  };
-
-  api.reset = () => { world = null; };
-
-  api.frame = () => {
-    const { ctx, w, h } = api;
-    ctx.fillStyle = '#0b0d14';
-    ctx.fillRect(0, 0, w, h);
-    if (!E) return;
-    if (!world || world.width !== w) build();
-
-    at += 1 / 60;
-    if (phase === 0 && at > 1.6) {
-      phase = 1;
-      for (const p of parts) {
-        const up = 1 - p.home.y / h;
-        p.body.vel.x = (Math.random() - 0.5) * 220 * up;
-        p.body.spin = (Math.random() - 0.5) * 3.2 * up;
-      }
-    }
-    if (phase === 1) {
-      world.step(1 / 60);
-      if (at > 7.5) { phase = 2; }
-    } else if (phase === 2) {
-      let done = true;
-      for (const p of parts) {
-        if (!E.homeStep(p.body, { ...p.home, angle: 0 }, 1 / 60)) done = false;
-      }
-      if (done) { phase = 0; at = 0; }
-    }
-
-    const paint = {
-      logo: ['#e8ecf7', 0.92], pill: ['#e8ecf7', 0.5], dim: ['#8e9ab4', 0.5],
-      head: ['#dfe6f7', 0.95], cta: ['#8fb7ff', 0.95], ghost: ['#5d6685', 0.7],
-      card: ['#1a2032', 1],
-    };
-    for (const p of parts) {
-      const b = p.body;
-      const [fill, alpha] = paint[p.kind] || ['#888', 1];
-      ctx.save();
-      ctx.translate(b.p.x, b.p.y);
-      ctx.rotate(b.angle);
-      ctx.globalAlpha = alpha;
-      const r = Math.min(6, b.h / 3);
-      ctx.beginPath();
-      const x = -b.w / 2, y = -b.h / 2;
-      ctx.moveTo(x + r, y);
-      ctx.arcTo(x + b.w, y, x + b.w, y + b.h, r);
-      ctx.arcTo(x + b.w, y + b.h, x, y + b.h, r);
-      ctx.arcTo(x, y + b.h, x, y, r);
-      ctx.arcTo(x, y, x + b.w, y, r);
-      ctx.closePath();
-      ctx.fillStyle = fill;
-      ctx.fill();
-      if (p.kind === 'card') {
-        ctx.strokeStyle = 'rgba(255,255,255,.12)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
-      ctx.restore();
-      ctx.globalAlpha = 1;
-    }
-  };
-}
-
 /** Falling sand, in miniature: the same rules as the real one, fewer grains. */
 function sandPreview(api) {
   const C = 4;
@@ -3408,53 +3327,6 @@ function islandPreview(api) {
   };
 }
 
-/** The flow field, at a tenth of the particle count. */
-function flowPreview(api) {
-  const N = 1400;
-  const px = new Float32Array(N), py = new Float32Array(N), pa = new Float32Array(N);
-  let seed = Math.random() * 100;
-  const hash = (x, y) => {
-    let h = x * 374761393 + y * 668265263 + seed * 1013904223;
-    h = (h ^ (h >> 13)) * 1274126177;
-    return ((h ^ (h >> 16)) & 0xffff) / 0xffff;
-  };
-  const sm = (t) => t * t * (3 - 2 * t);
-  const noise = (x, y) => {
-    const xi = Math.floor(x), yi = Math.floor(y);
-    const xf = sm(x - xi), yf = sm(y - yi);
-    const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1);
-    return (a + (b - a) * xf) + ((c + (d - c) * xf) - (a + (b - a) * xf)) * yf;
-  };
-  api.reset = () => {
-    for (let i = 0; i < N; i++) { px[i] = Math.random() * api.w; py[i] = Math.random() * api.h; pa[i] = Math.random() * 200; }
-    api.ctx.fillStyle = '#05060b';
-    api.ctx.fillRect(0, 0, api.w, api.h);
-  };
-  api.frame = () => {
-    const { ctx, w, h } = api;
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = 'rgba(5,6,11,.055)';
-    ctx.fillRect(0, 0, w, h);
-    ctx.globalCompositeOperation = 'lighter';
-    const t = api.t * 0.0022;
-    for (let i = 0; i < N; i++) {
-      const a = noise(px[i] * 0.009, py[i] * 0.009 + t) * Math.PI * 4;
-      const ox = px[i], oy = py[i];
-      px[i] += Math.cos(a) * 1.1;
-      py[i] += Math.sin(a) * 1.1;
-      const u = i / N;
-      const r = 34 + u * 210, g = 211 - u * 100, b = 238 - u * 56;
-      ctx.strokeStyle = `rgba(${r | 0},${g | 0},${b | 0},.2)`;
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(px[i], py[i]); ctx.stroke();
-      if (--pa[i] < 0 || px[i] < 0 || px[i] > w || py[i] < 0 || py[i] > h) {
-        px[i] = Math.random() * w; py[i] = Math.random() * h; pa[i] = 120 + Math.random() * 180;
-      }
-    }
-    ctx.globalCompositeOperation = 'source-over';
-  };
-}
-
 /** The game, played by a very simple robot. */
 function cometPreview(api) {
   let ship, orbs, drones, sparks, target;
@@ -3608,169 +3480,254 @@ loadModules.then(([{ BRIEFINGS, BRIEFING_ORDER }]) => {
     localhost, or use the published site.</p></li>`;
 });
 
-/* ── previews for the three big ones ─────────────────────────────────────────
-   Each runs the project's own engine on a small canvas. They were three
-   full-height feature cards before, which pushed the grid — the actual design
-   of this page — almost three screens down. Same code, same honesty about
-   running the real thing, one twelfth of the vertical space. */
+/* ── previews for the five newest ────────────────────────────────────────────
+   Two games and three things you would actually use, each running its own
+   engine in miniature — the real encoder, the real settling, the real pitch
+   detector, the real no-guess generator, the real hints. Paper-coloured,
+   like the pages they open, so they read as a set on the contact sheet. */
 
-/** Morph: the real layout functions and the real spring integrator. */
-function morphPreview(api) {
-  let M = null, tiles = null, targets = [], which = 0, held = 0;
-  const ORDER = ['masonry', 'grid', 'justified', 'spiral', 'deck'];
-  const TINTS = ['#ffd166', '#ff4d8d', '#7dd3fc', '#a3e635', '#f472b6', '#c084fc'];
-  const ASPECTS = [1, 0.75, 1.4, 1, 1.2, 0.85];
 
-  loadModules.then(([, , , , morph]) => { M = morph; }).catch(() => {});
-
-  const retarget = () => {
-    const { w, h } = api;
-    targets = M.LAYOUTS[ORDER[which]].fn(tiles, {
-      width: w, height: h, gap: 5, columns: 5,
-      targetHeight: h / 3.4, size: ORDER[which] === 'deck' ? h * 0.6 : h / 7, focus: tiles.length / 2,
-    });
-    // every layout is laid out at its natural size and then scaled to fit
-    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-    for (const t of targets) {
-      x0 = Math.min(x0, t.x); y0 = Math.min(y0, t.y);
-      x1 = Math.max(x1, t.x + t.w); y1 = Math.max(y1, t.y + t.h);
-    }
-    const pad = 10;
-    const k = Math.min((w - pad * 2) / (x1 - x0), (h - pad * 2) / (y1 - y0), 1);
-    const ox = (w - (x1 - x0) * k) / 2, oy = (h - (y1 - y0) * k) / 2;
-    for (const t of targets) {
-      t.x = ox + (t.x - x0) * k; t.y = oy + (t.y - y0) * k;
-      t.w *= k; t.h *= k;
-    }
-  };
-
-  api.reset = () => { tiles = null; };
-
+/** QR: the real encoder, redrawn on every keystroke of something being typed. */
+function qrPreview(api) {
+  let Q = null;
+  import('./apps/qr/qr.js').then((m) => { Q = m; }).catch(() => {});
+  const TEXTS = ['https://mohamedsucule-debug.github.io/Projects/', 'WIFI:T:WPA;S:Harkness Hall;P:lamplight;;', 'Meet at the lighthouse at nine.'];
+  let which = 0, typed = 1, hold = 0, code = null, shownText = '';
   api.frame = () => {
     const { ctx, w, h } = api;
-    ctx.fillStyle = '#05060b';
+    ctx.fillStyle = PAPER;
     ctx.fillRect(0, 0, w, h);
-    if (!M) return;
-    if (!tiles) {
-      tiles = Array.from({ length: 16 }, (_, i) => ({
-        aspect: ASPECTS[i % ASPECTS.length],
-        tint: TINTS[i % TINTS.length],
-        sp: { x: M.makeSpring(w / 2), y: M.makeSpring(h / 2), w: M.makeSpring(4), h: M.makeSpring(4), rot: M.makeSpring(0) },
-        wobble: 1 + ((i * 29) % 9) / 36,
-      }));
-      retarget();
+    if (!Q) return;
+    const text = TEXTS[which];
+    if (typed < text.length) { if (api.t % 2 === 0) typed++; }
+    else if ((hold += 1 / 30) > 2.4) { hold = 0; typed = 1; which = (which + 1) % TEXTS.length; }
+    const now = text.slice(0, typed);
+    if (now !== shownText) { shownText = now; code = Q.encode(now, { level: 'M' }); }
+    const wide = w > h * 1.35;
+    const side = Math.min(wide ? h * 0.8 : h * 0.66, wide ? w * 0.5 : w * 0.8);
+    const ox = wide ? h * 0.1 + 6 : (w - side) / 2, oy = wide ? (h - side) / 2 : h * 0.07;
+    const m = side / code.size;
+    for (let y = 0; y < code.size; y++) {
+      for (let x = 0; x < code.size; x++) {
+        const i = y * code.size + x;
+        if (!code.modules[i]) continue;
+        ctx.fillStyle = code.parts[i] === Q.PART.finder ? RED : INK;
+        ctx.fillRect(ox + x * m, oy + y * m, Math.ceil(m), Math.ceil(m));
+      }
     }
-    held += 1 / 60;
-    if (held > 2.6) { held = 0; which = (which + 1) % ORDER.length; retarget(); }
-    tiles.forEach((t, i) => {
-      const g = targets[i];
-      const cfg = { stiffness: 190 * t.wobble, damping: 19, mass: 1 };
-      M.stepSpring(t.sp.x, g.x, cfg, 1 / 60); M.stepSpring(t.sp.y, g.y, cfg, 1 / 60);
-      M.stepSpring(t.sp.w, g.w, cfg, 1 / 60); M.stepSpring(t.sp.h, g.h, cfg, 1 / 60);
-      M.stepSpring(t.sp.rot, g.rot || 0, cfg, 1 / 60);
-      const { x, y, w: tw, h: th, rot } = t.sp;
-      ctx.save();
-      ctx.translate(x.value + tw.value / 2, y.value + th.value / 2);
-      if (rot.value) ctx.rotate((rot.value * Math.PI) / 180);
-      ctx.fillStyle = t.tint;
-      ctx.globalAlpha = 0.92;
-      const r = Math.min(5, Math.abs(tw.value) / 3, Math.abs(th.value) / 3);
-      ctx.beginPath();
-      ctx.roundRect(-tw.value / 2, -th.value / 2, Math.max(1, tw.value), Math.max(1, th.value), r);
-      ctx.fill();
-      ctx.restore();
-    });
-    ctx.globalAlpha = 1;
+    ctx.fillStyle = FAINT;
+    ctx.font = `600 ${Math.max(8, Math.min(11, w / 40))}px ${MONO}`;
+    const info = `VERSION ${code.version} · ${code.size}×${code.size} · MASK ${code.mask}`;
+    if (wide) {
+      const tx = ox + side + h * 0.1, maxW = w - tx - 10;
+      ctx.fillText(info, tx, oy + 12);
+      ctx.fillStyle = INK;
+      ctx.font = `400 ${Math.max(12, Math.min(20, w / 24))}px ${SERIF}`;
+      let line = '', y = oy + 44;
+      for (const ch of now) {
+        if (ctx.measureText(line + ch).width > maxW) { ctx.fillText(line, tx, y); line = ''; y += 22; }
+        line += ch;
+      }
+      ctx.fillText(line + (api.t % 40 < 20 ? '|' : ''), tx, y);
+    } else {
+      ctx.textAlign = 'center';
+      ctx.fillText(info, w / 2, oy + side + 16);
+      ctx.textAlign = 'left';
+    }
   };
 }
 
-/** Portrait: the real stippler, relaxing a real image, on loop. */
-function portraitPreview(api) {
-  let P = null, weight = null, src = 0, stip = null, holding = 0;
-  const SRC = 132, DOTS = 1500, PASSES = 30;
-
-  loadModules.then(([, loom, presets, portrait]) => {
-    P = portrait;
-    const g = loom.deserialize(structuredClone(presets.PRESETS[1].graph));   // Marble
-    const out = g.nodes.find((n) => n.type === 'output');
-    const img = loom.evaluate(g, out.id, SRC, SRC).image;
-    const gray = P.adjust(P.luma(loom.toRGBA(img), SRC, SRC), { contrast: 1.25 });
-    weight = new Float32Array(gray.length);
-    for (let i = 0; i < weight.length; i++) weight[i] = 1 - gray[i];
-    src = SRC;
-  }).catch(() => {});
-
+/** Split: the real settling, as a weekend's expenses arrive one at a time. */
+function splitPreview(api) {
+  let S = null, g = null;
+  import('./apps/split/split.js').then((m) => { S = m; g = m.example(); }).catch(() => {});
+  let k = 1, hold = 0;
   api.frame = () => {
     const { ctx, w, h } = api;
-    ctx.fillStyle = '#f6f3ec';
+    ctx.fillStyle = PAPER;
     ctx.fillRect(0, 0, w, h);
-    if (!weight) return;
-    if (!stip) stip = new P.Stippler(weight, src, src, DOTS, 5, { start: 'uniform' });
-    if (stip.passes < PASSES) stip.step();
-    else if ((holding += 1 / 60) > 3.6) { holding = 0; stip = null; return; }
-
-    const k = Math.min(w / src, h / src);
-    const ox = (w - src * k) / 2, oy = (h - src * k) / 2;
-    ctx.save();
-    ctx.translate(ox, oy);
-    ctx.scale(k, k);
-    ctx.fillStyle = '#12141a';
-    const base = stip.spacing * 0.46;
-    for (let i = 0; i < stip.n; i++) {
-      const r = base * (0.18 + stip.weightAt(i) * 0.92);
-      ctx.beginPath();
-      ctx.arc(stip.pts[i * 2], stip.pts[i * 2 + 1], r, 0, 6.2832);
-      ctx.fill();
+    if (!g) return;
+    if ((hold += 1 / 30) > (k >= g.expenses.length ? 3.5 : 1.1)) { hold = 0; k = k >= g.expenses.length ? 1 : k + 1; }
+    const spent = g.expenses.slice(0, k);
+    const plan = S.settle(S.balances(g.people, spent));
+    const naive = S.naivePayments(g.people, spent);
+    const name = (id) => g.people.find((p) => p.id === id).name;
+    const fs = Math.max(9, Math.min(13, w / 30));
+    const pad = Math.max(8, w * 0.04);
+    ctx.fillStyle = INK;
+    ctx.font = `400 ${Math.max(18, Math.min(34, w / 12))}px ${SERIF}`;
+    ctx.fillText(`${plan.length} payment${plan.length === 1 ? '' : 's'}`, pad, pad + fs * 2);
+    ctx.fillStyle = FAINT;
+    ctx.font = `600 ${fs * 0.8}px ${MONO}`;
+    ctx.fillText(naive > plan.length ? `INSTEAD OF ${naive}` : 'SETTLE EVERYTHING', pad, pad + fs * 3.4);
+    let y = pad + fs * 5.4;
+    ctx.font = `500 ${fs}px ${MONO}`;
+    for (const t of plan) {
+      if (y > h - pad) break;
+      ctx.fillStyle = INK;
+      ctx.fillText(`${name(t.from)} → ${name(t.to)}`, pad, y);
+      ctx.textAlign = 'right';
+      ctx.fillText(S.money(t.amount, g.currency, 'en-GB'), w - pad, y);
+      ctx.textAlign = 'left';
+      y += fs * 1.7;
     }
-    ctx.restore();
+    /* The newest expense, in red, arriving. */
+    const last = spent[spent.length - 1];
+    ctx.fillStyle = RED;
+    ctx.font = `italic 400 ${fs * 1.15}px ${SERIF}`;
+    ctx.textAlign = 'right';
+    ctx.fillText(`+ ${last.what}`, w - pad, pad + fs * 2);
+    ctx.textAlign = 'left';
   };
 }
 
-/** Loom: its own presets, rendered by its own engine, cross-fading. */
-function loomPreview(api) {
-  const RES = 200;
-  const frames = [];
-  let queued = false, cur = 0, fade = 1, hold = 0;
-
+/** Tuner: the real detector, listening to a synthesised string drifting in and out of tune. */
+function tunerPreview(api) {
+  let P = null;
+  import('./apps/tuner/pitch.js').then((m) => { P = m; }).catch(() => {});
+  const buf = new Float32Array(2048);
+  let t = 0, needle = 0, reading = null;
   api.frame = () => {
     const { ctx, w, h } = api;
-    ctx.fillStyle = '#05060b';
+    ctx.fillStyle = PAPER;
     ctx.fillRect(0, 0, w, h);
-
-    if (!queued) {
-      queued = true;
-      loadModules.then(([, loom, presets]) => {
-        let i = 0;
-        const next = () => {
-          if (i >= presets.PRESETS.length) return;
-          try {
-            const g = loom.deserialize(structuredClone(presets.PRESETS[i++].graph));
-            const out = g.nodes.find((n) => n.type === 'output');
-            const img = loom.evaluate(g, out.id, RES, RES).image;
-            const off = document.createElement('canvas');
-            off.width = off.height = RES;
-            off.getContext('2d').putImageData(new ImageData(loom.toRGBA(img), RES, RES), 0, 0);
-            frames.push(off);
-          } catch {}
-          (window.requestIdleCallback || ((f) => setTimeout(f, 60)))(next);
-        };
-        next();
-      }).catch(() => {});
+    if (!P) return;
+    t += 1 / 30;
+    const cents = 34 * Math.sin(t * 0.55) * Math.max(0.05, Math.abs(Math.cos(t * 0.21)));
+    if (api.t % 3 === 0) {
+      P.pluck(buf, 48000, 110 * 2 ** (cents / 1200), 0.05 + (t % 2.5));
+      const r = P.yin(buf, 48000, { minFreq: 60 });
+      if (r) reading = { ...P.noteOf(r.freq), freq: r.freq };
     }
-    if (!frames.length) return;
+    if (!reading) return;
+    needle += (reading.cents - needle) * 0.2;
+    const cx = w / 2, cy = h * 0.7, r = Math.min(w * 0.42, h * 0.58);
+    const ang = (c) => Math.PI * 1.5 + (c / 50) * (Math.PI * 0.42);
+    ctx.lineWidth = r * 0.09;
+    ctx.strokeStyle = 'rgba(44,122,75,.3)';
+    ctx.beginPath(); ctx.arc(cx, cy, r * 0.92, ang(-5), ang(5)); ctx.stroke();
+    ctx.lineWidth = 1;
+    for (let c = -50; c <= 50; c += 10) {
+      const a = ang(c);
+      ctx.strokeStyle = c === 0 ? INK : FAINT;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * r * 0.84, cy + Math.sin(a) * r * 0.84);
+      ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+      ctx.stroke();
+    }
+    const a = ang(Math.max(-50, Math.min(50, needle)));
+    ctx.strokeStyle = Math.abs(needle) < 5 ? '#2c7a4b' : RED;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * r * 0.95, cy + Math.sin(a) * r * 0.95); ctx.stroke();
+    ctx.fillStyle = INK;
+    ctx.beginPath(); ctx.arc(cx, cy, 4, 0, 6.2832); ctx.fill();
+    ctx.textAlign = 'center';
+    ctx.font = `400 ${Math.max(22, r * 0.5)}px ${SERIF}`;
+    ctx.fillText(`${reading.name}${reading.octave}`, cx, h - Math.max(8, h * 0.06));
+    ctx.font = `600 ${Math.max(8, Math.min(11, w / 40))}px ${MONO}`;
+    ctx.fillStyle = FAINT;
+    ctx.fillText(`${reading.freq.toFixed(1)} HZ · ${needle > 0 ? '+' : '−'}${Math.abs(needle).toFixed(0)} CENTS`, cx, Math.max(14, h * 0.1));
+    ctx.textAlign = 'left';
+  };
+}
 
-    if (fade >= 1) { if ((hold += 1 / 60) > 2.4) { hold = 0; fade = 0; } }
-    else { fade = Math.min(1, fade + 1 / 42); if (fade >= 1) cur = (cur + 1) % frames.length; }
+/** Minesweeper: the real generator and solver, playing a board on hints alone. */
+function sweeperPreview(api) {
+  let E = null, game = null, seed = 7, wait = 0, ring = -1;
+  import('./play/sweeper/engine.js').then((m) => { E = m; }).catch(() => {});
+  const COLS = 16, ROWS = 10;
+  const COLOURS = ['', '#1f5fbf', '#2c7a4b', '#cf2e1b', '#23306e', '#7a1f1f', '#1f7a7a', INK, FAINT];
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    ctx.fillStyle = '#c9bfa9';
+    ctx.fillRect(0, 0, w, h);
+    if (!E) return;
+    if (!game) {
+      game = new E.Game({ w: COLS, h: ROWS, mines: 26, seed: seed++ });
+      game.reveal(game.idx(8, 5));
+    }
+    if (game.status === 'won') {
+      if ((wait += 1 / 30) > 2.2) { game = null; wait = 0; ring = -1; }
+    } else if (api.t % 12 === 0) {
+      const hint = game.hint();
+      if (hint) { ring = hint.cell; game.reveal(hint.cell); } else game = null;
+    }
+    if (!game) return;
+    const cell = Math.min(w / COLS, h / ROWS);
+    const ox = (w - cell * COLS) / 2, oy = (h - cell * ROWS) / 2;
+    ctx.font = `700 ${cell * 0.55}px ${MONO}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (let i = 0; i < game.n; i++) {
+      const x = ox + (i % COLS) * cell, y = oy + Math.floor(i / COLS) * cell;
+      const open = game.open[i];
+      ctx.fillStyle = open ? PAPER : game.status === 'won' && game.mines[i] ? '#b3a78e' : '#e4ddcc';
+      ctx.fillRect(x + 0.5, y + 0.5, cell - 1, cell - 1);
+      if (open && game.counts[i]) {
+        ctx.fillStyle = COLOURS[game.counts[i]];
+        ctx.fillText(String(game.counts[i]), x + cell / 2, y + cell / 2 + 1);
+      }
+      if (i === ring) {
+        ctx.strokeStyle = RED;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(x + cell / 2, y + cell / 2, cell * 0.62, 0, 6.2832); ctx.stroke();
+      }
+    }
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+  };
+}
 
-    // the square render is drawn to cover the card, cropped rather than squashed
-    const a = frames[cur % frames.length], b = frames[(cur + 1) % frames.length];
-    const k = Math.max(w / RES, h / RES);
-    const dw = RES * k, dh = RES * k, dx = (w - dw) / 2, dy = (h - dh) / 2;
-    ctx.drawImage(a, dx, dy, dw, dh);
-    if (fade < 1 && frames.length > 1) {
-      ctx.globalAlpha = 1 - fade;
-      ctx.drawImage(b, dx, dy, dw, dh);
-      ctx.globalAlpha = 1;
+/** Sudoku: the real generator and hints, one reasoned square at a time. */
+function sudokuPreview(api) {
+  let E = null, puzzle = null, grid = null, solution = null, seed = 41, ring = -1, unit = [], tech = '', wait = 0;
+  import('./play/sudoku/engine.js').then((m) => { E = m; }).catch(() => {});
+  api.frame = () => {
+    const { ctx, w, h } = api;
+    ctx.fillStyle = PAPER;
+    ctx.fillRect(0, 0, w, h);
+    if (!E) return;
+    if (!grid) {
+      const g = E.generate({ level: 'medium', seed: seed++ });
+      puzzle = g.puzzle; solution = g.solution; grid = puzzle.slice(); ring = -1; unit = []; tech = '';
+    }
+    if (grid.every((d) => d)) {
+      if ((wait += 1 / 30) > 2.5) { grid = null; wait = 0; }
+    } else if (api.t % 14 === 0) {
+      const hint = E.hint(grid, solution);
+      if (hint) { grid[hint.cell] = hint.digit; ring = hint.cell; unit = hint.cells; tech = hint.technique; }
+    }
+    if (!grid) return;
+    const side = Math.min(h * 0.9, w * 0.62), ox = (w - side) / 2 - (w > h * 1.4 ? w * 0.12 : 0), oy = (h - side) / 2;
+    const c = side / 9;
+    const inUnit = new Set(unit);
+    for (let i = 0; i < 81; i++) {
+      const x = ox + (i % 9) * c, y = oy + Math.floor(i / 9) * c;
+      if (inUnit.has(i) && i !== ring) { ctx.fillStyle = 'rgba(207,46,27,.09)'; ctx.fillRect(x, y, c, c); }
+      if (!grid[i]) continue;
+      ctx.fillStyle = puzzle[i] ? INK : '#1f4fbf';
+      ctx.font = `${puzzle[i] ? 600 : 400} ${c * 0.62}px Newsreader, Georgia, serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText(String(grid[i]), x + c / 2, y + c * 0.72);
+    }
+    ctx.textAlign = 'left';
+    for (let k = 0; k <= 9; k++) {
+      ctx.strokeStyle = k % 3 === 0 ? INK : 'rgba(23,20,15,.22)';
+      ctx.lineWidth = k % 3 === 0 ? 1.6 : 0.8;
+      ctx.beginPath(); ctx.moveTo(ox + k * c, oy); ctx.lineTo(ox + k * c, oy + side); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(ox, oy + k * c); ctx.lineTo(ox + side, oy + k * c); ctx.stroke();
+    }
+    if (ring >= 0) {
+      ctx.strokeStyle = RED;
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.arc(ox + (ring % 9) * c + c / 2, oy + Math.floor(ring / 9) * c + c / 2, c * 0.46, 0, 6.2832);
+      ctx.stroke();
+    }
+    if (tech && w > h * 1.4) {
+      ctx.fillStyle = RED;
+      ctx.font = `600 ${Math.max(8, Math.min(11, w / 42))}px ${MONO}`;
+      ctx.fillText(tech.toUpperCase(), ox + side + w * 0.05, oy + side * 0.5);
     }
   };
 }
