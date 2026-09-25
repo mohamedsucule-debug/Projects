@@ -55,6 +55,17 @@ export const ATLAS = [
            'internal tools', 'client work', 'product', 'business', 'startup', 'impressive'],
   },
 
+  {
+    id: 'callcoach', title: 'Call Coach', href: 'apps/callcoach/index.html',
+    kind: 'ai', depth: 'play', minutes: 4,
+    blurb: 'A live assistant for sales calls: the right answer on screen the moment a prospect '
+         + 'objects, and the notes, CRM record and follow-up written when the call ends.',
+    hook: 'Three calls — a good one, a hard one and a polite no.',
+    tags: ['ai', 'sales', 'sales ai', 'copilot', 'call', 'calls', 'crm', 'meddicc', 'objection handling',
+           'battlecards', 'coaching', 'conversation intelligence', 'transcript', 'revenue', 'gong',
+           'client work', 'product', 'business', 'startup', 'impressive'],
+  },
+
   /* ── machine learning ─────────────────────────────────────────────────── */
   {
     id: 'attention', title: 'Attention', href: 'apps/attention/index.html',
