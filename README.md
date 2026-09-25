@@ -15,7 +15,7 @@ no API key, no video of someone else using it.
 | **V** | [The serious ones](#v--the-serious-ones) — Covers, and six tools for engineers | 7 |
 
 Plain HTML, CSS and JavaScript. No framework, no build step, no dependencies.
-732 tests run in CI before anything here is published — including twenty
+Over 800 tests run in CI before anything here is published — including twenty
 gradient checks against finite differences, a check that a 95% confidence
 interval really does contain the truth about 95% of the time, and one that no
 tool result ever answers a call that was not made.

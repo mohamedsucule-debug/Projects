@@ -4,728 +4,844 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" href="favicon.svg" />
-<meta name="theme-color" content="#06070d" />
-<title>Playground — machine learning from the algorithm up, and twenty-six other things</title>
-<meta name="description" content="A transformer trained from scratch with hand-written backpropagation, and the exact step it learned to copy. A byte-pair tokeniser that trains itself in front of you. The statistics that decide whether a change to a model did anything at all. Plus a lighthouse, a locked-room murder and a restaurant booking system. Twenty-nine things, all running in your browser, nothing to install." />
-<meta property="og:title" content="Playground — machine learning from the algorithm up" />
-<meta property="og:description" content="Three pieces on how language models actually work — a transformer trained here with backpropagation written from nothing, a tokeniser you train yourself, and the statistics nobody runs. Plus twenty-six other things, all live in the page." />
+<meta name="theme-color" content="#f3efe5" />
+<title>Playground — thirty things I built, all of them running, marked up by hand</title>
+<meta name="description" content="A transformer trained from scratch with hand-written backpropagation, and the exact step it learned to copy. A byte-pair tokeniser that trains itself in front of you. The statistics that decide whether a change to a model did anything at all. Plus a lighthouse, a locked-room murder and a restaurant booking system. Thirty things, all running in your browser, and a page of errata listing everything that was wrong with them." />
+<meta property="og:title" content="Playground — thirty things, all of them running right here" />
+<meta property="og:description" content="Four pieces on how language models actually work — a transformer trained with backpropagation written from nothing, a tokeniser you train yourself, the statistics nobody runs, and an agent loop you can break. Plus twenty-six other things, all live in the page, and the errata." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://mohamedsucule-debug.github.io/Projects/" />
 <meta property="og:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Playground — machine learning from the algorithm up" />
-<meta name="twitter:description" content="Watch an induction head form in a transformer trained from scratch. Train a tokeniser in 380ms. Then a lighthouse in a gale and a locked-room murder. All in the browser, nothing to install." />
+<meta name="twitter:title" content="Playground — thirty things, all of them running right here" />
+<meta name="twitter:description" content="Watch an induction head form in a transformer trained from scratch. Train a tokeniser in 380ms. Then a lighthouse in a gale, a locked-room murder, and a page of errata. All in the browser, nothing to install." />
 <meta name="twitter:image" content="https://mohamedsucule-debug.github.io/Projects/assets/og.png" />
 <link rel="canonical" href="https://mohamedsucule-debug.github.io/Projects/" />
+<!-- Fonts are served from this repo rather than a font CDN. Every piece here
+     promises that nothing is sent anywhere, and a stylesheet from somebody
+     else's server would have made the front page the one exception. -->
+<link rel="preload" href="assets/fonts/instrument-serif.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="assets/fonts/newsreader.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="assets/fonts/caveat.woff2" as="font" type="font/woff2" crossorigin />
 <style>
+  @font-face {
+    font-family: "Instrument Serif"; src: url("assets/fonts/instrument-serif.woff2") format("woff2");
+    font-style: normal; font-weight: 400; font-display: swap;
+  }
+  @font-face {
+    font-family: "Instrument Serif"; src: url("assets/fonts/instrument-serif-italic.woff2") format("woff2");
+    font-style: italic; font-weight: 400; font-display: swap;
+  }
+  @font-face {
+    font-family: "Newsreader"; src: url("assets/fonts/newsreader.woff2") format("woff2");
+    font-weight: 200 800; font-display: swap;
+  }
+  @font-face {
+    font-family: "JetBrains Mono Var"; src: url("assets/fonts/jetbrains-mono.woff2") format("woff2");
+    font-weight: 100 800; font-display: swap;
+  }
+  @font-face {
+    font-family: "Caveat"; src: url("assets/fonts/caveat.woff2") format("woff2");
+    font-weight: 600; font-display: swap;
+  }
+
+  /* ── the idea ──────────────────────────────────────────────
+     Every page on this site is built from the algorithm up, and every one of
+     them was wrong at least once before it was right. The code says so in its
+     comments; the README has a list. So the front page is set as what it is: a
+     proof, on paper, marked up in red by the person who made it. The live
+     pieces are the figures. The corrections are real. The last section is the
+     errata. */
   :root {
-    --bg: #06070d;
-    --card: #0e111a;
-    --line: rgba(255,255,255,.09);
-    --line2: rgba(255,255,255,.17);
-    --fg: #f3f6fb;
-    --dim: #9aa5b8;
-    --mute: #6c7789;
-    --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --paper: #f3efe5;
+    --paper-2: #ebe5d7;
+    --photo: #fbf9f3;
+    --ink: #17140f;
+    --ink-2: #4a4439;
+    --ink-3: #857c6c;
+    --rule: rgba(23,20,15,.16);
+    --rule-2: rgba(23,20,15,.34);
+    --red: #cf2e1b;
+    --grease: #ff5a36;
+    --film: #131110;
+    --amber: #e8a33b;
+    --display: "Instrument Serif", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --text: "Newsreader", "Iowan Old Style", Georgia, serif;
+    --mono: "JetBrains Mono Var", ui-monospace, "SF Mono", Menlo, monospace;
+    --hand: "Caveat", "Bradley Hand", "Segoe Print", cursive;
   }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
   body {
-    margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans);
-    -webkit-font-smoothing: antialiased;
+    margin: 0; background: var(--paper); color: var(--ink);
+    font: 400 18px/1.6 var(--text);
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
     overflow-x: hidden;
   }
-  .page { max-width: 1180px; margin: 0 auto; padding: 0 20px 90px; }
+  /* The tooth of the paper. Flat #f3efe5 reads as a colour on a screen; the
+     same colour with a little grain in it reads as a sheet you could pick up. */
+  body::after {
+    content: ''; position: fixed; inset: 0; z-index: 100; pointer-events: none; opacity: .07;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .1 0 0 0 0 .08 0 0 0 0 .05 0 0 0 1.4 -.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  ::selection { background: rgba(207,46,27,.22); }
   a { color: inherit; }
+  .page { max-width: 1240px; margin: 0 auto; padding: 0 28px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  :focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
 
-  /* ── nav ───────────────────────────────────────────────── */
-  /* Scoped to .top. As a bare `nav` these rules also claimed the contents list
-     in the hero, which is a nav too — it came out as a single flex row running
-     off the side of the page. Second time on this page that an unscoped
-     element selector reached somewhere it was never meant to. */
+  /* ── red pen ───────────────────────────────────────────────
+     Every stroke is drawn by script into an SVG over the thing it marks, from
+     that thing's measured size, with a little seeded wobble so no two lines
+     are the same and no line is different on the next visit. They are inked
+     — drawn on, start to end — when they first come into view. */
+  [data-pen] { position: relative; }
+  svg.pen { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; z-index: 2; }
+  svg.pen path {
+    fill: none; stroke: var(--red); stroke-linecap: round; stroke-linejoin: round;
+    stroke-dasharray: 1; stroke-dashoffset: 1;
+    transition: stroke-dashoffset var(--pt, .55s) cubic-bezier(.55,.05,.35,1) calc(var(--pd, 0s) + var(--pi, 0s));
+  }
+  /* Inline-block, because a ResizeObserver cannot see an inline box — the
+     strokes were measured once against the fallback font and never again,
+     and the strike ran on past the word it was striking. */
+  [data-pen] { white-space: nowrap; display: inline-block; }
+  svg.pen.inked path { stroke-dashoffset: 0; }
+  .hand { font-family: var(--hand); font-weight: 600; color: var(--red); line-height: 1.02; }
+  .hand.later { opacity: 0; transition: opacity .35s ease var(--pd, 0s); }
+  .hand.later.inked { opacity: 1; }
+
+  /* ── the title page ────────────────────────────────────── */
+  .proof {
+    position: relative; min-height: min(100svh, 1000px);
+    display: grid; grid-template-rows: auto auto 1fr auto;
+    padding: 22px 28px 26px; max-width: 1296px; margin: 0 auto;
+  }
+  /* Crop marks, outside the corners of the page, where a printer trims. */
+  .crop { position: absolute; width: 20px; height: 20px; pointer-events: none; }
+  .crop::before, .crop::after { content: ''; position: absolute; background: var(--ink); opacity: .55; }
+  .crop::before { width: 20px; height: 1px; }
+  .crop::after { width: 1px; height: 20px; }
+  /* Inset by the length of their own ticks: at full width the page edge IS
+     the screen edge, and a tick 8px past it was enough to make a phone lay
+     the whole page out 8px wider than itself. */
+  .crop.tl { left: 8px; top: 8px; } .crop.tl::before { top: 12px; left: -8px; } .crop.tl::after { left: 12px; top: -8px; }
+  .crop.tr { right: 8px; top: 8px; } .crop.tr::before { top: 12px; right: -8px; } .crop.tr::after { right: 12px; top: -8px; }
+  .crop.bl { left: 8px; bottom: 8px; } .crop.bl::before { bottom: 12px; left: -8px; } .crop.bl::after { left: 12px; bottom: -8px; }
+  .crop.br { right: 8px; bottom: 8px; } .crop.br::before { bottom: 12px; right: -8px; } .crop.br::after { right: 12px; bottom: -8px; }
+
+  .slug {
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px;
+    font: 500 10.5px/1.3 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3);
+    padding: 0 12px;
+  }
+  .slug > :last-child { text-align: right; }
+  .slug .reg { width: 22px; height: 22px; color: var(--ink); opacity: .7; }
+
   nav.top {
-    display: flex; align-items: center; gap: 10px;
-    padding: 18px 0; font-size: 13.5px;
+    display: flex; align-items: baseline; gap: 6px 22px; flex-wrap: wrap;
+    margin: 26px 12px 0; padding-bottom: 14px; border-bottom: 1px solid var(--ink);
+    font: 500 12.5px/1 var(--mono); letter-spacing: .06em;
   }
-  nav.top .logo {
-    width: 24px; height: 24px; border-radius: 8px;
-    background: conic-gradient(from 140deg, #ffd166, #ff4d8d, #7dd3fc, #a3e635, #ffd166);
-    box-shadow: 0 0 26px -4px rgba(255,120,180,.65);
+  nav.top .brand {
+    font: 400 26px/1 var(--display); letter-spacing: -.01em; text-decoration: none; margin-right: auto;
   }
-  nav.top b { font-weight: 700; letter-spacing: -.01em; }
-  nav.top .spacer { flex: 1; }
-  nav.top a.ghost { color: var(--dim); text-decoration: none; font-weight: 500; }
-  nav.top a.ghost:hover { color: var(--fg); }
+  nav.top a { text-decoration: none; color: var(--ink-2); }
+  nav.top a:hover { color: var(--red); }
+  nav.top a .sec { color: var(--red); margin-right: 5px; }
+  nav.top a.write { color: var(--red); }
 
-  /* ── the front door ────────────────────────────────────────
-     The page used to open with an argument and a contents list. Nobody reads
-     either. It opens now with two of the pieces already running at the size
-     they deserve — a lighthouse in a gale and a study with a body in it — and
-     the only instruction on the screen is which way is down.
+  .title { align-self: center; padding: clamp(28px, 6vh, 70px) 12px clamp(18px, 3vh, 34px); position: relative; }
+  .byline {
+    margin: 0 0 clamp(26px, 5vh, 54px); font: 500 12px/1.4 var(--mono); letter-spacing: .16em;
+    text-transform: uppercase; color: var(--ink-2);
+  }
+  .byline b { color: var(--ink); font-weight: 700; }
+  /* The headline was typeset when there were twenty-nine. There are thirty
+     now, and rather than quietly reset the type, the author has struck the
+     old number and written the new one over it — which is the whole of how
+     this site gets made, in one correction. Screen readers get the corrected
+     sentence and none of the theatre. */
+  h1.headline {
+    margin: 0; font: 400 clamp(54px, 9.4vw, 138px)/.94 var(--display); letter-spacing: -.028em;
+    padding-top: .42em;
+  }
+  h1.headline > span:not(.sr) { display: block; }
+  h1.headline em { font-style: italic; letter-spacing: -.02em; }
+  .fix { position: relative; display: inline-block; }
+  .fix .ins {
+    position: absolute; left: 50%; bottom: 76%; white-space: nowrap;
+    font-size: .52em; transform: translateX(-50%) rotate(-5deg); letter-spacing: 0;
+  }
+  /* Hangs off the right-hand end of the underline it is about, with its
+     arrow reaching back up to it. */
+  .headline-note {
+    position: relative; margin: -6px 0 34px auto; width: min(100%, 21ch); padding-left: 64px;
+    font-size: clamp(22px, 2vw, 27px); transform: rotate(-3deg);
+  }
+  .headline-note svg { position: absolute; left: 0; top: -30px; width: 60px; height: 56px; overflow: visible; }
+  .headline-note svg path { fill: none; stroke: var(--red); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 
-     The whole thing is one viewport tall on purpose: whatever else a landing
-     page does, it has to say "there is more below this" without saying it. */
-  .door {
-    min-height: min(100svh, 940px);
-    display: grid; grid-template-rows: auto auto minmax(300px, 1fr) auto;
-    padding: 0 20px 26px;
-    /* Everything inside the door lifts and fades as it leaves, driven by one
-       scroll handler writing a single number. It is the difference between a
-       page that begins and a page that just starts. */
-    --sd: 0;
+  .under {
+    display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 28px 64px;
+    margin-top: clamp(28px, 5vh, 50px); align-items: end;
   }
-  /* min-width: 0 matters more than it looks. A grid item's automatic minimum
-     size is its min-content, so one child that will not wrap — the nav, whose
-     links are told not to break — quietly widened the door's single column and
-     pushed the heading, the copy and both panes past the right edge with it.
-     One stubborn row should not get to set the width of the page. */
-  .door > * { width: 100%; min-width: 0; max-width: 1180px; margin-inline: auto; }
-  .door .say, .door .panes, .door .cue {
-    opacity: calc(1 - var(--sd) * 1.15);
-    transform: translateY(calc(var(--sd) * -34px));
+  .sub { margin: 0; font-size: clamp(18px, 1.7vw, 22px); line-height: 1.5; color: var(--ink-2); max-width: 44ch; }
+  .sub b { color: var(--ink); font-weight: 600; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 28px; margin-top: 30px; }
+
+  /* A rubber stamp, inked a little unevenly. The speckle is a noise field
+     used as a mask, so the paper shows through the ink the way it does. */
+  .stamp {
+    font: 700 14px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase;
+    color: var(--red); background: transparent; cursor: pointer;
+    border: 2.5px solid currentColor; border-radius: 5px; padding: 15px 20px 14px;
+    box-shadow: inset 0 0 0 2.5px var(--paper), inset 0 0 0 4px currentColor;
+    transform: rotate(-2.5deg); transition: transform .18s cubic-bezier(.2,.8,.3,1), background .2s;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='90'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.6 2.15'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='90'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.6 2.15'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
   }
-  .door .say { padding: clamp(16px, 4vw, 40px) 0 clamp(18px, 3vw, 30px); }
-  .eyebrow {
-    font-size: 14px; font-weight: 500; color: var(--dim);
-    margin: 0 0 18px; letter-spacing: .01em;
-    display: inline-flex; align-items: center; gap: 8px;
-    border: 1px solid var(--line); border-radius: 99px; padding: 8px 15px;
+  .stamp:hover { transform: rotate(-2.5deg) scale(1.05); background: rgba(207,46,27,.07); }
+  .stamp:active { transform: rotate(-2.5deg) scale(.96); }
+  /* The surprise button deals titles like a slot machine before it goes, so
+     its face is given the width of a long one up front — a button that
+     changes size under the pointer while you are looking at it is a bug. */
+  #surprise .face { display: inline-block; min-width: 15ch; text-align: center; }
+  .quiet-link {
+    font: italic 400 19px/1.3 var(--display); color: var(--ink-2); text-decoration: none;
+    border-bottom: 1px solid var(--rule-2); padding-bottom: 2px;
   }
-  .eyebrow b { color: var(--fg); font-weight: 650; }
-  .door h1 {
-    font-size: clamp(34px, 5.6vw, 64px);
-    line-height: 1.03; letter-spacing: -.045em; font-weight: 700;
-    margin: 0 0 16px; max-width: 20ch;
+  .quiet-link:hover { color: var(--red); border-color: var(--red); }
+
+  /* The specification: four claims, each checked somewhere in the repo, set
+     like the spec box on the back of a manual rather than as four giant
+     numbers — the numbers are true either way, and they read as checked
+     rather than as shouted. */
+  .spec { margin: 0; padding: 16px 0 0; border-top: 1px solid var(--ink); font: 500 12.5px/1.3 var(--mono); }
+  .spec .hd { font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 10px; }
+  .spec dl { margin: 0; }
+  .spec dl > div { display: flex; align-items: baseline; padding: 6px 0; }
+  .spec dt { flex: 1; display: flex; align-items: baseline; color: var(--ink-2); letter-spacing: .02em; }
+  .spec dt::after { content: ''; flex: 1; min-width: 16px; border-bottom: 1.5px dotted var(--ink-3); margin: 0 10px; transform: translateY(-3px); }
+  .spec dd { margin: 0; font: 400 25px/1 var(--display); letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+
+  .foot {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 12px 0;
+    font: 500 10.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3);
   }
-  .door h1 em {
-    font-style: normal;
-    background: linear-gradient(102deg, #ffd166, #ff4d8d 42%, #7dd3fc 88%);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
+  .foot a { text-decoration: none; color: var(--ink-2); }
+  .foot a:hover { color: var(--red); }
+  /* The colour bar a printer checks the inks against. It is also the only
+     place on the page the old neon survives, as four squares of it. */
+  .bar { display: flex; gap: 0; }
+  .bar i { width: 15px; height: 15px; display: block; }
+
+  /* ── figures ───────────────────────────────────────────── */
+  figure { margin: 0; }
+  .fn { font: 600 11px/1 var(--mono); letter-spacing: .08em; color: var(--red); text-transform: uppercase; white-space: nowrap; }
+
+  /* Fig. 1 — the contact sheet. Strips of film laid on photographic paper,
+     one frame per piece, every frame the piece itself running. */
+  .fig1 { margin: clamp(30px, 6vh, 60px) 0 0; }
+  .sheet {
+    position: relative; background: var(--photo); padding: clamp(14px, 2.4vw, 30px);
+    box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 2px 4px rgba(60,45,20,.08), 0 30px 60px -28px rgba(60,45,20,.45);
+    transform: rotate(-.45deg);
   }
-  .door .sub {
-    font-size: clamp(15.5px, 1.7vw, 18px); line-height: 1.6; color: var(--dim);
-    max-width: 58ch; margin: 0;
+  .strips { display: grid; gap: clamp(10px, 1.4vw, 18px); }
+  .strip {
+    --n: 6;
+    position: relative; background: var(--film);
+    display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 7px;
+    padding: 30px 12px 32px;
+    /* Sprocket holes: a rounded slot, repeated along the top and the bottom
+       edge, in the colour of the light coming through it. */
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='9'%3E%3Crect x='6' y='0' width='10' height='9' rx='2' fill='%23e9e3d4'/%3E%3C/svg%3E"),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='9'%3E%3Crect x='6' y='0' width='10' height='9' rx='2' fill='%23e9e3d4'/%3E%3C/svg%3E");
+    background-repeat: repeat-x; background-position: 4px 6px, 4px calc(100% - 6px);
   }
-  .door .sub b { color: var(--fg); font-weight: 650; }
-  /* The one claim a technical reader wants before they click anything, so it
-     goes above the fold rather than only in the colophon at the bottom. */
-  .door .facts {
-    margin: 16px 0 0; color: var(--mute); font-size: 13px; line-height: 1.6;
-    max-width: 96ch;
+  .strip:nth-child(odd) { transform: rotate(.18deg) translateX(-3px); }
+  .strip:nth-child(even) { transform: rotate(-.12deg) translateX(4px); }
+  .frame {
+    position: relative; aspect-ratio: 4 / 3; background: #050404; display: block;
+    text-decoration: none; color: #f3efe5; outline: 1px solid rgba(255,255,255,.06);
   }
-  .door .facts b { color: var(--dim); font-weight: 600; }
-  /* The navigator is a pill in the corner of every page, which is discoverable
-     but not announced. One line here saves everybody the discovery. */
-  .door .hint { margin: 10px 0 0; font-size: 13px; line-height: 1.7; color: var(--mute); }
-  .door .hint i { font-style: normal; color: var(--dim); }
-  .door .hint kbd {
-    font: 650 11.5px/1 var(--mono); color: var(--dim);
-    border: 1px solid var(--line2); border-radius: 5px; padding: 3px 6px;
-    background: rgba(255,255,255,.05); margin: 0 2px;
+  .frame canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  /* Edge print: the frame number over each frame and its half-frame number
+     beside it, in the amber the film stock prints them in. */
+  .frame::before, .frame::after {
+    position: absolute; bottom: calc(100% + 5px); font: 600 9px/1 var(--mono); letter-spacing: .08em;
+    color: var(--amber); opacity: .9; pointer-events: none;
+  }
+  .frame::before { content: attr(data-n); left: 2px; }
+  .frame::after { content: '\25B8\2009' attr(data-n) 'A'; right: 2px; opacity: .55; }
+  .frame.type { display: flex; flex-direction: column; justify-content: flex-end; padding: 9% 9% 8%; overflow: hidden; }
+  .frame.type b { font: 400 clamp(17px, 2vw, 27px)/.95 var(--display); letter-spacing: -.01em; }
+  .frame.type span { font: 500 clamp(8px, .72vw, 10px)/1.35 var(--mono); color: rgba(243,239,229,.55); margin-top: 6px; letter-spacing: .02em; }
+  .frame.type small { position: absolute; top: 9%; left: 9%; font: 600 8.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--amber); }
+  .strip .edge {
+    position: absolute; left: 14px; bottom: 18px; font: 600 8px/1 var(--mono); letter-spacing: .22em;
+    color: var(--amber); opacity: .45; white-space: nowrap; pointer-events: none;
+  }
+  svg.grease { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; z-index: 3; }
+  svg.grease path { stroke: var(--grease); stroke-width: 3.2; opacity: .92; }
+  svg.grease text { font: 600 23px var(--hand); fill: var(--grease); opacity: 0; transition: opacity .3s ease var(--pd, 0s); }
+  svg.grease.inked text { opacity: 1; }
+  .fig1 figcaption b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .fig1 figcaption, figcaption.cap {
+    display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap;
+    margin: 18px 4px 0; font-size: 15px; line-height: 1.5; color: var(--ink-2);
+  }
+  @media (hover: none) { .fig1 .fine { display: none; } }
+
+  /* The loupe. A lens over the sheet that redraws the frames beneath it at
+     twice the size, from the same canvases, every frame — so what is under
+     the glass is moving too. */
+  .loupe {
+    position: fixed; left: 0; top: 0; width: 210px; height: 210px; border-radius: 50%;
+    pointer-events: none; z-index: 60; opacity: 0; transition: opacity .18s;
+    box-shadow: 0 0 0 6px #1d1a16, 0 0 0 7px rgba(255,255,255,.18), 0 26px 50px -12px rgba(0,0,0,.55);
+    overflow: hidden; background: var(--film);
+  }
+  .loupe.on { opacity: 1; }
+  .loupe canvas { width: 100%; height: 100%; display: block; }
+  .loupe::after {
+    content: ''; position: absolute; inset: 0; border-radius: 50%;
+    background: radial-gradient(circle at 32% 26%, rgba(255,255,255,.22), rgba(255,255,255,0) 38%),
+                radial-gradient(circle, rgba(0,0,0,0) 62%, rgba(0,0,0,.45) 100%);
+  }
+  .loupe-tag {
+    position: fixed; left: 0; top: 0; z-index: 61; pointer-events: none; opacity: 0; transition: opacity .18s;
+    font: 600 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase;
+    background: var(--ink); color: var(--paper); padding: 7px 10px; white-space: nowrap;
+  }
+  .loupe-tag.on { opacity: 1; }
+
+  /* ── sections ──────────────────────────────────────────── */
+  .section { margin-top: clamp(110px, 14vw, 180px); position: relative; }
+  /* A running head, the way a book puts the chapter at the top of every
+     page: section mark and number on the left, the name on the right, a
+     rule between. Then the title at the size of a title. */
+  .runhead {
+    display: flex; align-items: baseline; gap: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--ink);
+    font: 500 11.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2);
+  }
+  .runhead .no { color: var(--red); }
+  .runhead .nm { margin-left: auto; }
+  .section h2 {
+    margin: clamp(26px, 4vw, 44px) 0 0; font: 400 clamp(46px, 7vw, 100px)/.96 var(--display);
+    letter-spacing: -.025em; max-width: 11.5em; text-wrap: balance;
+  }
+  .section h2 em { font-style: italic; }
+  .lede { margin: 22px 0 0; font-size: clamp(18px, 1.5vw, 20px); line-height: 1.6; color: var(--ink-2); max-width: 60ch; }
+  .lede b { color: var(--ink); font-weight: 600; }
+  .section > header { margin-bottom: clamp(44px, 6vw, 70px); }
+
+  /* A figure is a plate and a caption. The plate is the live piece, mounted
+     square-cornered with a hairline, the way a plate sits in a printed book;
+     the kind is a small label over it and the pen note, when there is one,
+     is written in the space above. */
+  .figs {
+    display: grid; gap: 64px 28px; grid-auto-flow: dense;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--min, 340px)), 1fr));
+  }
+  a.fig { display: flex; flex-direction: column; text-decoration: none; color: inherit; position: relative; }
+  .fig .kind {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    font: 600 10.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3);
+  }
+  .fig .kind::before { content: ''; width: 8px; height: 8px; background: rgb(var(--accent, 23,20,15)); flex: none; }
+  .fig .plate {
+    position: relative; aspect-ratio: 16 / 9; flex: 1 1 auto; background: #080706; overflow: hidden;
+    outline: 1px solid var(--ink); outline-offset: 0;
+    transition: transform .25s cubic-bezier(.2,.7,.3,1), box-shadow .25s;
+  }
+  .fig .plate canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  a.fig:hover .plate { transform: translateY(-4px); box-shadow: 0 22px 34px -22px rgba(40,28,10,.55); }
+  .fig h3 {
+    display: flex; align-items: baseline; gap: 12px; margin: 16px 0 6px;
+    font: 400 clamp(28px, 2.5vw, 34px)/1.02 var(--display); letter-spacing: -.015em;
+  }
+  .fig h3 .t {
+    background: linear-gradient(var(--red), var(--red)) 0 100% / 0 2px no-repeat;
+    transition: background-size .35s cubic-bezier(.5,0,.3,1);
+  }
+  a.fig:hover h3 .t { background-size: 100% 2px; }
+  .fig h3 .go { margin-left: auto; font: 500 12px/1 var(--mono); color: var(--red); opacity: 0; transform: translateX(-6px); transition: opacity .2s, transform .2s; }
+  a.fig:hover h3 .go { opacity: 1; transform: none; }
+  .fig p { margin: 0; font-size: 16px; line-height: 1.55; color: var(--ink-2); max-width: 62ch; }
+  .fig p b { color: var(--ink); font-weight: 600; }
+  .fig .fn { margin-right: 8px; }
+  .figs .wide { grid-column: span 2; }
+  .figs .wide .plate { aspect-ratio: 2.3 / 1; }
+  @media (max-width: 720px) {
+    .figs .wide { grid-column: auto; }
+    .figs .wide .plate { aspect-ratio: 16 / 9; }
+  }
+  /* The pen note sits in the gutter above the plate, right-aligned, with a
+     stroke curling down into the picture it is about. */
+  .fig .note {
+    position: absolute; right: 4px; top: 0; transform: translateY(calc(-100% + 8px)) rotate(-2.5deg);
+    max-width: 62%; text-align: right; font-size: 22px; z-index: 2;
+  }
+  .note-arrow { position: absolute; right: -16px; top: 55%; width: 26px; height: 44px; display: block; }
+  /* On a phone the gutter above a plate is the width of its label, so the
+     note stops floating and takes a line of its own between the two. */
+  @media (max-width: 760px) {
+    .fig .note { position: static; transform: rotate(-1.5deg); max-width: none; text-align: left;
+      margin: -2px 0 10px; font-size: 20px; }
+    .note-arrow { display: none; }
   }
 
-  /* A row of three, directly under the headline. A reader who came here for
-     machine learning should not have to scroll past a lighthouse to find out
-     there is any. */
-  .door .jump {
-    display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-top: 18px;
+  .nb {
+    display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; align-items: baseline;
+    margin-top: 58px; padding: 22px 0 0; border-top: 1px solid var(--rule-2);
+    font-size: 17px; line-height: 1.6; color: var(--ink-2); max-width: 900px;
   }
-  .door .jump .lead {
-    font: 600 12px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase;
-    color: var(--mute);
-  }
-  .door .jump a {
-    text-decoration: none; font: 650 13px/1 var(--sans);
-    border: 1px solid rgba(125,211,252,.34); border-radius: 99px; padding: 8px 14px;
-    color: #cfe9ff; background: rgba(125,211,252,.09);
-    transition: background .16s, transform .16s;
-  }
-  .door .jump a:hover { background: rgba(125,211,252,.2); transform: translateY(-1px); }
+  .nb .hand { font-size: 34px; line-height: .8; }
+  .nb b { color: var(--ink); font-weight: 600; }
+  .nb a { color: var(--red); }
 
-  /* ── the two panes ─────────────────────────────────────────
-     Two live scenes, and the one you point at takes the room. Animating
+  /* ── the stories ─────────────────────────────────────────
+     Two plates, and the one you point at takes the room. Animating
      grid-template-columns is the only way to do this that keeps both canvases
      at their natural aspect instead of stretching them, which a transform
      would. Browsers that will not interpolate it simply snap — the layout is
      correct either way. */
   .panes {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
-    transition: grid-template-columns .5s cubic-bezier(.2,.75,.25,1);
-    min-height: 0;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    height: clamp(460px, 48vw, 620px);
+    transition: grid-template-columns .6s cubic-bezier(.2,.75,.25,1);
   }
   .panes:has(.pane:first-child:hover) { grid-template-columns: 1.34fr .66fr; }
   .panes:has(.pane:last-child:hover) { grid-template-columns: .66fr 1.34fr; }
-
   .pane {
-    position: relative; overflow: hidden; min-width: 0;
-    border: 1px solid var(--line2); border-radius: 22px;
-    background: #05060b; text-decoration: none; color: inherit;
+    position: relative; overflow: hidden; min-width: 0; outline: 1px solid var(--ink);
+    background: #05060b; text-decoration: none; color: #f3efe5;
     display: flex; align-items: flex-end;
-    transition: border-color .3s, box-shadow .3s;
   }
-  .pane canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  /* The scrim is what makes white text on a moving picture legible at every
+  .pane canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; transition: opacity .4s; }
+  /* The scrim is what makes light text on a moving picture legible at every
      moment of the animation rather than most of them — and how much scrim it
      takes depends entirely on the picture. The lighthouse is a night sky and
      needs almost none. The Room is a pencil drawing on cream paper, and the
-     same gradient left the heading white-on-white and the amber kicker gone
-     altogether. So the four stops are variables and the light one turns them
-     up, rather than both panes settling for whatever suits neither. */
+     same gradient left the heading white-on-white. So the four stops are
+     variables and the light one turns them up. */
   .pane::after {
     content: ''; position: absolute; inset: 0; pointer-events: none;
     background: linear-gradient(to top,
-      rgba(4,5,9,var(--k1,.94)) 0%,
-      rgba(4,5,9,var(--k2,.76)) 30%,
-      rgba(4,5,9,var(--k3,.12)) 62%,
-      rgba(4,5,9,var(--k4,0)) 100%);
+      rgba(8,7,5,var(--k1,.94)) 0%, rgba(8,7,5,var(--k2,.74)) 30%,
+      rgba(8,7,5,var(--k3,.1)) 62%, rgba(8,7,5,var(--k4,0)) 100%);
   }
-  .pane.light { --k1: .97; --k2: .93; --k3: .56; --k4: .12; }
-  .pane .edge { position: relative; z-index: 2; padding: 22px 24px 24px; }
-  .pane .k {
-    display: inline-block; font: 700 10.5px/1 var(--mono); letter-spacing: .2em;
-    text-transform: uppercase; color: rgb(var(--accent)); margin-bottom: 11px;
-  }
-  .pane h2 { margin: 0 0 8px; font-size: clamp(24px, 2.7vw, 33px); letter-spacing: -.032em; }
-  .pane p {
-    margin: 0; color: var(--dim); font-size: 14.5px; line-height: 1.58;
-    max-width: 44ch;
-  }
-  .pane p b { color: var(--fg); font-weight: 650; }
-  .pane .go {
-    display: inline-block; margin-top: 15px;
-    font: 700 11.5px/1 var(--mono); letter-spacing: .13em; color: rgb(var(--accent));
-    border: 1px solid rgba(var(--accent), .4); border-radius: 99px; padding: 9px 15px;
-    transition: background .2s;
-  }
-  .pane:hover { border-color: rgba(var(--accent), .55);
-    box-shadow: 0 40px 90px -40px rgba(0,0,0,1), 0 0 0 1px rgba(var(--accent), .13); }
-  .pane:hover .go { background: rgba(var(--accent), .14); }
-  /* Whichever one you are not looking at steps back. Without this the pair
-     compete and neither wins. */
-  .panes:has(.pane:hover) .pane:not(:hover) canvas { opacity: .52; }
-  .pane canvas { transition: opacity .4s; }
-
-  /* ── the way down ──────────────────────────────────────────
-     A landing page's single most important job. It says how much is left, so
-     it is a sentence and a count rather than a naked chevron. */
-  .cue {
-    display: flex; align-items: center; justify-content: center; gap: 11px;
-    margin-top: 20px; padding: 6px;
-    text-decoration: none; color: var(--mute);
-    font: 600 12.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase;
-    transition: color .2s;
-  }
-  .cue:hover { color: var(--fg); }
-  .cue i { font-style: normal; animation: nudge 2.1s ease-in-out infinite; }
-  @keyframes nudge {
-    0%, 62%, 100% { transform: translateY(0); opacity: .55; }
-    80% { transform: translateY(5px); opacity: 1; }
-  }
-  @media (max-width: 560px) { .cue { font-size: 11px; letter-spacing: .07em; } }
-
-  /* On a phone the two panes stack, and a scene at half a viewport each plus
-     the copy is three screens of preamble before the first card. The panes get
-     short and the second one is a strip — enough to see it is alive and worth
-     a tap, which is all a pane has to do. */
+  .pane.light { --k1: .97; --k2: .92; --k3: .55; --k4: .1; }
+  .pane .edge { position: relative; z-index: 2; padding: 26px 28px 28px; }
+  .pane .k { display: block; font: 600 10.5px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: rgb(var(--accent)); margin-bottom: 12px; }
+  .pane .k .fn { color: inherit; }
+  .pane h3 { margin: 0 0 10px; font: 400 clamp(38px, 4.2vw, 60px)/.95 var(--display); letter-spacing: -.02em; }
+  .pane h3 em { font-style: italic; }
+  .pane p { margin: 0; color: rgba(243,239,229,.74); font-size: 16px; line-height: 1.55; max-width: 44ch; }
+  .pane p b { color: #fff; font-weight: 600; }
+  .pane .go { display: inline-block; margin-top: 16px; font: 700 11.5px/1 var(--mono); letter-spacing: .14em; color: rgb(var(--accent)); }
+  .panes:has(.pane:hover) .pane:not(:hover) canvas { opacity: .5; }
   @media (max-width: 760px) {
-    .door { min-height: 0; grid-template-rows: auto auto auto auto; }
-    .panes { grid-template-columns: 1fr; gap: 12px; }
+    .panes { grid-template-columns: 1fr; height: auto; }
     .panes:has(.pane:hover) { grid-template-columns: 1fr; }
-    .pane { min-height: clamp(420px, 66svh, 540px); }
-    .pane + .pane { min-height: clamp(400px, 60svh, 500px); }
+    .pane { min-height: clamp(420px, 110vw, 520px); }
     .panes:has(.pane:hover) .pane:not(:hover) canvas { opacity: 1; }
   }
 
-  /* ── the scroll rail ───────────────────────────────────────
-     Two pixels down the left edge. It is the only thing on the page that
-     answers "how far in am I" at a glance, and it costs one scroll listener
-     that was already there for the door. */
-  .rail {
-    position: fixed; left: 0; top: 0; bottom: 0; width: 2px; z-index: 40;
-    background: rgba(255,255,255,.05); pointer-events: none;
-  }
-  .rail i {
-    display: block; width: 100%; height: 0%;
-    background: linear-gradient(180deg, #ffd166, #ff4d8d 46%, #7dd3fc);
-  }
-
-  /* ── reveals ───────────────────────────────────────────────
-     Cards arrive as you reach them, staggered a little across each row. This
-     is the part the page lost when it was reorganised into chapters, and the
-     part that made scrolling it feel like something rather than like paging
-     through a spreadsheet. */
-  .reveal { opacity: 0; transform: translateY(22px); }
-  .reveal.in {
-    opacity: 1; transform: none;
-    transition: opacity .62s cubic-bezier(.2,.7,.3,1) var(--d, 0s),
-                transform .62s cubic-bezier(.2,.7,.3,1) var(--d, 0s);
-  }
-  @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; } }
-  /* ── the big one ───────────────────────────────────────────
-     This was the front door for a while and it should not have been. It is a
-     working tool for people who already know what a covers book is — it
+  /* ── the serious ones ────────────────────────────────────
+     Covers was the front door for a while and should not have been: it
      rewards twenty minutes and punishes ninety seconds, which is the wrong way
-     round for the first thing a stranger sees. So it sits down here at the
-     head of the serious section, at twice the size of a card, because a grid
-     where everything is the same size says everything took the same effort. */
-  /* The picture column used to be 1.35fr, and the floor plan letterboxes to
-     the room's own proportions inside it — so the taller the text column got,
-     the more empty floor there was above and below the plan. Widening the text
-     shortens it, and the picture follows it down. */
-  .headline {
-    display: grid; grid-template-columns: 1.06fr 1fr; gap: 0;
-    background: var(--card); border: 1px solid var(--line2); border-radius: 22px;
-    overflow: hidden; text-decoration: none; color: inherit;
-    transition: border-color .18s, box-shadow .18s, transform .18s;
-  }
-  .headline:hover { border-color: rgba(90,169,255,.45); transform: translateY(-3px);
-    box-shadow: 0 34px 80px -34px rgba(0,0,0,.95); }
-  .headline .shot { position: relative; background: #0a0c10; min-height: 340px; overflow: hidden; }
-  .headline .shot canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  .headline .said { padding: 30px 32px 32px; display: flex; flex-direction: column; }
-  .headline .kicker { font: 700 10.5px/1 var(--mono); letter-spacing: .2em; text-transform: uppercase;
-    color: #5aa9ff; margin: 0 0 12px; }
-  .headline h2 { margin: 0 0 12px; font-size: clamp(25px, 2.5vw, 31px); letter-spacing: -.03em; }
-  .headline p { margin: 0 0 13px; color: var(--dim); font-size: 15.5px; line-height: 1.62; }
-  .headline p b { color: var(--fg); font-weight: 650; }
-  .headline ul { margin: 4px 0 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+     round for the first thing a stranger sees. So it heads this section at
+     twice the size of anything else, because a page where everything is the
+     same size says everything took the same effort. */
+  .headline-fig { display: grid; grid-template-columns: 1.1fr 1fr; gap: 0 40px; text-decoration: none; color: inherit; }
+  .headline-fig .plate { position: relative; min-height: 360px; background: #0a0c10; outline: 1px solid var(--ink); overflow: hidden;
+    transition: transform .25s, box-shadow .25s; }
+  .headline-fig:hover .plate { transform: translateY(-4px); box-shadow: 0 26px 40px -24px rgba(40,28,10,.55); }
+  .headline-fig .plate canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .headline-fig .said { padding: 4px 0; display: flex; flex-direction: column; }
+  .headline-fig h3 { margin: 12px 0 16px; font: 400 clamp(38px, 3.6vw, 52px)/1 var(--display); letter-spacing: -.02em; }
+  .headline-fig p { margin: 0 0 12px; font-size: 17px; line-height: 1.6; color: var(--ink-2); }
+  .headline-fig p b { color: var(--ink); font-weight: 600; }
+  .headline-fig ul { margin: 6px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
   /* Not display:flex. Flex makes a separate flex item of every child ELEMENT,
      so the bolded lead-in of the first bullet stopped being part of the
-     sentence and became a 90px column of its own with the rest of the line
-     stacked beside it. The marker is positioned instead and the text stays one
-     run of text. */
-  .headline li { color: var(--dim); font-size: 13.5px; line-height: 1.5;
-    position: relative; padding-left: 21px; }
-  .headline li::before { content: '→'; position: absolute; left: 0; top: 0;
-    color: #5aa9ff; font-size: 12px; }
-  .headline .go { margin-top: auto; padding-top: 18px; font: 700 12px/1 var(--mono);
-    letter-spacing: .1em; color: #5aa9ff; }
+     sentence and became a column of its own. The marker is positioned
+     instead and the text stays one run of text. */
+  .headline-fig li { position: relative; padding-left: 24px; font-size: 15.5px; line-height: 1.5; color: var(--ink-2); }
+  .headline-fig li::before { content: '\2192'; position: absolute; left: 0; color: var(--red); }
+  .headline-fig li b { color: var(--ink); }
+  .headline-fig .go { margin-top: auto; padding-top: 18px; font: 700 12px/1 var(--mono); letter-spacing: .12em; color: var(--red); }
   @media (max-width: 860px) {
-    .headline { grid-template-columns: 1fr; }
-    .headline .shot { min-height: 220px; }
-    .headline .said { padding: 22px 20px 24px; }
+    .headline-fig { grid-template-columns: 1fr; }
+    .headline-fig .plate { min-height: 240px; }
+  }
+  /* The ratio changes with the width; it does NOT get a min-height. This
+     strip had both once, and on a phone the height won and the width was
+     derived back from it — a 968px box in a 350px column, cropped in silence
+     by the body's overflow. */
+  .plate.strip-plate { position: relative; aspect-ratio: 11 / 1; background: #080a12; outline: 1px solid var(--ink); overflow: hidden; margin: 56px 0 0; }
+  @media (max-width: 900px) { .plate.strip-plate { aspect-ratio: 6 / 1; } }
+  @media (max-width: 560px) { .plate.strip-plate { aspect-ratio: 3.2 / 1; } }
+  .plate.strip-plate canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+  /* The six tools as an index: name, what it is, dot leaders, figure
+     number. A list of links is a list of links anywhere; set as the index of
+     a book it says these are things to look up, which is what they are. */
+  .index { list-style: none; margin: 18px 0 0; padding: 0; border-top: 1px solid var(--ink); }
+  .index li { border-bottom: 1px solid var(--rule); }
+  .index a { display: flex; align-items: baseline; gap: 14px; padding: 16px 2px; text-decoration: none; }
+  .index .t { font: 400 clamp(24px, 2.4vw, 32px)/1 var(--display); letter-spacing: -.01em; flex: none; }
+  .index .d { font-size: 15.5px; color: var(--ink-2); min-width: 0; }
+  .index .dots { flex: 1; min-width: 20px; border-bottom: 1.5px dotted var(--ink-3); transform: translateY(-4px); }
+  .index .pg { font: 600 11px/1 var(--mono); letter-spacing: .08em; color: var(--red); flex: none; }
+  .index a:hover .t { color: var(--red); }
+  .index .dot { width: 8px; height: 8px; flex: none; align-self: center; }
+  @media (max-width: 760px) {
+    .index a { flex-wrap: wrap; row-gap: 4px; }
+    .index .d { order: 5; flex-basis: 100%; padding-left: 22px; }
   }
 
-  /* ── sections ──────────────────────────────────────────────
-     There were five numbered chapters here, each with its own accent and its
-     own column count. It was tidy and it read as a filing system: by the time
-     you had been told what KIND of thing you were about to look at, you had
-     stopped wanting to look at it. Three sections now — the door, the run, the
-     serious ones — and each one is a thin rule and a sentence rather than a
-     lid. The mixing happens inside the run instead, by order. */
-  .chapter { margin-top: 96px; }
-  .chapter:first-of-type { margin-top: 74px; }
-  .chapter > header { margin-bottom: 26px; }
-  .chapter .tier { display: flex; align-items: center; gap: 13px; }
-  .chapter .tick { width: 22px; height: 1px; background: rgb(var(--accent)); opacity: .75; flex: none; }
-  /* Scoped to the chapter's OWN header. Unscoped, `.chapter h2` reached every
-     card title inside the chapter too, and set nineteen product names in
-     letter-spaced capitals — which looked deliberate, which is why it took a
-     render to notice. */
-  .chapter > header h2 {
-    margin: 0; font-size: 14px; font-weight: 700;
-    letter-spacing: .2em; text-transform: uppercase; flex: none;
-  }
-  /* The rule runs from the chapter name out to the edge of the page and fades.
-     It is the only thing on the page doing the job a margin cannot: saying
-     "this is where one thing ends and the next begins" without a box. */
-  .chapter .rule {
-    flex: 1; height: 1px; min-width: 20px;
-    background: linear-gradient(90deg, rgba(var(--accent), .55), rgba(var(--accent), 0));
-  }
-  .chapter .note {
-    margin: 13px 0 0; color: var(--dim); font-size: 16px; line-height: 1.62; max-width: 64ch;
-  }
-  .chapter .note b { color: var(--fg); font-weight: 650; }
-  /* A reading suggestion, not a summary. Somebody assessing this has minutes,
-     not an afternoon, and the most useful thing to hand them is not the best
-     result — it is the place where a result turned out to be wrong. */
-  .guide {
-    margin-top: 16px; padding: 15px 18px; border-radius: 12px;
-    background: rgba(125,211,252,.07); border: 1px solid rgba(125,211,252,.22);
-    font-size: 14px; line-height: 1.62; color: var(--dim); max-width: 78ch;
-  }
-  .guide b { color: var(--fg); font-weight: 650; }
-  .guide a { color: #9bd4ff; }
-  /* An aside is a note about the work rather than more of the work, so its
-     heading is dimmed and it carries no accent rule of its own. */
-  .chapter.aside > header h2 { color: var(--dim); }
+  /* ── errata ──────────────────────────────────────────────
+     Every one of these was technically working code. They are set the way a
+     publisher sets an errata slip — for this, read that — because that is
+     exactly what each of them was. */
+  .errata { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 520px), 1fr)); gap: 0 56px; }
+  .errata li { display: grid; grid-template-columns: 48px 1fr; gap: 0 14px; padding: 24px 0 26px; border-top: 1px solid var(--rule-2); }
+  .errata .en { font: 400 30px/1 var(--display); color: var(--red); }
+  .errata .where { margin: 2px 0 8px; font: 600 10.5px/1.3 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+  .errata .where a { text-decoration: none; }
+  .errata .where a:hover { color: var(--red); }
+  .errata .for { margin: 0 0 8px; font: 400 clamp(21px, 1.9vw, 25px)/1.28 var(--display); }
+  .errata .for i { font: italic 400 1em var(--display); color: var(--ink-3); }
+  .errata .for s { text-decoration: none; background: linear-gradient(var(--red), var(--red)) 0 55% / 100% 2px no-repeat; color: var(--ink-2); }
+  .errata .for ins { text-decoration: none; font: 600 1.12em/1 var(--hand); color: var(--red); }
+  .errata .for ins code { font: 600 .72em/1 var(--mono); background: rgba(207,46,27,.1); padding: 2px 5px; }
+  .errata code { font: 500 .88em var(--mono); }
+  .errata .why { margin: 0; font-size: 16px; line-height: 1.58; color: var(--ink-2); }
+  .errata .how { margin: 10px 0 0; font: 500 11px/1.3 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+  .errata .how b { color: var(--red); font-weight: 600; }
 
-  /* ── cards ─────────────────────────────────────────────── */
-  /* auto-fill against a per-chapter minimum rather than a fixed column count:
-     each chapter keeps the rhythm it was designed with at full width, and
-     every one of them reflows sensibly on the way down to a phone without a
-     breakpoint per chapter. */
-  .grid {
-    display: grid; gap: 16px;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--min, 340px)), 1fr));
+  /* ── sign-off ────────────────────────────────────────────
+     The end of a proof is somebody signing it off. This one is signed, and
+     stamped, and the address is one press away. */
+  .signoff {
+    position: relative; margin-top: clamp(120px, 15vw, 190px); padding: clamp(40px, 6vw, 76px) 0 20px;
+    border-top: 3px double var(--ink);
   }
-
-  /* A column, so the picture can take up whatever height the row gives the card
-     beyond what its words need. Grid stretches every card in a row to the
-     tallest; as a block that surplus came out as dead space under the last
-     line of the blurb, which on a row led by a wide card was a hundred pixels
-     of nothing. The scene simply draws itself bigger instead. */
-  a.card {
-    display: flex; flex-direction: column; text-decoration: none; color: inherit;
-    background: var(--card); border: 1px solid var(--line);
-    border-radius: 20px; overflow: hidden; position: relative;
-    transition: transform .18s cubic-bezier(.2,.7,.3,1), border-color .18s, box-shadow .18s;
+  .signoff h2 { margin: 0; font: 400 clamp(56px, 10vw, 150px)/.9 var(--display); letter-spacing: -.03em; max-width: 12ch; }
+  .signoff h2 em { font-style: italic; color: var(--red); }
+  .signoff p { margin: 26px 0 0; font-size: clamp(18px, 1.6vw, 21px); line-height: 1.55; color: var(--ink-2); max-width: 50ch; }
+  .mail {
+    display: inline-block; margin-top: 34px; font: 400 clamp(26px, 4.4vw, 58px)/1.05 var(--display);
+    letter-spacing: -.015em; text-decoration: none; color: var(--ink); word-break: break-word;
+    background: linear-gradient(var(--red), var(--red)) 0 100% / 100% 2px no-repeat; padding-bottom: 4px;
   }
-  a.card:hover {
-    transform: translateY(-4px);
-    border-color: rgba(var(--accent, 255,255,255), .38);
-    box-shadow: 0 26px 60px -28px rgba(0,0,0,.95), 0 0 0 1px rgba(var(--accent, 255,255,255), .10);
+  .mail:hover { color: var(--red); }
+  .signoff .actions { margin-top: 30px; }
+  .signoff .stamp.small { font-size: 12px; padding: 12px 16px 11px; transform: rotate(1.5deg); }
+  .signoff .stamp.small:hover { transform: rotate(1.5deg) scale(1.05); }
+  .signoff .stamp.small[data-done] { color: #1d7a3e; }
+  .approved {
+    position: absolute; right: 2%; top: clamp(40px, 6vw, 80px); width: clamp(170px, 20vw, 250px);
+    color: var(--red); transform: rotate(-11deg) scale(1.6); opacity: 0;
+    transition: transform .35s cubic-bezier(.3,1.6,.5,1), opacity .12s;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='180'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.6' numOctaves='2' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.4 2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='180'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.6' numOctaves='2' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.4 2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
   }
-  a.card .stage { position: relative; aspect-ratio: 16 / 9; flex: 1 1 auto; background: #05060b; overflow: hidden; }
-  /* Some cards take two columns. Seventeen identical rectangles is a table of
-     contents with pictures; a few doubled up gives the run a shape, and the
-     ones that earn it are the ones whose pictures are worth the width.
-
-     dense flow is what keeps it from leaving holes: a single-width card later
-     in the list will back-fill the gap a wide one left beside it, so the
-     mosaic closes up instead of going gap-toothed at awkward widths. */
-  .grid { grid-auto-flow: dense; }
-  a.card.wide { grid-column: span 2; }
-  a.card.wide .stage { aspect-ratio: 2.3 / 1; }
-  a.card.wide .meta { padding: 20px 22px 24px; }
-  a.card.wide h2 { font-size: 23px; margin-bottom: 7px; }
-  a.card.wide p { font-size: 15px; max-width: 62ch; }
-  /* Below this the grid itself is down to one column, and a card spanning two
-     of one would push a second column into existence and hang off the side of
-     the page. The breakpoint is above where that happens, not at it. */
-  @media (max-width: 720px) {
-    a.card.wide { grid-column: auto; }
-    a.card.wide .stage { aspect-ratio: 16 / 9; }
-  }
-  a.card canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  a.card .play {
-    position: absolute; right: 14px; bottom: 14px; z-index: 2;
-    background: rgba(8,10,16,.72); backdrop-filter: blur(10px);
-    border: 1px solid var(--line2); border-radius: 99px;
-    padding: 8px 14px; font-size: 12.5px; font-weight: 650;
-    opacity: 0; transform: translateY(6px); transition: opacity .18s, transform .18s;
-  }
-  a.card:hover .play { opacity: 1; transform: translateY(0); }
-  a.card .meta { padding: 16px 18px 18px; }
-  a.card h2 { margin: 0 0 5px; font-size: 19px; letter-spacing: -.02em; }
-  a.card p { margin: 0; color: var(--dim); font-size: 14px; line-height: 1.55; }
-  /* The pill takes the colour of the card's kind, which is set per card rather
-     than per section. Running an eye down the page, the colour changing every
-     card is the mixing made visible — it says "these are different sorts of
-     thing" before a single word is read. */
-  a.card .tag {
-    position: absolute; left: 14px; top: 14px; z-index: 2;
-    background: rgba(8,10,16,.72); backdrop-filter: blur(10px);
-    border: 1px solid rgba(var(--accent, 255,255,255), .32); border-radius: 99px;
-    padding: 6px 11px; font: 600 11px/1 var(--mono); letter-spacing: .04em;
-    color: rgb(var(--accent, 255,255,255));
+  .approved.in { transform: rotate(-11deg) scale(1); opacity: .9; }
+  .approved svg { display: block; width: 100%; height: auto; }
+  .signature { display: block; margin-top: 44px; font-size: clamp(46px, 5vw, 64px); transform: rotate(-3deg); transform-origin: left; }
+  @media (max-width: 760px) {
+    /* No oversize wait on a phone: a box that big past the edge, even
+       invisible, is enough for a phone to widen the whole layout to fit
+       it. It drops in from just above instead. */
+    .approved { position: relative; right: auto; top: auto; margin: 0 16px 24px auto; display: block;
+      transform: rotate(-11deg) translateY(-18px); }
   }
 
-  /* ── odds and ends ─────────────────────────────────────── */
-  .chapter + .chapter { margin-top: 96px; }
-  .lead { font-size: 17px; line-height: 1.65; color: var(--dim); max-width: 68ch; margin: 0 0 26px; }
-  .lead b { color: var(--fg); font-weight: 650; }
+  .colophon {
+    display: grid; grid-template-columns: 180px 1fr; gap: 10px 40px; margin-top: 90px;
+    padding: 24px 0 48px; border-top: 1px solid var(--ink); font-size: 14.5px; line-height: 1.6; color: var(--ink-2);
+  }
+  .colophon h4 { margin: 0; font: 600 10.5px/1.6 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink); }
+  .colophon p { margin: 0; max-width: 78ch; }
+  @media (max-width: 640px) { .colophon { grid-template-columns: 1fr; } }
 
-  .how { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
-  .how div {
-    background: var(--card); border: 1px solid var(--line);
-    border-radius: 16px; padding: 20px;
-  }
-  .how h4 { margin: 0 0 8px; font-size: 15.5px; letter-spacing: -.01em; }
-  .how p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--dim); }
-  .how .n {
-    font: 700 10px/1 var(--mono); color: #ffd166; letter-spacing: .14em;
-    text-transform: uppercase; display: block; margin-bottom: 10px;
-  }
+  /* ── the rail and reveals ────────────────────────────────
+     A red line down the left edge: how far through the proof you are. */
+  .rail { position: fixed; left: 0; top: 0; bottom: 0; width: 2px; z-index: 40; pointer-events: none; }
+  .rail i { display: block; width: 100%; height: 0%; background: var(--red); }
+  .reveal { opacity: 0; transform: translateY(24px); }
+  .reveal.in { opacity: 1; transform: none;
+    transition: opacity .7s cubic-bezier(.2,.7,.3,1) var(--d, 0s), transform .7s cubic-bezier(.2,.7,.3,1) var(--d, 0s); }
 
-  /* Chapter V is a list of links rather than a grid of cards, so it has no
-     picture of its own and sat flat next to the four above it. One wide strip
-     — a state machine stepping through its input, which is what half of these
-     six are about — gives it the same visual anchor the others get from their
-     cards, at a fifth of the height. */
-  /* The ratio changes with the width; it does NOT get a min-height. This strip
-     had `min-height: 88px` next to `aspect-ratio: 11/1`, and on a phone the
-     height won and the width was derived back from it — a 968px box inside a
-     350px column, cropped in silence by the `overflow-x: hidden` on the body.
-     Two rules that both want to decide one box's size, and the page only had
-     to be looked at on a phone for the loser to show. */
-  .plate {
-    position: relative; aspect-ratio: 11 / 1;
-    border: 1px solid var(--line); border-radius: 16px;
-    overflow: hidden; margin-bottom: 14px; background: #080a12;
+  /* ── narrow ──────────────────────────────────────────── */
+  @media (max-width: 1000px) {
+    .under { grid-template-columns: 1fr; }
+    .headline-note { margin: 0 0 30px; width: auto; padding-left: 0; }
+    .headline-note svg { display: none; }
   }
-  @media (max-width: 900px) { .plate { aspect-ratio: 6 / 1; } }
-  @media (max-width: 560px) { .plate { aspect-ratio: 3.2 / 1; } }
-  .plate canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-
-  /* ── deep cuts ─────────────────────────────────────────── */
-  /* min() against 100%, the same as the card grid. A bare 345px minimum is a
-     345px column whatever the page is, so below about a 360px phone the six
-     rows hung off the side — invisible, because the body hides the sideways
-     scroll. A minimum that cannot exceed the space available has no such
-     width to go wrong at. */
-  .deep { display: grid; gap: 13px;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 345px), 1fr)); }
-  a.row {
-    display: flex; align-items: center; gap: 14px; text-decoration: none;
-    background: var(--card); border: 1px solid var(--line);
-    border-radius: 14px; padding: 15px 16px;
-    transition: border-color .15s, transform .15s;
+  @media (max-width: 920px) { nav.top a:not(.brand):not(.keep) { display: none; } }
+  @media (max-width: 760px) {
+    .proof { padding: 14px 16px 20px; min-height: 0; }
+    .page { padding: 0 18px; }
+    .slug { grid-template-columns: 1fr auto; padding: 0 8px; }
+    .slug > :last-child { display: none; }
+    nav.top { margin: 18px 6px 0; }
+    .title { padding: 22px 6px 12px; }
+    .foot { padding: 20px 6px 0; }
+    .figs { gap: 56px 20px; }
   }
-  a.row:hover { border-color: var(--line2); transform: translateX(3px); }
-  a.row .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
-  a.row .t { font-size: 15px; font-weight: 650; letter-spacing: -.01em; }
-  a.row .d { font-size: 13px; color: var(--dim); margin-top: 3px; line-height: 1.5; }
-  a.row .arrow { margin-left: auto; color: var(--mute); font-size: 18px; }
-
-  footer { margin-top: 84px; padding-top: 30px; border-top: 1px solid var(--line); }
-  .card-me {
-    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
-    background: var(--card); border: 1px solid var(--line);
-    border-radius: 18px; padding: 22px 24px;
-  }
-  .card-me .id { display: flex; align-items: center; gap: 15px; flex: 1; min-width: 260px; }
-  .card-me .avatar {
-    width: 46px; height: 46px; border-radius: 14px; flex: none;
-    display: grid; place-items: center;
-    font: 700 15px/1 var(--sans); color: #100c02; letter-spacing: .02em;
-    background: conic-gradient(from 140deg, #ffd166, #ff4d8d, #7dd3fc, #a3e635, #ffd166);
-  }
-  .card-me .nm { font-size: 17px; font-weight: 700; letter-spacing: -.015em; }
-  .card-me .rl { font-size: 14px; color: var(--dim); margin-top: 3px; line-height: 1.5; }
-  .card-me .links { display: flex; gap: 9px; flex-wrap: wrap; }
-  .lk {
-    text-decoration: none; font-size: 14px; font-weight: 600;
-    border: 1px solid var(--line2); border-radius: 11px; padding: 11px 16px;
-    transition: background .14s, transform .14s;
-  }
-  .lk:hover { background: rgba(255,255,255,.07); transform: translateY(-1px); }
-  .colophon { margin: 20px 2px 0; color: var(--mute); font-size: 13px; line-height: 1.6; max-width: 70ch; }
-
-  @media (max-width: 560px) {
-    /* The pill broke after the name and left the middot stranded at the start
-       of the second line. It fits on one line at every width the page is ever
-       seen at, so it is simply told not to break. */
-    .eyebrow { white-space: nowrap; font-size: 13px; padding: 7px 13px; }
-    .hero { padding-bottom: 18px; }
-    .chapter:first-of-type { margin-top: 46px; }
-    nav.top { font-size: 12.5px; gap: 8px; }
-    nav.top a.ghost { white-space: nowrap; }
-    /* Something has to go at this width. It used to be the first link, which is
-       now the one that goes to the work — so it is the last one, which goes to
-       a paragraph about how I work, that goes instead. */
-    nav.top a.ghost:last-of-type { display: none; }
-  }
-  /* And on the narrowest phones still in use, one link only. The nav grew a
-     fourth entry and dropping two of four still ran off the side of a 320px
-     screen; the first one is the one worth keeping. */
   @media (max-width: 430px) {
-    nav.top a.ghost:not(:first-of-type) { display: none; }
+    .slug .reg { display: none; }
+    .slug { grid-template-columns: 1fr; }
+    #surprise .face { min-width: 0; }
   }
 
-  /* At the narrowest widths the section heading is set in letter-spaced capitals
-     and refuses to shrink, and the rule beside it has a 20px floor — together
-     they are wider than the screen. Both give here. */
-  @media (max-width: 430px) {
-    .chapter .tier { flex-wrap: wrap; }
-    .chapter > header h2 { flex: 1 1 auto; letter-spacing: .13em; }
-    .chapter .rule { min-width: 0; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    .reveal { opacity: 1; transform: none; }
+    svg.pen path { stroke-dashoffset: 0; }
+    .hand.later { opacity: 1; }
+    .approved { opacity: .9; transform: rotate(-11deg); }
   }
-
-  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
 
 <div class="rail" aria-hidden="true"><i id="railFill"></i></div>
 
-<!-- ── the front door ──────────────────────────────────────────────────────
-     Two of the pieces, running, at the size they were drawn for. Point at one
-     and it takes the room. -->
-<section class="door" id="door">
+<!-- ── the title page ──────────────────────────────────────────────────────
+     A proof, with its crop marks and its colour bar, and the author's first
+     correction already on it. -->
+<header class="proof" id="top">
+  <i class="crop tl"></i><i class="crop tr"></i><i class="crop bl"></i><i class="crop br"></i>
 
-  <nav class="top">
-    <span class="logo"></span>
-    <b>Playground</b>
-    <span class="spacer"></span>
-    <a class="ghost" href="#ml">inside the models</a>
-    <a class="ghost" href="#run">everything</a>
-    <a class="ghost" href="#deep">the serious ones</a>
-    <a class="ghost" href="#how">how I work</a>
+  <div class="slug" aria-hidden="true">
+    <span>Playground &middot; author&rsquo;s proof</span>
+    <svg class="reg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5" fill="none" stroke="currentColor" stroke-width="1"/><path d="M12 0v24M0 12h24" stroke="currentColor" stroke-width="1"/><circle cx="12" cy="12" r="2.4" fill="currentColor"/></svg>
+    <span id="setAt">set in your browser</span>
+  </div>
+
+  <nav class="top" aria-label="Sections">
+    <a class="brand" href="#top">Playground</a>
+    <a href="#ml"><span class="sec">&sect;1</span>The models</a>
+    <a href="#stories"><span class="sec">&sect;2</span>Stories</a>
+    <a href="#run"><span class="sec">&sect;3</span>Everything else</a>
+    <a href="#deep"><span class="sec">&sect;4</span>The serious ones</a>
+    <a class="keep" href="#errata">Errata</a>
+    <a class="keep write" href="#contact">Write to me</a>
   </nav>
 
-  <div class="say">
-    <!-- ↓↓ YOUR NAME AND TITLE — edit these two lines ↓↓ -->
-    <p class="eyebrow"><b>Mohamed Sucule</b> &middot; software engineer</p>
-    <h1>Thirty things I built. <em>All of them run right here.</em></h1>
-    <p class="sub">
-      No videos, no screenshots, no &ldquo;request a demo&rdquo;. Both of these are live on
-      this page right now &mdash; <b>click either one and you are in it.</b> Then keep going:
-      there are twenty-eight more below.
-    </p>
-    <!-- The three machine-learning pieces, above the fold, because they are the
-         ones a reader looking for that will want first and they are three
-         scrolls down otherwise. -->
-    <nav class="jump" aria-label="Machine learning">
-      <span class="lead">How language models actually work &mdash;</span>
-      <a href="apps/tokens/index.html">Tokens</a>
-      <a href="apps/attention/index.html">Attention</a>
-      <a href="apps/evals/index.html">Evals</a>
-      <a href="apps/agents/index.html">Agents</a>
-    </nav>
-    <p class="facts">
-      Plain HTML, CSS and JavaScript &middot; <b>no framework, no build step, no dependencies</b>
-      &middot; 777 tests run in CI
-    </p>
-    <p class="hint">
-      Anywhere on this site, press <kbd>⌘K</kbd> and ask for what you want &mdash;
-      <i>&ldquo;something fun&rdquo;</i>, <i>&ldquo;the AI work&rdquo;</i>,
-      <i>&ldquo;I have 2 minutes&rdquo;</i>.
-    </p>
+  <div class="title">
+    <!-- ↓↓ YOUR NAME AND TITLE — edit this line ↓↓ -->
+    <p class="byline"><b>Mohamed Sucule</b> &mdash; software engineer &mdash; thirty pieces, 2026</p>
+    <h1 class="headline">
+      <span class="sr">Thirty things I built. All of them run right here.</span>
+      <span aria-hidden="true"><span class="fix"><span data-pen="strike" style="--pd:.7s">Twenty-nine</span><span class="ins hand later" style="--pd:1.25s">thirty</span></span> things I built.</span>
+      <span aria-hidden="true"><em>All of them <span data-pen="underline2" style="--pd:1.7s">run right here.</span></em></span>
+    </h1>
+
+    <div class="under">
+      <div>
+        <p class="sub">
+          No videos, no screenshots, no &ldquo;request a demo&rdquo;. Every figure on this page is
+          the real thing, running in your browser &mdash; <b>click any of it and you are in it.</b>
+          Then read the errata: it is the list of everything here that was wrong.
+        </p>
+        <div class="actions">
+          <button class="stamp" id="surprise" type="button"><span class="face">Surprise me</span></button>
+          <a class="quiet-link" href="#ml">or start with the machine learning &darr;</a>
+        </div>
+      </div>
+      <div class="aside">
+      <p class="headline-note hand later" style="--pd:2.2s">
+        <svg viewBox="0 0 60 56" aria-hidden="true"><path d="M52 54 C 50 30, 36 12, 8 6 M20 1 L7 6 L17 16" /></svg>
+        live &mdash; not a screenshot, not a video. every one of them, see Fig. 1
+      </p>
+      <div class="spec">
+        <p class="hd">Specification</p>
+        <dl>
+          <div><dt>Pieces, every one running</dt><dd data-atlas-count>30</dd></div>
+          <div><dt>Parameters, trained from nothing</dt><dd>45,440</dd></div>
+          <div><dt>Tests, run before publishing</dt><dd>800+</dd></div>
+          <div><dt>Frameworks, build steps, deps</dt><dd>0</dd></div>
+        </dl>
+      </div>
+      </div>
+    </div>
   </div>
 
-  <div class="panes">
-    <a class="pane" href="apps/lamplighter/index.html" style="--accent: 255,209,102">
-      <canvas id="paneLamp"></canvas>
-      <div class="edge">
-        <span class="k">a short story &middot; five minutes</span>
-        <h2>The Lamplighter</h2>
-        <p>
-          One night, and a keeper about to be replaced by a machine. <b>Scroll and the sun
-          goes down</b>, the gale gets up, the rain comes sideways, and the light keeps
-          turning. Not a photograph in it &mdash; the sea and the sky are worked out from scratch.
-        </p>
-        <span class="go">READ IT →</span>
-      </div>
-    </a>
-    <a class="pane light" href="apps/room/index.html" style="--accent: 224,177,100">
-      <canvas id="paneRoom"></canvas>
-      <div class="edge">
-        <span class="k">a murder &middot; ten minutes</span>
-        <h2>The Room</h2>
-        <p>
-          Edmund Harkness is dead at his desk and the door was locked from inside.
-          <b>Look at nineteen things</b>, question four people, and the notebook works out
-          for itself which two of them cannot both be true. Then name somebody.
-        </p>
-        <span class="go">SOLVE IT →</span>
-      </div>
-    </a>
+  <div class="foot" aria-hidden="true">
+    <span class="bar"><i style="background:#00a3e0"></i><i style="background:#e5007e"></i><i style="background:#ffe600"></i><i style="background:#17140f"></i><i style="background:#17140f;opacity:.6"></i><i style="background:#17140f;opacity:.3"></i><i style="background:#cf2e1b"></i></span>
+    <a class="cue" href="#sheet">Fig. 1 &mdash; four on machine learning, then twenty-six more &darr;</a>
+    <span>p. i</span>
   </div>
-
-  <a class="cue" href="#ml">four on machine learning, then twenty-four more <i>↓</i></a>
-</section>
+</header>
 
 <div class="page">
 
-  <!-- ── inside the models ───────────────────────────────────────────────
-       First, before the games. Everything below this is craft; this is the
-       part that is about the machines. -->
-  <section class="chapter" id="ml" style="--accent: 125,211,252">
+  <!-- ── fig. 1 ──────────────────────────────────────────────────────────────
+       The contact sheet. Built by script from the atlas, so it can never list
+       something the navigator does not. -->
+  <figure class="fig1" id="sheet">
+    <div class="sheet" id="film">
+      <div class="strips" id="strips"></div>
+      <svg class="grease" id="grease" aria-hidden="true"></svg>
+    </div>
+    <figcaption>
+      <span class="fn">Fig. 1</span>
+      <span>Contact sheet. Every piece on this site, running, and the author&rsquo;s picks in grease
+      pencil &mdash; <b id="liveCount">&hellip;</b> of them running as you read this.
+      <span class="fine">Hold the loupe over a frame to look closer;</span> click a frame to go in.</span>
+    </figcaption>
+  </figure>
+
+  <!-- ── §1 inside the models ────────────────────────────────────────────── -->
+  <section class="section" id="ml" style="--accent: 125,211,252">
     <header>
-      <div class="tier"><span class="tick"></span><h2>Inside the models</h2><span class="rule"></span></div>
-      <p class="note">
-        Four pieces on how language models actually work, built from the algorithm up rather
-        than from an API call. A tokeniser that trains itself in front of you; a transformer
-        trained here with backpropagation written from nothing; the statistics that decide
-        whether a change to one of these systems did anything at all; and an agent loop you
-        can break on purpose.
+      <div class="runhead"><span class="no">&sect; 1</span><span>Inside the models</span><span class="nm">four figures</span></div>
+      <h2>How language models <em>actually</em> work</h2>
+      <p class="lede">
+        Four pieces built from the algorithm up rather than from an API call. A tokeniser that
+        trains itself in front of you; a transformer trained here with backpropagation written
+        from nothing; the statistics that decide whether a change to one of these systems did
+        anything at all; and an agent loop you can break on purpose.
         <b>No key, no server, nothing sent anywhere</b> — same promise as everything else here.
       </p>
     </header>
-    <div class="grid" style="--min:420px">
+    <div class="figs" style="--min:440px">
 
-      <a class="card reveal" href="apps/attention/index.html" style="--accent: 125,211,252; --d: 0ms">
-        <div class="stage"><canvas id="mlAttention"></canvas></div>
-        <span class="tag">trained from scratch</span>
-        <span class="play">open →</span>
-        <div class="meta">
-          <h2>Attention</h2>
-          <p>
-            45,440 parameters, trained with an automatic differentiation engine written from
-            nothing — no PyTorch, no library at all, every backward pass checked against finite
-            differences. Drag through training and watch eight attention heads go from an even
-            smear to bright stripes at the exact step the loss falls off a cliff. The circuit that
-            appears is the induction head, and it lands in the layer the theory says it must.
-          </p>
-        </div>
+      <a class="fig reveal" href="apps/attention/index.html" style="--accent: 125,211,252; --d: 0ms">
+        <span class="kind">trained from scratch</span>
+        <span class="note hand" data-pen-note>scored 0.92, and was the wrong mechanism &mdash; see E1</span>
+        <div class="plate"><canvas id="mlAttention"></canvas></div>
+        <h3><span class="fn" data-fig></span><span class="t">Attention</span><span class="go">open &rarr;</span></h3>
+        <p>
+          45,440 parameters, trained with an automatic differentiation engine written from
+          nothing — no PyTorch, no library at all, every backward pass checked against finite
+          differences. Drag through training and watch eight attention heads go from an even
+          smear to bright stripes at the exact step the loss falls off a cliff. The circuit that
+          appears is the induction head, and it lands in the layer the theory says it must.
+        </p>
       </a>
 
-      <a class="card reveal" href="apps/tokens/index.html" style="--accent: 163,230,53; --d: 70ms">
-        <div class="stage"><canvas id="mlTokens"></canvas></div>
-        <span class="tag">train it yourself</span>
-        <span class="play">open →</span>
-        <div class="meta">
-          <h2>Tokens</h2>
-          <p>
-            A real byte-pair encoder, trained in the page in 380ms — watch the vocabulary build
-            itself one merge at a time. Then why a model cannot count the r's in strawberry, why
-            arithmetic was hard and got easier, and why the same sentence costs three times as
-            much in Japanese.
-          </p>
-        </div>
+      <a class="fig reveal" href="apps/tokens/index.html" style="--accent: 163,230,53; --d: 70ms">
+        <span class="kind">train it yourself</span>
+        <span class="note hand" data-pen-note>strawberry = 10 letters, 6 tokens</span>
+        <div class="plate"><canvas id="mlTokens"></canvas></div>
+        <h3><span class="fn" data-fig></span><span class="t">Tokens</span><span class="go">open &rarr;</span></h3>
+        <p>
+          A real byte-pair encoder, trained in the page in 380ms — watch the vocabulary build
+          itself one merge at a time. Then why a model cannot count the r's in strawberry, why
+          arithmetic was hard and got easier, and why the same sentence costs three times as
+          much in Japanese.
+        </p>
       </a>
 
-      <a class="card reveal" href="apps/evals/index.html" style="--accent: 255,196,107; --d: 140ms">
-        <div class="stage"><canvas id="mlEvals"></canvas></div>
-        <span class="tag">the one nobody builds</span>
-        <span class="play">open →</span>
-        <div class="meta">
-          <h2>Evals</h2>
-          <p>
-            Two real parsers, eight hundred real inputs, graded live. Drag the sample size and
-            watch the confidence interval cross zero. At a hundred items the better parser scores
-            <b>worse</b> — which is what three points of noise looks like when you can drag it.
-          </p>
-        </div>
+      <a class="fig reveal" href="apps/evals/index.html" style="--accent: 255,196,107; --d: 0ms">
+        <span class="kind">the one nobody builds</span>
+        <span class="note hand" data-pen-note>at n = 100 the better one loses</span>
+        <div class="plate"><canvas id="mlEvals"></canvas></div>
+        <h3><span class="fn" data-fig></span><span class="t">Evals</span><span class="go">open &rarr;</span></h3>
+        <p>
+          Two real parsers, eight hundred real inputs, graded live. Drag the sample size and
+          watch the confidence interval cross zero. At a hundred items the better parser scores
+          <b>worse</b> — which is what three points of noise looks like when you can drag it.
+        </p>
       </a>
 
-      <a class="card reveal" href="apps/agents/index.html" style="--accent: 125,211,252; --d: 210ms">
-        <div class="stage"><canvas id="mlAgents"></canvas></div>
-        <span class="tag">break it on purpose</span>
-        <span class="play">open →</span>
-        <div class="meta">
-          <h2>Agents</h2>
-          <p>
-            The tool-use loop is ten lines and everybody writes it correctly. Everything hard is
-            what happens when a tool throws, a result is five kilobytes, or the model calls the
-            same thing four times. Step through a real loop over a real ledger, then switch the
-            guards off one at a time and watch what each one was holding back.
-          </p>
-        </div>
+      <a class="fig reveal" href="apps/agents/index.html" style="--accent: 125,211,252; --d: 70ms">
+        <span class="kind">break it on purpose</span>
+        <span class="note hand" data-pen-note>5.3&times; the tokens, same answer</span>
+        <div class="plate"><canvas id="mlAgents"></canvas></div>
+        <h3><span class="fn" data-fig></span><span class="t">Agents</span><span class="go">open &rarr;</span></h3>
+        <p>
+          The tool-use loop is ten lines and everybody writes it correctly. Everything hard is
+          what happens when a tool throws, a result is five kilobytes, or the model calls the
+          same thing four times. Step through a real loop over a real ledger, then switch the
+          guards off one at a time and watch what each one was holding back.
+        </p>
       </a>
 
     </div>
-    <div class="guide">
-      <b>If you only read one thing:</b> the two bugs in
+    <p class="nb reveal">
+      <span class="hand">N.B.</span>
+      <span><b>If you only read one thing,</b> read the two bugs in
       <a href="apps/attention/README.md">the Attention write-up</a>. The first made a positional
       copy head look exactly like an induction head; the second made one induction head look like
       eight different ones. Both produced a plausible picture and a beautiful number, and neither
-      would ever have thrown. Finding them took longer than the build.
+      would ever have thrown. Finding them took longer than the build.</span>
+    </p>
+  </section>
+
+  <!-- ── §2 stories ──────────────────────────────────────────────────────── -->
+  <section class="section" id="stories" style="--accent: 255,209,102">
+    <header>
+      <div class="runhead"><span class="no">&sect; 2</span><span>Stories</span><span class="nm">two figures</span></div>
+      <h2>Two to get <em>lost in</em></h2>
+      <p class="lede">
+        A short story drawn from scratch as you scroll, and a murder you solve by looking at
+        things. <b>Point at one and it takes the room.</b>
+      </p>
+    </header>
+    <div class="panes reveal">
+      <a class="pane" href="apps/lamplighter/index.html" style="--accent: 255,209,102">
+        <canvas id="paneLamp"></canvas>
+        <div class="edge">
+          <span class="k"><span class="fn" data-fig></span> &middot; a short story &middot; five minutes</span>
+          <h3>The <em>Lamplighter</em></h3>
+          <p>
+            One night, and a keeper about to be replaced by a machine. <b>Scroll and the sun
+            goes down</b>, the gale gets up, the rain comes sideways, and the light keeps
+            turning. Not a photograph in it &mdash; the sea and the sky are worked out from scratch.
+          </p>
+          <span class="go">READ IT &rarr;</span>
+        </div>
+      </a>
+      <a class="pane light" href="apps/room/index.html" style="--accent: 224,177,100">
+        <canvas id="paneRoom"></canvas>
+        <div class="edge">
+          <span class="k"><span class="fn" data-fig></span> &middot; a murder &middot; ten minutes</span>
+          <h3>The <em>Room</em></h3>
+          <p>
+            Edmund Harkness is dead at his desk and the door was locked from inside.
+            <b>Look at nineteen things</b>, question four people, and the notebook works out
+            for itself which two of them cannot both be true. Then name somebody.
+          </p>
+          <span class="go">SOLVE IT &rarr;</span>
+        </div>
+      </a>
     </div>
   </section>
 
-  <section class="chapter" id="run" style="--accent: 255,77,141">
+  <!-- ── §3 everything else ──────────────────────────────────────────────── -->
+  <section class="section" id="run">
     <header>
-      <div class="tier"><span class="tick"></span><h2>Then everything else</h2><span class="rule"></span></div>
-      <p class="note">
+      <div class="runhead"><span class="no">&sect; 3</span><span>Everything else</span><span class="nm">seventeen figures</span></div>
+      <h2>Things to put your <em>hands on</em></h2>
+      <p class="lede">
         Games, physics you can put your finger in, instruments that make you something,
         and one horror story. <b>Shuffled on purpose</b> — two of a kind in a row gets
         boring, so there never are two. Nothing here has a menu or a tutorial: the first
         ten seconds teach you the rest.
       </p>
     </header>
-    <div class="grid" id="toys" style="--min:330px"></div>
+    <div class="figs" id="toys" style="--min:330px"></div>
   </section>
 
-  <section class="chapter" id="deep" style="--accent: 90,169,255">
+  <!-- ── §4 the serious ones ─────────────────────────────────────────────── -->
+  <section class="section" id="deep">
     <header>
-      <div class="tier"><span class="tick"></span><h2>The serious ones</h2><span class="rule"></span></div>
-      <p class="note">
+      <div class="runhead"><span class="no">&sect; 4</span><span>The serious ones</span><span class="nm">one figure, six entries</span></div>
+      <h2>Systems that <em>refuse to be simple</em></h2>
+      <p class="lede">
         Same approach, harder subjects, and these take longer than ten seconds to get into.
         Each one puts something normally invisible on screen — a night's bookings, what a
         database is thinking, why servers disagree — and lets you poke it. <b>You do not need
@@ -733,11 +849,11 @@
       </p>
     </header>
 
-    <a class="headline" id="headline" href="apps/covers/index.html">
-      <div class="shot"><canvas></canvas></div>
+    <a class="headline-fig reveal" id="headline" href="apps/covers/index.html">
+      <div class="plate"><canvas></canvas></div>
       <div class="said">
-        <p class="kicker">The longest thing here, by a distance</p>
-        <h2>Covers — a restaurant floor and booking system</h2>
+        <span class="fn" data-fig></span>
+        <h3>Covers &mdash; a restaurant floor and booking system</h3>
         <p>
           You arrive at <b>19:42 on a Saturday</b>. Thirty-one bookings are in the book, eleven
           parties are eating, three groups are waiting at the bar, and there is a double-booking
@@ -753,90 +869,159 @@
           <li>Open it in two windows and they stay in step — because a restaurant has more than one screen</li>
           <li>No backend, no database, no signup — and sixty-seven tests on the rules alone</li>
         </ul>
-        <div class="go">OPEN IT →</div>
+        <div class="go">OPEN IT &rarr;</div>
       </div>
     </a>
 
-    <div class="plate"><canvas id="machine"></canvas></div>
-    <div class="deep" id="deepList"></div>
+    <div class="plate strip-plate reveal"><canvas id="machine"></canvas></div>
+    <ul class="index" id="deepList"></ul>
   </section>
 
-  <section class="chapter aside" id="how" style="--accent: 154,165,184">
+  <!-- ── errata ──────────────────────────────────────────────────────────────
+       The section this whole page is built around. It used to be four cards
+       under "How I work" that described a habit; these are the habit's
+       results. Every entry is written up in the README or in the piece's own
+       write-up, and none of them would have thrown. -->
+  <section class="section" id="errata">
     <header>
-      <div class="tier"><h2>How I work</h2><span class="rule"></span></div>
-      <p class="note">
+      <div class="runhead"><span class="no">&sect; 5</span><span>Errata</span><span class="nm">ten corrections</span></div>
+      <h2>Everything here that was <em>wrong</em></h2>
+      <p class="lede">
         I build fast and I am hard to satisfy. With modern tooling a working version exists in
         minutes, so the job stops being typing and starts being judgement — <b>what is worth
-        building, what is wrong with it, whether it is actually doing what it appears to be
-        doing, and what it should say.</b> That is where my time goes, and it is the part that
-        never gets easier.
+        building, what is wrong with it, and whether it is actually doing what it appears to be
+        doing.</b> Every one of these was technically working code. Not one of them threw.
       </p>
     </header>
-  <div class="how">
-    <div>
-      <span class="n">build</span>
-      <h4>Something running beats something planned</h4>
-      <p>
-        I would rather have a thing I can click that is wrong than a document that is right.
-        Getting to a working version fast is the quickest way to find out what I actually
-        wanted — which is reliably not what I wrote down at the start.
-      </p>
-    </div>
-    <div>
-      <span class="n">review</span>
-      <h4>Looking at it beats testing it</h4>
-      <p>
-        Every screen here was rendered and inspected after each change. That is how the
-        hourglass that leaked sand, the forest fire that burned one tree and gave up, and
-        the island that came out as a featureless green blob all got caught. No test would
-        have flagged any of them — they were all technically working.
-      </p>
-    </div>
-    <div>
-      <span class="n">verify</span>
-      <h4>A beautiful result is not the same as a correct one</h4>
-      <p>
-        The transformer here learned to copy, the loss fell off a cliff on cue, and a head hit a
-        score of 0.92. <b>It was the wrong mechanism</b> — it had memorised a position, not
-        learned to match on content, and on screen the two are identical. Finding that out took
-        longer than the original build and is the only reason the claim is worth anything. Every
-        strong result in this repo has a check attached that would catch it being the wrong one.
-      </p>
-    </div>
-    <div>
-      <span class="n">write</span>
-      <h4>The words are half the product</h4>
-      <p>
-        “Pour sand. Add water. Then set it on fire” teaches the sandbox faster than any
-        tutorial could. Deciding what a thing says — and what it refuses to say — is part of
-        building it, not a coat of paint applied at the end.
-      </p>
-    </div>
-  </div>
-
-
-  <footer>
-    <div class="card-me">
-      <!-- ↓↓ YOUR DETAILS — edit the name, line and links ↓↓ -->
-      <div class="id">
-        <span class="avatar">MS</span>
+    <ol class="errata">
+      <li class="reveal">
+        <span class="en">E1</span>
         <div>
-          <div class="nm">Mohamed Sucule</div>
-          <div class="rl">Software engineer. I build things end to end, and I care how they feel to use.</div>
+          <p class="where"><a href="apps/attention/index.html">Attention</a> &middot; &sect;1</p>
+          <p class="for"><i>For</i> <s>an induction head, scoring 0.92</s> <i>read</i> <ins>a positional copy head</ins></p>
+          <p class="why">It had memorised &ldquo;attend to <i>i</i> &minus; 31&rdquo; off the positional embeddings and never looked at a token. The period is now drawn fresh for every sequence, and the model is scored across all of them.</p>
+          <p class="how">Caught by <b>distrusting a beautiful number</b></p>
         </div>
-      </div>
-      <div class="links">
-        <a class="lk" href="mailto:mohamedsucule@gmail.com">✉ Email me</a>
-        <a class="lk" href="https://github.com/mohamedsucule-debug/Projects">↗ Source on GitHub</a>
-      </div>
+      </li>
+      <li class="reveal" style="--d:70ms">
+        <span class="en">E2</span>
+        <div>
+          <p class="where"><a href="apps/attention/index.html">Attention</a> &middot; &sect;1</p>
+          <p class="for"><i>For</i> <s>a head that works better at longer periods</s> <i>read</i> <ins>a bad measurement</ins></p>
+          <p class="why">The score only counted the nearest earlier match, so at period 12 it saw about a fifth of the head&rsquo;s attention. Fixed, the spread across periods fell from 0.437 to 0.132: one head, matching on content.</p>
+          <p class="how">Caught by <b>asking why the curve was so smooth</b></p>
+        </div>
+      </li>
+      <li class="reveal">
+        <span class="en">E3</span>
+        <div>
+          <p class="where"><a href="play/sandbox/index.html">Sandbox</a> &middot; &sect;3</p>
+          <p class="for"><i>For</i> <s>an hourglass</s> <i>read</i> <ins>an X</ins></p>
+          <p class="why">It leaked sand out of its sides, because it had been drawn as two crossed lines rather than a funnel.</p>
+          <p class="how">Caught by <b>looking at it</b></p>
+        </div>
+      </li>
+      <li class="reveal" style="--d:70ms">
+        <span class="en">E4</span>
+        <div>
+          <p class="where"><a href="play/sandbox/index.html">Sandbox</a> &middot; &sect;3</p>
+          <p class="for"><i>For</i> <s>a forest fire</s> <i>read</i> <ins>one tree</ins></p>
+          <p class="why">It burned one tree and went out. The match had been lit on an isolated tree at the edge of the map.</p>
+          <p class="how">Caught by <b>looking at it</b></p>
+        </div>
+      </li>
+      <li class="reveal">
+        <span class="en">E5</span>
+        <div>
+          <p class="where"><a href="play/island/index.html">Islandsmith</a> &middot; &sect;3</p>
+          <p class="for"><i>For</i> <s>a new island</s> <i>read</i> <ins>a smooth green ellipse</ins></p>
+          <p class="why">Every one of them. The noise frequency was so low that the entire map sat inside a single noise cell.</p>
+          <p class="how">Caught by <b>looking at it</b></p>
+        </div>
+      </li>
+      <li class="reveal" style="--d:70ms">
+        <span class="en">E6</span>
+        <div>
+          <p class="where"><a href="play/loom/index.html">Loom</a> &middot; &sect;3</p>
+          <p class="for"><i>For</i> <s>Contrast</s> <i>read</i> <ins>Brightness</ins></p>
+          <p class="why">The knob applied a gamma curve, so turning it up raised the mean from 0.501 to 0.587 instead of spreading the values out &mdash; the opposite of what its own label promised.</p>
+          <p class="how">Caught by <b>looking at it, then measuring it</b></p>
+        </div>
+      </li>
+      <li class="reveal">
+        <span class="en">E7</span>
+        <div>
+          <p class="where"><a href="play/portrait/index.html">Portrait</a> &middot; &sect;3</p>
+          <p class="for"><i>For</i> <s>six thousand dots</s> <i>read</i> <ins>six thousand dots under a pixel wide</ins></p>
+          <p class="why">The radius was divided by a canvas scale that had already been applied. The data was right the whole time; it just could not be seen.</p>
+          <p class="how">Caught by <b>looking at it</b></p>
+        </div>
+      </li>
+      <li class="reveal" style="--d:70ms">
+        <span class="en">E8</span>
+        <div>
+          <p class="where"><a href="play/morph/index.html">Morph</a> &middot; &sect;3</p>
+          <p class="for"><i>For</i> <s>in front of its backdrop</s> <i>read</i> <ins>behind it</ins></p>
+          <p class="why">The container carries <code>perspective</code> for the 3D layouts, which makes a stacking context &mdash; and no <code>z-index</code> inside one can lift a child above something outside it.</p>
+          <p class="how">Caught by <b>looking at it</b></p>
+        </div>
+      </li>
+      <li class="reveal">
+        <span class="en">E9</span>
+        <div>
+          <p class="where">Six pages &middot; throughout</p>
+          <p class="for"><i>For</i> <s>&ldquo;&mdash;&rdquo;</s> <i>read</i> <ins><code>&acirc;&euro;&rdquo;</code></ins></p>
+          <p class="why">Six pages had no doctype and no charset, so they rendered in quirks mode, decoded as windows-1252, with every em-dash mangled &mdash; and no viewport, so a phone shrank them to illegibility.</p>
+          <p class="how">Caught by <b>a sweep of every page, which now runs in CI</b></p>
+        </div>
+      </li>
+      <li class="reveal" style="--d:70ms">
+        <span class="en">E10</span>
+        <div>
+          <p class="where">This page &middot; p. i</p>
+          <p class="for"><i>For</i> <s>777 tests, 703 tests and 732 tests</s> <i>read</i> <ins>over 800</ins></p>
+          <p class="why">Three counts of the same suite in three places on the front page and the README, and every one of them stale. They now say a number that stays true as the suite grows.</p>
+          <p class="how">Caught by <b>reading this proof</b></p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ↓↓ YOUR DETAILS — edit the address, the line and the links ↓↓ -->
+  <section class="signoff" id="contact">
+    <div class="approved" id="approved" aria-hidden="true">
+      <svg viewBox="0 0 250 150">
+        <rect x="5" y="5" width="240" height="140" rx="10" fill="none" stroke="currentColor" stroke-width="5"/>
+        <rect x="14" y="14" width="222" height="122" rx="6" fill="none" stroke="currentColor" stroke-width="2"/>
+        <text x="125" y="62" text-anchor="middle" font-family="JetBrains Mono Var, ui-monospace, monospace" font-weight="800" font-size="25" letter-spacing="2" fill="currentColor">OK TO PRINT</text>
+        <line x1="30" y1="80" x2="220" y2="80" stroke="currentColor" stroke-width="2"/>
+        <text x="125" y="112" text-anchor="middle" font-family="JetBrains Mono Var, ui-monospace, monospace" font-weight="700" font-size="16" letter-spacing="4" fill="currentColor" id="stampDate">M.S. &middot; 2026</text>
+      </svg>
     </div>
-    <p class="colophon">
+    <h2>Seen enough? <em>Write to me.</em></h2>
+    <p>
+      I build things end to end and I care how they feel to use &mdash; and then I go looking for
+      what is wrong with them. If there is something you would like built like this, or taken
+      apart like the transformer was, this is the fastest way to reach me.
+    </p>
+    <a class="mail" href="mailto:mohamedsucule@gmail.com">mohamedsucule@gmail.com</a>
+    <div class="actions">
+      <button class="stamp small" id="copyMail" type="button" data-mail="mohamedsucule@gmail.com">Copy the address</button>
+      <a class="quiet-link" href="https://github.com/mohamedsucule-debug/Projects">or read the source, and the full record, on GitHub &rarr;</a>
+    </div>
+    <span class="signature hand" aria-hidden="true">&mdash; Mohamed</span>
+  </section>
+
+  <footer class="colophon">
+    <h4>Colophon</h4>
+    <p>
+      Set in Instrument Serif, Newsreader, JetBrains Mono and Caveat, served from this repository.
       No frameworks, no build step, no dependencies — every page here is plain HTML, CSS and
-      JavaScript, about 27,000 lines of it, with the engine behind Ace, Morph, Portrait, Loom,
-      Nightshift, The Room, Covers, the transformer, the tokeniser and each of the tools
-      unit-tested: 703 tests, run in CI before anything is published — including twenty gradient
-      checks against finite differences, and a check that a 95% confidence interval really does
-      contain the truth 95% of the time. The commit history is the full record.
+      JavaScript, with the engine behind Ace, Morph, Portrait, Loom, Nightshift, The Room, Covers,
+      the transformer, the tokeniser and each of the tools unit-tested: over 800 tests, run in CI
+      before anything is published — including twenty gradient checks against finite differences,
+      and a check that a 95% confidence interval really does contain the truth 95% of the time.
+      The commit history is the full record.
     </p>
   </footer>
 </div>
@@ -886,6 +1071,7 @@ const TOYS = [
   },
   {
     href: 'apps/nightshift/index.html', tag: 'read it alone', kind: 'story',
+    note: 'it reads you back',
     title: 'Nightshift',
     blurb: 'A coastal watch log from one night in 1987, transcribed from the original daybook. It opens with the weather and the shipping and it does not stay there. Read it to the end — it is reading you back.',
     preview: nightshiftPreview,
@@ -898,6 +1084,7 @@ const TOYS = [
   },
   {
     href: 'play/portrait/index.html', tag: 'your photo', kind: 'instrument', wide: true,
+    note: 'never leaves your device',
     title: 'Portrait',
     blurb: 'Drop in a photo of your face and watch six thousand dots crawl out of random noise until it is unmistakably you. It never leaves your device.',
     preview: portraitPreview,
@@ -910,6 +1097,7 @@ const TOYS = [
   },
   {
     href: 'play/sandbox/index.html', tag: 'sandbox', kind: 'physics',
+    note: 'now set it on fire',
     title: 'Sandbox',
     blurb: 'Pour sand. Add water. Set it on fire and watch the smoke rise. Ten materials that all behave the way you would expect them to, which is the whole trick.',
     preview: sandPreview,
@@ -928,6 +1116,7 @@ const TOYS = [
   },
   {
     href: 'apps/mercury/index.html', tag: 'touch it', kind: 'physics', gl: true, wide: true,
+    note: 'no 3D model, no texture — just maths',
     title: 'Mercury',
     blurb: 'A sheet of liquid metal under a sunset sky. Drag it and it ripples, and the ripples bend the reflections as they spread. There is no 3D model and no texture in it — every pixel is worked out from scratch, sixty times a second.',
     preview: mercuryPreview,
@@ -940,6 +1129,7 @@ const TOYS = [
   },
   {
     href: 'play/tangle/index.html', tag: 'daily puzzle', kind: 'game',
+    note: 'same board for everyone today',
     title: 'Tangle',
     blurb: 'Tap a tile to turn it. The board is solved when no connector is left dangling. Everybody in the world gets the same board each day, and finishing gives you a line you can paste into a group chat.',
     preview: tanglePreview,
@@ -970,6 +1160,7 @@ const TOYS = [
   },
   {
     href: 'play/sumo/index.html', tag: 'two players', kind: 'game',
+    note: 'one key each',
     title: 'Sumo',
     blurb: 'Two people, one keyboard, one key each. Hold it: your arrow stops turning and you charge that way. Knock the other one out of the ring before it closes under you. There is a bot if you are on your own.',
     preview: sumoPreview,
@@ -990,23 +1181,28 @@ for (let i = 1; i < TOYS.length; i++) {
 }
 
 /* ── one canvas, one live miniature ──────────────────────────────────────────
-   Four different things on this page hang a live scene on a canvas: the two
-   panes of the front door, the seventeen cards in the run, the Covers picture
-   and the strip above the serious ones. Every one of them wants the same four
-   things — size itself to its box at the device's pixel ratio, resize when the
-   box does, run only while it is on screen, and never ask a canvas for a
-   second kind of context. That was written out four times, which is three
-   places for the next change to it to be forgotten. */
+   Five different things on this page hang a live scene on a canvas: the
+   frames of the contact sheet, the two story plates, the seventeen figures in
+   the run, the Covers plate and the strip above the index. Every one of them
+   wants the same four things — size itself to its box at the device's pixel
+   ratio, resize when the box does, run only while it is on screen, and never
+   ask a canvas for a second kind of context. That was written out four times,
+   which is three places for the next change to it to be forgotten. */
 const running = new Set();
 
-function mount(canvas, preview, { gl = false, margin = '120px' } = {}) {
+function mount(canvas, preview, { gl = false, margin = '120px', sheet = false, phase = 0, dpr: minDpr = 0 } = {}) {
   /* A canvas gets exactly one kind of context for its whole life, so asking
      for a 2d one here would quietly stop the scene that wants WebGL from ever
      getting it — getContext just returns null and the panel stays black. */
-  const api = { canvas, ctx: gl ? null : canvas.getContext('2d'), w: 0, h: 0, t: 0, alive: false };
+  const api = { canvas, ctx: gl ? null : canvas.getContext('2d'), w: 0, h: 0, t: 0, alive: false, sheet, phase };
   const fit = () => {
-    const r = canvas.getBoundingClientRect();
-    const dpr = gl ? 1 : Math.min(2, devicePixelRatio || 1);
+    /* The layout size, not getBoundingClientRect. The strips of the contact
+       sheet are laid down a fraction of a degree off square, and the bounding
+       rect of a rotated box is the bounding box of its shadow — a hair wider
+       and taller than the canvas actually is. Layout size ignores transforms,
+       which is the size the canvas is actually drawn at. */
+    const r = { width: canvas.clientWidth, height: canvas.clientHeight };
+    const dpr = gl ? 1 : Math.min(2, Math.max(minDpr, devicePixelRatio || 1));
     canvas.width = Math.max(1, Math.round(r.width * dpr * (gl ? 0.5 : 1)));
     canvas.height = Math.max(1, Math.round(r.height * dpr * (gl ? 0.5 : 1)));
     api.ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1025,16 +1221,41 @@ function mount(canvas, preview, { gl = false, margin = '120px' } = {}) {
   return api;
 }
 
-function tick() {
-  for (const api of running) { api.t += 1; api.frame(); }
+/* ── the frame loop ──────────────────────────────────────────────────────────
+   One requestAnimationFrame for the whole page. The contact sheet puts thirty
+   scenes on screen at once, so its frames draw on alternate frames — half of
+   them on each, so the cost is spread rather than lumped — and if the page
+   still cannot hold its frame rate they drop to every third frame, then every
+   fourth. Thirty thumbnails in slight slow motion is the right way for a
+   contact sheet to degrade. Nothing that is not on the sheet is ever slowed. */
+let frameNo = 0, sheetStride = 2, lastNow = 0, frameMs = 16.7, strain = 0;
+const everyFrame = new Set();
+
+function tick(now) {
+  const dt = lastNow ? Math.min(100, now - lastNow) : 16.7;
+  lastNow = now;
+  frameMs += (dt - frameMs) * 0.05;
+  if (frameMs > 23) {
+    if (++strain > 120) { sheetStride = Math.min(4, sheetStride + 1); strain = 0; }
+  } else strain = 0;
+
+  frameNo++;
+  for (const api of running) {
+    if (api.sheet && (frameNo + api.phase) % sheetStride) continue;
+    api.t += 1; api.frame();
+  }
+  for (const fn of everyFrame) fn(dt);
   requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
 
+const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const finePointer = matchMedia('(hover: hover) and (pointer: fine)').matches;
+
 /* ── reveals ─────────────────────────────────────────────────────────────────
-   Things arrive as you reach them. Cards are built here and the six serious
-   ones are appended later from a dynamic import, so this takes a root and gets
-   called twice rather than running once over a page that is not finished yet.
+   Things arrive as you reach them. Figures are built here and the index is
+   appended later from a dynamic import, so this takes a root and gets called
+   twice rather than running once over a page that is not finished yet.
 
    If the browser has no IntersectionObserver the class goes straight on: a
    missing animation is a shrug, and a page whose content never becomes visible
@@ -1055,19 +1276,375 @@ function watchReveals(root = document) {
   }
 }
 
-/* ── the front door ──────────────────────────────────────────────────────────
-   The two panes are the real scenes from the two pieces, not stills of them —
+/* ── red pen ─────────────────────────────────────────────────────────────────
+   A stroke is a path worked out from the size of the thing it marks, with a
+   little wobble from a seeded random — seeded by the words under it, so the
+   same line is drawn the same way on every visit and no two lines on the page
+   are the same. Paths carry pathLength="1", so "draw it on" is one transition
+   of stroke-dashoffset from 1 to 0, whatever the length. */
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function seeded(text) {
+  let s = 2166136261;
+  for (let i = 0; i < text.length; i++) s = Math.imul(s ^ text.charCodeAt(i), 16777619);
+  return () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296);
+}
+
+const inkIO = 'IntersectionObserver' in window
+  ? new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        e.target.classList.add('inked');
+        inkIO.unobserve(e.target);
+      }
+    }, { rootMargin: '0px 0px -8% 0px' })
+  : null;
+const inkWhenSeen = (el) => (inkIO ? inkIO.observe(el) : el.classList.add('inked'));
+
+function strokes(kind, w, h, r) {
+  const j = (a) => (r() - 0.5) * a;
+  if (kind === 'strike') {
+    const y0 = h * 0.6 + j(h * 0.06), y1 = h * 0.5 + j(h * 0.06);
+    return [`M ${-w * 0.04} ${y0} C ${w * 0.3} ${y0 - h * 0.03 + j(4)}, ${w * 0.65} ${y1 + h * 0.05 + j(4)}, ${w * 1.04} ${y1}`];
+  }
+  if (kind === 'underline2') {
+    const y = h * 0.93;
+    return [
+      `M ${w * 0.0} ${y + j(3)} C ${w * 0.3} ${y - h * 0.04 + j(3)}, ${w * 0.7} ${y + h * 0.03 + j(3)}, ${w * 1.01} ${y - h * 0.02}`,
+      `M ${w * 0.08} ${y + h * 0.1 + j(3)} C ${w * 0.4} ${y + h * 0.07 + j(3)}, ${w * 0.72} ${y + h * 0.12 + j(3)}, ${w * 0.95} ${y + h * 0.08}`,
+    ];
+  }
+  if (kind === 'arrow') {
+    return [`M ${w * 0.1} ${2} C ${w * 0.9} ${h * 0.12}, ${w * 1.05} ${h * 0.55}, ${w * 0.55} ${h * 0.95}`,
+            `M ${w * 0.1} ${h * 0.72} L ${w * 0.55} ${h * 0.97} L ${w * 0.88} ${h * 0.62}`];
+  }
+  return [];
+}
+
+function pen(el, kind = el.dataset.pen) {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.classList.add('pen');
+  svg.setAttribute('aria-hidden', 'true');
+  el.append(svg);
+  const draw = () => {
+    const w = el.offsetWidth, h = el.offsetHeight;
+    if (!w || !h) return;
+    const r = seeded(el.textContent + kind);
+    const weight = kind === 'arrow' ? 2.2 : Math.max(2.4, h * 0.045);
+    svg.setAttribute('width', w); svg.setAttribute('height', h);
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    svg.innerHTML = strokes(kind, w, h, r).map((d, i) =>
+      `<path pathLength="1" d="${d}" style="stroke-width:${weight.toFixed(1)}px;--pi:${i * 0.28}s"/>`).join('');
+  };
+  new ResizeObserver(draw).observe(el);
+  document.fonts?.ready.then(draw);
+  draw();
+  inkWhenSeen(svg);
+}
+
+for (const el of document.querySelectorAll('[data-pen]')) pen(el);
+for (const el of document.querySelectorAll('.hand.later')) inkWhenSeen(el);
+{
+  const arrow = document.querySelector('.headline-note svg');
+  if (arrow) {
+    arrow.classList.add('pen');
+    for (const p of arrow.querySelectorAll('path')) p.setAttribute('pathLength', '1');
+    arrow.style.setProperty('--pd', '2.4s');
+    inkWhenSeen(arrow);
+  }
+}
+
+/* A pen note gets a little arrow curling from its end down into the plate. */
+function noteArrows(root = document) {
+  for (const note of root.querySelectorAll('[data-pen-note]')) {
+    const holder = document.createElement('span');
+    holder.className = 'note-arrow';
+    note.append(holder);
+    pen(holder, 'arrow');
+  }
+}
+noteArrows();
+
+/* ── the proof's own details ─────────────────────────────────────────────────
+   The slug says when this copy was set, because it was: the browser set every
+   line of it a moment ago. */
+{
+  const now = new Date();
+  const when = now.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  document.getElementById('setAt').textContent = `set in your browser · ${when}`;
+  const d = (n) => String(n).padStart(2, '0');
+  document.getElementById('stampDate').textContent =
+    `M.S. · ${d(now.getDate())}.${d(now.getMonth() + 1)}.${String(now.getFullYear()).slice(2)}`;
+}
+
+/* ── fig. 1, the contact sheet ───────────────────────────────────────────────
+   Every piece on the site as one frame of film, each frame the piece itself
+   running. Read across a strip, no two neighbours are the same kind of thing;
+   the four the author would send you to first are ringed in grease pencil.
+
+   Titles, links and colours come from the atlas, so the sheet can never list
+   something the navigator does not, or disagree with it about a name. */
+const PREVIEW = {
+  attention: attentionPreview, tokens: tokensPreview, evals: evalsPreview, agents: agentsPreview,
+  lamplighter: lamplighterPreview, room: roomPreview, nightshift: nightshiftPreview,
+  covers: coversPreview, ace: acePreview, comet: cometPreview, stack: stackPreview,
+  tether: tetherPreview, sumo: sumoPreview, tangle: tanglePreview, sandbox: sandPreview,
+  topple: topplePreview, mercury: mercuryPreview, flow: flowPreview, portrait: portraitPreview,
+  loom: loomPreview, beats: beatsPreview, island: islandPreview, morph: morphPreview,
+  sift: siftPreview,
+};
+const SHEET = [
+  'attention', 'lamplighter', 'ace', 'sandbox', 'room', 'tokens',
+  'comet', 'covers', 'mercury', 'evals', 'tangle', 'loom',
+  'nightshift', 'regex-lab', 'stack', 'flow', 'agents', 'island',
+  'raft-lab', 'tether', 'beats', 'topple', 'query-planner', 'sumo',
+  'morph', 'trace-explorer', 'sift', 'diff-forge', 'portrait', 'oklch-studio',
+];
+const PICKS = {
+  attention: ['ring', 'start here'],
+  lamplighter: ['ring', 'read this one'],
+  room: ['ring', 'whodunnit?'],
+  covers: ['ring', 'the big one'],
+  tokens: ['tick'], evals: ['tick'], agents: ['tick'], mercury: ['tick'], portrait: ['tick'],
+};
+
+/* The six engineering tools are words rather than scenes, so their frames
+   are set as type: what it is, what it is called, and the one line that
+   says why you would open it. */
+function typeFrame(entry) {
+  return (api) => {
+    let dirty = true;
+    api.reset = () => { dirty = true; };
+    document.fonts?.ready.then(() => { dirty = true; });
+    api.frame = () => {
+      if (!dirty) return;
+      dirty = false;
+      const { ctx, w, h } = api;
+      ctx.fillStyle = '#050404';
+      ctx.fillRect(0, 0, w, h);
+      const pad = w * 0.09;
+      ctx.fillStyle = '#e8a33b';
+      ctx.font = `600 ${Math.max(7, w * 0.045)}px "JetBrains Mono Var", ui-monospace, monospace`;
+      ctx.fillText('ENGINEERING TOOL', pad, pad + w * 0.04);
+      ctx.fillStyle = '#f3efe5';
+      ctx.font = `400 ${w * 0.15}px "Instrument Serif", Georgia, serif`;
+      ctx.fillText(entry.title, pad, h * 0.7);
+      ctx.fillStyle = 'rgba(243,239,229,.55)';
+      ctx.font = `500 ${Math.max(7, w * 0.045)}px "JetBrains Mono Var", ui-monospace, monospace`;
+      let line = '', y = h * 0.7 + w * 0.09;
+      for (const word of entry.hook.split(' ')) {
+        const next = line ? `${line} ${word}` : word;
+        if (ctx.measureText(next).width > w - pad * 2 && line) {
+          ctx.fillText(line, pad, y); line = word; y += w * 0.06;
+          if (y > h - pad * 0.4) break;
+        } else line = next;
+      }
+      if (y <= h - pad * 0.4) ctx.fillText(line, pad, y);
+    };
+  };
+}
+
+const atlasReady = import('./shared/atlas.js');
+
+atlasReady.then(({ KINDS, byId }) => {
+  const sheet = document.getElementById('film');
+  const host = document.getElementById('strips');
+  const grease = document.getElementById('grease');
+  grease.classList.add('pen');
+
+  const frames = SHEET.map((id, i) => byId.get(id) && { entry: byId.get(id), n: i + 1 }).filter(Boolean);
+  for (const f of frames) {
+    const a = document.createElement('a');
+    a.className = 'frame';
+    a.href = f.entry.href;
+    a.dataset.n = String(f.n);
+    a.setAttribute('aria-label', `${f.entry.title} — ${KINDS[f.entry.kind].label}`);
+    a.innerHTML = '<canvas></canvas>';
+    f.el = a;
+    f.canvas = a.querySelector('canvas');
+    const preview = PREVIEW[f.entry.id] ?? typeFrame(f.entry);
+    const gl = f.entry.id === 'mercury';
+    /* Drawn at one and a half times the pixels at least, because the loupe
+       enlarges them, and a loupe that shows you blur is a loupe that lies. */
+    mount(f.canvas, preview, { gl, margin: '0px', sheet: !gl, phase: f.n, dpr: finePointer ? 1.5 : 0 });
+  }
+
+  /* Six to a strip on a desk, five on a tablet, three on a phone — thirty
+     divides by all of them, so every strip is full. The frames are moved,
+     not rebuilt, so their scenes carry on where they were. */
+  let cols = 0;
+  const layout = () => {
+    const w = sheet.clientWidth;
+    const want = w >= 860 ? 6 : w >= 560 ? 5 : 3;
+    if (want === cols) return false;
+    cols = want;
+    host.replaceChildren();
+    for (let s = 0; s < frames.length / cols; s++) {
+      const strip = document.createElement('div');
+      strip.className = 'strip';
+      strip.style.setProperty('--n', cols);
+      strip.innerHTML = `<span class="edge">PLAYGROUND 400 &nbsp;&#9656; ${s + 1}</span>`;
+      for (const f of frames.slice(s * cols, (s + 1) * cols)) strip.append(f.el);
+      host.append(strip);
+    }
+    return true;
+  };
+
+  /* Grease pencil: a ring round the four picks, a note under each, and a
+     tick on five more. Worked out from where the frames actually are, and
+     redrawn whenever they move. */
+  const drawGrease = () => {
+    const W = sheet.clientWidth, H = sheet.clientHeight;
+    grease.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    let out = '', k = 0;
+    for (const f of frames) {
+      const pick = PICKS[f.entry.id];
+      if (!pick) continue;
+      const strip = f.el.parentElement;
+      const x = strip.offsetLeft + f.el.offsetLeft, y = strip.offsetTop + f.el.offsetTop;
+      const w = f.el.offsetWidth, h = f.el.offsetHeight;
+      const r = seeded(f.entry.id);
+      const delay = `--pd:${(0.25 + k++ * 0.22).toFixed(2)}s`;
+      if (pick[0] === 'ring') {
+        const cx = x + w / 2, cy = y + h / 2, rx = w / 2 + 9, ry = h / 2 + 10;
+        const a0 = -2.2 + r() * 0.4, sweep = Math.PI * 2 + 0.45 + r() * 0.3;
+        const wob = r() * 6.28, pts = [];
+        for (let t = 0; t <= 1.0001; t += 1 / 48) {
+          const a = a0 + sweep * t;
+          const g = 1 + 0.035 * Math.sin(a * 2 + wob) + t * 0.05;
+          pts.push(`${(cx + Math.cos(a) * rx * g).toFixed(1)} ${(cy + Math.sin(a) * ry * g).toFixed(1)}`);
+        }
+        out += `<path pathLength="1" style="${delay}" d="M ${pts.join(' L ')}"/>`;
+        if (pick[1]) {
+          /* Sized to the frame: a phone's sheet is three across, and at a
+             desk's size the notes under neighbouring rings ran into each
+             other. */
+          const fs = Math.max(14, Math.min(23, w * 0.13)).toFixed(1);
+          const tx = cx + (r() - 0.5) * w * 0.3, ty = y + h + fs * 1.45;
+          out += `<text style="${delay};font-size:${fs}px" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle"
+            transform="rotate(${(-4 + r() * 5).toFixed(1)} ${tx.toFixed(1)} ${ty.toFixed(1)})">${pick[1]}</text>`;
+        }
+      } else {
+        const tx = x + w - 6, ty = y + 8;
+        out += `<path pathLength="1" style="${delay}" d="M ${tx - 9} ${ty - 2} L ${tx - 1 + r() * 2} ${ty + 9} L ${tx + 17} ${ty - 17 - r() * 4}"/>`;
+      }
+    }
+    grease.innerHTML = out;
+  };
+
+  layout();
+  drawGrease();
+  new ResizeObserver(() => { layout(); drawGrease(); }).observe(sheet);
+  document.fonts?.ready.then(drawGrease);
+  inkWhenSeen(grease);
+
+  /* ── the loupe ─────────────────────────────────────────────────────────────
+     Only where there is a pointer to hold it. Each frame it copies the
+     canvases under the lens into its own at twice the size — the same
+     pixels the frames just drew, so the enlargement is live too. Rects are
+     read before anything is written, so the page is never asked to lay
+     itself out twice in one frame. */
+  if (!finePointer) return;
+  const R = 105, Z = 2.1;
+  const loupe = document.createElement('div');
+  loupe.className = 'loupe';
+  loupe.setAttribute('aria-hidden', 'true');
+  const lens = document.createElement('canvas');
+  loupe.append(lens);
+  const tag = document.createElement('div');
+  tag.className = 'loupe-tag';
+  tag.setAttribute('aria-hidden', 'true');
+  document.body.append(loupe, tag);
+  const ldpr = Math.min(2, devicePixelRatio || 1);
+  lens.width = lens.height = Math.round(2 * R * ldpr);
+  const lctx = lens.getContext('2d');
+
+  let px = 0, py = 0, over = false, shown = null, tagW = 0;
+  host.addEventListener('pointermove', (e) => { px = e.clientX; py = e.clientY; over = true; }, { passive: true });
+  host.addEventListener('pointerleave', () => {
+    over = false;
+    loupe.classList.remove('on');
+    tag.classList.remove('on');
+  });
+
+  everyFrame.add(() => {
+    if (!over) return;
+    const rects = frames.map((f) => f.el.getBoundingClientRect());
+    lctx.setTransform(ldpr, 0, 0, ldpr, 0, 0);
+    lctx.fillStyle = '#131110';
+    lctx.fillRect(0, 0, 2 * R, 2 * R);
+    let hit = null;
+    const reach = R / Z;
+    frames.forEach((f, i) => {
+      const r = rects[i];
+      if (r.right < px - reach || r.left > px + reach || r.bottom < py - reach || r.top > py + reach) return;
+      lctx.drawImage(f.canvas, R + (r.left - px) * Z, R + (r.top - py) * Z, r.width * Z, r.height * Z);
+      if (px >= r.left && px <= r.right && py >= r.top && py <= r.bottom) hit = f;
+    });
+    if (hit !== shown) {
+      shown = hit;
+      tag.textContent = hit ? `${hit.n} · ${hit.entry.title}` : '';
+      tagW = tag.offsetWidth;
+      tag.classList.toggle('on', !!hit);
+    }
+    loupe.style.transform = `translate(${px - R}px, ${py - R}px)`;
+    tag.style.transform = `translate(${Math.round(px - tagW / 2)}px, ${Math.round(py + R + 16)}px)`;
+    loupe.classList.add('on');
+  });
+}).catch(() => {});
+
+/* How many scenes are drawing right now, straight from the set the frame
+   loop walks, written into the caption of the contact sheet — which is the
+   one place the number is always about something you can see. Twice a
+   second is plenty for a number people glance at. */
+{
+  const live = document.getElementById('liveCount');
+  let last = -1;
+  setInterval(() => {
+    if (running.size !== last) live.textContent = String(last = running.size);
+  }, 500);
+}
+
+/* ── surprise me ─────────────────────────────────────────────────────────────
+   Deals titles like a slot machine, slowing down, and goes wherever it stops.
+   The pick is made before the first title is dealt; the dealing is theatre,
+   and about a second of it, because a random button that goes instantly
+   feels like a broken link. */
+{
+  const btn = document.getElementById('surprise');
+  const face = btn.querySelector('.face');
+  let pool = null, rolling = false;
+  atlasReady.then(({ ATLAS }) => { pool = ATLAS; }).catch(() => {});
+  btn.addEventListener('click', () => {
+    if (!pool || rolling) return;
+    rolling = true;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    const any = () => pool[Math.floor(Math.random() * pool.length)].title;
+    let n = 0;
+    const deal = () => {
+      if (n++ < 13) { face.textContent = any(); setTimeout(deal, 36 + n * n * 1.7); return; }
+      face.textContent = `${pick.title} →`;
+      setTimeout(() => { location.href = pick.href; }, 450);
+    };
+    deal();
+  });
+  /* Back from wherever it went, the page can come out of the back-forward
+     cache exactly as it was left — mid-roll, with the last title on it. */
+  addEventListener('pageshow', () => { rolling = false; face.textContent = 'Surprise me'; });
+}
+
+/* ── the stories ─────────────────────────────────────────────────────────────
+   The two plates are the real scenes from the two pieces, not stills of them —
    the same scene.js the story scrolls through, and the same plate the murder
    is drawn on. A picture of a thing that runs is a worse advertisement for it
    than the thing running. */
-mount(document.getElementById('paneLamp'), lamplighterPreview, { margin: '0px' });
-mount(document.getElementById('paneRoom'), roomPreview, { margin: '0px' });
+mount(document.getElementById('paneLamp'), lamplighterPreview, { margin: '60px' });
+mount(document.getElementById('paneRoom'), roomPreview, { margin: '60px' });
 
 /* ── the run ─────────────────────────────────────────────────────────────────
-   Each card carries the accent of its kind rather than of a section it has
-   been filed under, which is what makes the mixing visible: scrolling the run
-   you see the colour change every card, and that IS the argument — these are
-   different kinds of thing, not seventeen variations on one. */
+   Each figure carries a square of the colour of its kind rather than of a
+   section it has been filed under, which is what makes the mixing visible:
+   run an eye down the section and the square changes every figure. */
 const ACCENT = {
   game: '255,77,141',
   story: '255,209,102',
@@ -1078,56 +1655,86 @@ const ACCENT = {
 const toysHost = document.getElementById('toys');
 for (const [i, toy] of TOYS.entries()) {
   const a = document.createElement('a');
-  a.className = toy.wide ? 'card wide reveal' : 'card reveal';
+  a.className = toy.wide ? 'fig wide reveal' : 'fig reveal';
   a.href = toy.href;
-  a.style.setProperty('--accent', ACCENT[toy.kind] ?? '255,255,255');
+  a.style.setProperty('--accent', ACCENT[toy.kind] ?? '23,20,15');
   /* Staggered across the row, not down the list: a delay proportional to the
-     index would have the last card waiting a second and a half after it is
+     index would have the last figure waiting a second and a half after it is
      already on screen. */
   a.style.setProperty('--d', `${(i % 3) * 70}ms`);
   a.innerHTML = `
-    <div class="stage"><canvas></canvas></div>
-    <span class="tag">${toy.tag}</span>
-    <span class="play">open →</span>
-    <div class="meta"><h2>${toy.title}</h2><p>${toy.blurb}</p></div>`;
+    <span class="kind">${toy.tag}</span>
+    ${toy.note ? `<span class="note hand" data-pen-note>${toy.note}</span>` : ''}
+    <div class="plate"><canvas></canvas></div>
+    <h3><span class="fn" data-fig></span><span class="t">${toy.title}</span><span class="go">open →</span></h3>
+    <p>${toy.blurb}</p>`;
   toysHost.append(a);
   mount(a.querySelector('canvas'), toy.preview, { gl: toy.gl });
 }
+noteArrows(toysHost);
 
-/* Covers and the strip above the serious ones. */
+/* Covers and the strip above the index. */
 mount(document.querySelector('#headline canvas'), coversPreview, { margin: '160px' });
 mount(document.getElementById('machine'), machinePreview);
 
-/* The three machine-learning cards. */
+/* The four machine-learning figures. */
 mount(document.getElementById('mlAttention'), attentionPreview);
 mount(document.getElementById('mlTokens'), tokensPreview);
 mount(document.getElementById('mlEvals'), evalsPreview);
 mount(document.getElementById('mlAgents'), agentsPreview);
 
-for (const el of document.querySelectorAll('.chapter > header, #headline, .plate, .how > div, .card-me')) {
-  el.classList.add('reveal');
-}
+/* Figures are numbered in the order they are set, the way a book numbers
+   them — the contact sheet is Fig. 1 and everything after counts on from it,
+   so moving a figure renumbers the lot instead of leaving a gap. */
+document.querySelectorAll('[data-fig]').forEach((el, i) => { el.textContent = `Fig. ${i + 2}`; });
+
+for (const el of document.querySelectorAll('.section > header')) el.classList.add('reveal');
 watchReveals();
 
-/* ── the rail, and the door on its way out ───────────────────────────────────
-   One scroll listener, rAF-throttled, writing two numbers: how far down the
-   page you are, and how far the door has gone. Everything either of them does
-   is done in CSS from those numbers. */
+/* ── signed off ──────────────────────────────────────────────────────────────
+   The stamp comes down once, when the sign-off is actually in view. */
+{
+  const stamp = document.getElementById('approved');
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return;
+      stamp.classList.add('in');
+      io.disconnect();
+    }, { threshold: 0.5 });
+    io.observe(stamp);
+  } else stamp.classList.add('in');
+}
+
+/* ── copy the address ────────────────────────────────────────────────────────
+   Half the people who want to email somebody from a web page do not have a
+   mail client wired up to mailto:, and a link that opens the wrong app is
+   worse than no link. So the address is also one press from the clipboard —
+   and if the clipboard refuses, the button falls back to the link. */
+{
+  const btn = document.getElementById('copyMail');
+  btn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(btn.dataset.mail);
+    } catch {
+      location.href = `mailto:${btn.dataset.mail}`;
+      return;
+    }
+    btn.textContent = 'Copied ✓';
+    btn.dataset.done = '';
+    setTimeout(() => { btn.textContent = 'Copy the address'; delete btn.dataset.done; }, 2200);
+  });
+}
+
+/* ── the rail ────────────────────────────────────────────────────────────────
+   One scroll listener, rAF-throttled, writing one number: how far through
+   the proof you are. */
 {
   const rail = document.getElementById('railFill');
-  const door = document.getElementById('door');
-  const panes = door.querySelector('.panes');
   let queued = false;
   const paint = () => {
     queued = false;
     const max = document.documentElement.scrollHeight - innerHeight;
     rail.style.height = `${max > 0 ? Math.min(1, scrollY / max) * 100 : 0}%`;
-    const sd = Math.min(1, scrollY / Math.max(1, door.offsetHeight * 0.85));
-    door.style.setProperty('--sd', sd.toFixed(3));
-    /* Faded to nothing is still clickable, and the bottom of the door is still
-       on screen at that point — so a pane you cannot see would eat the click
-       meant for the first card. */
-    panes.style.pointerEvents = sd > 0.8 ? 'none' : '';
   };
   addEventListener('scroll', () => {
     if (queued) return;
@@ -1165,7 +1772,9 @@ function attentionPreview(api) {
     })
     .catch(() => { card = false; });
 
-  let t = 0;
+  /* Two checkpoints before the cliff, so the stripe forms a few seconds
+     after the card arrives rather than after ten seconds of noise. */
+  let t = 5.5;
   api.frame = () => {
     const { ctx, w, h } = api;
     ctx.fillStyle = '#080c16';
@@ -1211,7 +1820,8 @@ function attentionPreview(api) {
   };
 }
 
-/** Tokens: the real trainer, learning merges off a small corpus, live. */
+/** Tokens: the real trainer, and one sentence falling into fewer, longer pieces
+    as the vocabulary it is read with grows. */
 function tokensPreview(api) {
   let B = null;
   import('./apps/tokens/bpe.js').then((m) => { B = m; }).catch(() => { B = false; });
@@ -1225,48 +1835,98 @@ function tokensPreview(api) {
     'the room was locked from the inside and the keeper was not there at all. ' +
     'building something that runs beats planning something that does not. '
   ).repeat(6);
+  const LINE = 'the keeper watched the weather, and the light turned again before the night ended.';
+  const TINTS = ['163,230,53', '125,211,252', '255,209,102', '255,77,141', '182,156,255'];
 
-  let merges = null, shown = 0, t = 0;
+  /* The list of merges was already being drawn as a list of merges, and a
+     list of merges is the tokeniser's own bookkeeping — true, and not what
+     anybody came to see. What it is FOR is this: the same sentence, read with
+     the first k merges, for every k. At zero it is eighty-odd single letters;
+     by the end the common words are one piece each. `views[k]` is that
+     sentence tokenised by the real encoder with a vocabulary cut off at k. */
+  let views = null, layout = null, lw = 0, lh = 0;
+  let t = 3;   // starts partway in, so the card is never caught empty
+  /* Laid out once per size, in a font that may still be arriving — so the
+     layout is thrown away when it lands and measured again. */
+  document.fonts?.ready.then(() => { layout = null; });
+
+  const lay = (ctx, w, h) => {
+    /* One size for the whole cycle, chosen so the longest version — every
+       character its own token — fits. Otherwise the text would grow as the
+       tokens merged, and the thing to watch is the tokens, not the type. */
+    for (let fs = 20; fs >= 8; fs -= 0.5) {
+      ctx.font = `600 ${fs}px "JetBrains Mono Var", ui-monospace, Menlo, monospace`;
+      const pad = fs * 0.28, gap = fs * 0.22, line = fs * 1.75;
+      let x = 0, y = 0;
+      for (const piece of views[0]) {
+        const tw = ctx.measureText(piece).width + pad * 2;
+        if (x + tw > w - 28) { x = 0; y += line; }
+        x += tw + gap;
+      }
+      if (y + line <= h - 84 || fs === 8) return { fs, pad, gap, line, height: y + line };
+    }
+  };
+
   api.frame = () => {
     const { ctx, w, h } = api;
     ctx.fillStyle = '#080c16';
     ctx.fillRect(0, 0, w, h);
     if (!B) return;
-    if (!merges) {
-      merges = [];
-      B.trainBPE(SMALL, { vocabSize: 330, style: 'gpt4', onMerge: (m) => merges.push(m) });
+    if (!views) {
+      const model = B.trainBPE(SMALL, { vocabSize: 330, style: 'gpt4' });
+      views = [];
+      for (let k = 0; k <= model.merges.length; k++) {
+        const merges = model.merges.slice(0, k);
+        const rank = new Map(merges.map(([a, b], i) => [a * 0x100000 + b, i]));
+        views.push(B.encodeDetailed(LINE, { ...model, merges, rank }).flatMap((c) => c.pieces));
+      }
     }
+    if (!layout || lw !== w || lh !== h) { layout = lay(ctx, w, h); lw = w; lh = h; }
 
     t += 1 / 60;
     /* Builds for eight seconds, then holds for six. A cycle that snaps back to
        zero the instant it finishes means a card caught at the wrong moment
        shows an empty box — which is exactly what the first screenshot of it
        did, at t = 9.0 of a nine-second loop. */
-    const phase = t % 14;
-    shown = Math.min(merges.length, Math.floor(Math.min(1, phase / 8) * merges.length));
+    const M = views.length - 1;
+    const k = Math.min(M, Math.floor(Math.min(1, (t % 14) / 8) * M));
+    const pieces = views[k];
+    const { fs, pad, gap, line, height } = layout;
 
-    let x = 12, y = 52;
-    const pad = 5, gap = 4, lh = 19;
-    for (let i = 0; i < shown; i++) {
-      const label = merges[i].text.replace(/ /g, '␣').replace(/\n/g, '⏎');
-      ctx.font = '650 11px ui-monospace, Menlo, monospace';
-      const tw = ctx.measureText(label).width + pad * 2;
-      if (x + tw > w - 12) { x = 12; y += lh; }
-      if (y > h - 14) break;
-      const fresh = i > shown - 4;
-      ctx.fillStyle = fresh ? 'rgba(163,230,53,.26)' : 'rgba(255,255,255,.06)';
-      roundRect(ctx, x, y - 11, tw, 16, 4);
+    ctx.font = `600 ${fs}px "JetBrains Mono Var", ui-monospace, Menlo, monospace`;
+    ctx.textBaseline = 'middle';
+    let x = 14, y = Math.max(46, (h - height) / 2 + 6);
+    pieces.forEach((piece, i) => {
+      const tw = ctx.measureText(piece).width + pad * 2;
+      if (x + tw > w - 14) { x = 14; y += line; }
+      const tint = TINTS[i % TINTS.length];
+      ctx.fillStyle = `rgba(${tint},.2)`;
+      roundRect(ctx, x, y - fs * 0.72, tw, fs * 1.44, Math.min(5, fs * 0.3));
       ctx.fill();
-      ctx.fillStyle = fresh ? '#d4f58a' : 'rgba(233,238,251,.6)';
-      ctx.fillText(label, x + pad, y + 1);
+      /* Spaces drawn as a faint dot, because a leading space is part of the
+         token — " the", not "the" — and an invisible character is exactly
+         the detail this card exists to show. */
+      let cx = x + pad;
+      for (const part of piece.split(/( )/)) {
+        if (!part) continue;
+        ctx.fillStyle = part === ' ' ? `rgba(${tint},.55)` : `rgb(${tint})`;
+        const label = part === ' ' ? '·' : part;
+        ctx.fillText(label, cx, y + 0.5);
+        cx += ctx.measureText(part === ' ' ? ' ' : part).width;
+      }
       x += tw + gap;
-    }
+    });
+    ctx.textBaseline = 'alphabetic';
 
+    ctx.font = '650 10px "JetBrains Mono Var", ui-monospace, Menlo, monospace';
     ctx.textAlign = 'right';
-    ctx.font = '650 9.5px ui-monospace, Menlo, monospace';
-    ctx.fillStyle = 'rgba(233,238,251,.35)';
-    ctx.fillText(`${shown} MERGES LEARNED`, w - 12, 19);
+    ctx.fillStyle = 'rgba(233,238,251,.4)';
+    ctx.fillText(`${k} MERGES LEARNED`, w - 12, 19);
     ctx.textAlign = 'left';
+    ctx.fillStyle = '#d4f58a';
+    ctx.fillText(`${pieces.length} TOKENS`, 12, h - 12);
+    ctx.fillStyle = 'rgba(233,238,251,.4)';
+    ctx.fillText(`FOR ${LINE.length} CHARACTERS`, 12 + ctx.measureText(`${pieces.length} TOKENS  `).width, h - 12);
   };
 }
 
@@ -1286,7 +1946,9 @@ function agentsPreview(api) {
     run = [...h.runAgent({ task: P.TASK, tools, policy: P.scriptedPolicy('toolThrows') })];
   }).catch(() => { run = false; });
 
-  let t = 0;
+  /* Starts three steps in: the first thing on the card is the tool throwing,
+     rather than five seconds of an almost empty box on the way to it. */
+  let t = 4.9;
   api.frame = () => {
     const { ctx, w, h } = api;
     ctx.fillStyle = '#080c16';
@@ -1351,7 +2013,9 @@ function evalsPreview(api) {
     })
     .catch(() => { data = false; });
 
-  let t = 0;
+  /* Partway in, for the same reason as the others: the interval should
+     already be drawn when the card arrives, and narrowing, not starting. */
+  let t = 3.6;
   api.frame = () => {
     const { ctx, w, h } = api;
     ctx.fillStyle = '#080c16';
@@ -2365,7 +3029,8 @@ function nightshiftPreview(api) {
   const CPS = 26;          // characters a second, about a slow typist
   const HOLD = 1.1;        // a beat between entries
   const REST = 3.4;        // how long the finished page sits there
-  let t = 0;
+  let t = 5.5;             // three entries in, so the page is never blank
+  let grain = null;
 
   api.frame = () => {
     const { ctx, w, h } = api;
@@ -2378,9 +3043,17 @@ function nightshiftPreview(api) {
     ctx.fillStyle = '#d9d5cc';
     ctx.fillRect(0, 0, w, h);
 
-    /* the grain of the photocopy, same trick as the page itself */
-    ctx.fillStyle = 'rgba(0,0,0,.05)';
-    for (let y = 2; y < h; y += 3) for (let x = 2; x < w; x += 3) ctx.fillRect(x, y, 1, 1);
+    /* The grain of the photocopy, same trick as the page itself — drawn once
+       and stamped, because it is several thousand one-pixel rectangles and
+       the wall asks for this card alongside twenty others. */
+    if (!grain || grain.width !== Math.ceil(w) || grain.height !== Math.ceil(h)) {
+      grain = document.createElement('canvas');
+      grain.width = Math.ceil(w); grain.height = Math.ceil(h);
+      const g = grain.getContext('2d');
+      g.fillStyle = 'rgba(0,0,0,.05)';
+      for (let y = 2; y < h; y += 3) for (let x = 2; x < w; x += 3) g.fillRect(x, y, 1, 1);
+    }
+    ctx.drawImage(grain, 0, 0, grain.width, grain.height);
 
     /* Right-aligned and below the rule: the card's tag chip sits over the
        top-left corner and would otherwise print straight through the header
@@ -2401,9 +3074,22 @@ function nightshiftPreview(api) {
     /* The cap was 17px, set when this card was 16:9. In the taller fiction
        frame that left the log finishing two thirds of the way down a page of
        blank paper. */
-    const lh = Math.min(26, (h - top - 14) / SCRIPT.length);
+    /* And a floor of 13px. On the contact sheet this is a thumbnail, and
+       nine lines shared out over a hundred pixels put them on top of each
+       other — so when the page runs out, the log scrolls up under the rule
+       the way a teleprinter's would. */
+    const lh = Math.max(13, Math.min(26, (h - top - 14) / SCRIPT.length));
     let clock = 0;
     let caret = null;
+    let started = 0;
+    for (const [, text] of SCRIPT) {
+      if (now > clock) started++;
+      clock += text.length / CPS + HOLD;
+    }
+    const lift = Math.max(0, top + (started - 1) * lh - (h - 12));
+    clock = 0;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 46, w, h - 46); ctx.clip();
 
     SCRIPT.forEach(([time, text], i) => {
       const span = text.length / CPS;
@@ -2413,7 +3099,7 @@ function nightshiftPreview(api) {
       clock += span + HOLD;
       if (shown === 0) return;
 
-      const y = top + i * lh;
+      const y = top + i * lh - lift;
       const body = text.slice(0, shown);
       /* The turn: once the log stops being about the weather it stops being
          grey, and by the last two lines it is addressing whoever is reading. */
@@ -2431,6 +3117,7 @@ function nightshiftPreview(api) {
       ctx.fillStyle = 'rgba(27,26,23,.7)';
       ctx.fillRect(caret.x, caret.y - 7.5, 5, 9);
     }
+    ctx.restore();
   };
 }
 
@@ -2895,30 +3582,30 @@ function machinePreview(api) {
   };
 }
 
-/* ── the serious list ───────────────────────────────────────────────────── */
+/* ── the index of tools ───────────────────────────────────────────────────── */
 const deep = document.getElementById('deepList');
 
 loadModules.then(([{ BRIEFINGS, BRIEFING_ORDER }]) => {
-  for (const key of BRIEFING_ORDER) {
+  BRIEFING_ORDER.forEach((key, k) => {
     const b = BRIEFINGS[key];
-    const a = document.createElement('a');
-    a.className = 'row reveal';
-    a.href = b.href;
+    const li = document.createElement('li');
+    li.className = 'reveal';
+    li.style.setProperty('--d', `${k * 50}ms`);
     /* One line each, not a paragraph. The full explanation lives inside each
-       tool now, where somebody who has decided to open it will actually read
-       it — six long cards here pushed everything below them off the page. */
-    a.innerHTML = `
+       tool, where somebody who has decided to open it will actually read it. */
+    li.innerHTML = `<a>
       <span class="dot" style="background:${b.colour}"></span>
-      <span><span class="t">${b.title}</span><div class="d">${b.tagline}</div></span>
-      <span class="arrow">→</span>`;
-    deep.append(a);
-  }
+      <span class="t">${b.title}</span><span class="d">${b.tagline}</span>
+      <span class="dots"></span><span class="pg">§4.${k + 1} →</span></a>`;
+    li.firstElementChild.href = b.href;
+    deep.append(li);
+  });
   watchReveals(deep);
 }).catch(() => {
-  deep.innerHTML = `<p class="lead" style="margin:0">
+  deep.innerHTML = `<li><p class="lede" style="margin:16px 0">
     This page reads its content from ES modules, which browsers refuse to load from a
     <code>file://</code> address. Run <b>npx http-server</b> in the repo and open it over
-    localhost, or use the published site.</p>`;
+    localhost, or use the published site.</p></li>`;
 });
 
 /* ── previews for the three big ones ─────────────────────────────────────────

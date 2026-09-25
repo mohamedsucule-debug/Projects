@@ -1,91 +1,39 @@
 <!doctype html>
 <meta charset="utf-8" />
+<title>Playground — the social card, drawn from the front page</title>
+<!--
+  The picture a link to the site unfurls into (og.png, 1200×630).
+
+  It used to be its own composition: a flow field and a headline, drawn here
+  and nowhere else, so the card and the page it advertised were two designs
+  that only agreed until one of them changed. It is now the front page itself,
+  in a frame, with everything taken out that is not the corrected headline
+  and the top of the contact sheet. Change the page and the card follows.
+
+  To regenerate: serve the repo, open this file at exactly 1200×630, wait a
+  few seconds for the pen to finish, and screenshot it to assets/og.png.
+-->
 <style>
-  @import url('');
-  * { box-sizing: border-box; margin: 0; }
-  body {
-    width: 1200px; height: 630px; overflow: hidden; position: relative;
-    background: #06070d; color: #f3f6fb;
-    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  }
-  canvas { position: absolute; inset: 0; }
-  .veil { position: absolute; inset: 0; background: linear-gradient(100deg, #06070d 32%, rgba(6,7,13,.72) 62%, rgba(6,7,13,.35)); }
-  .content { position: absolute; inset: 0; padding: 62px 66px; display: flex; flex-direction: column; }
-  .mark { display: flex; align-items: center; gap: 13px; }
-  .mark i {
-    width: 34px; height: 34px; border-radius: 11px; display: block;
-    background: conic-gradient(from 140deg, #ffd166, #ff4d8d, #7dd3fc, #a3e635, #ffd166);
-  }
-  .mark b { font-size: 21px; font-weight: 700; letter-spacing: -.01em; }
-  h1 {
-    margin-top: auto; font-size: 78px; line-height: 1.0; letter-spacing: -.045em;
-    font-weight: 700; max-width: 15ch;
-  }
-  h1 em {
-    font-style: normal;
-    background: linear-gradient(102deg, #ffd166, #ff4d8d 45%, #7dd3fc 92%);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-  }
-  p { margin-top: 22px; font-size: 25px; color: #9aa5b8; max-width: 34ch; line-height: 1.45; }
-  .pills { display: flex; gap: 10px; margin-top: 34px; flex-wrap: wrap; }
-  .pill {
-    display: inline-flex; align-items: center; gap: 9px;
-    border: 1px solid rgba(255,255,255,.16); border-radius: 99px;
-    padding: 11px 18px; font-size: 18px; font-weight: 600;
-    background: rgba(12,15,23,.66);
-  }
-  .pill i { width: 10px; height: 10px; border-radius: 50%; display: block; }
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: #f3efe5; }
+  iframe { border: 0; width: 1200px; height: 630px; display: block; }
 </style>
-<canvas id="c" width="1200" height="630"></canvas>
-<div class="veil"></div>
-<div class="content">
-  <div class="mark"><i></i><b>Playground</b></div>
-  <h1>Machine learning, <em>from the algorithm up.</em></h1>
-  <div class="pills">
-    <span class="pill"><i style="background:#7dd3fc"></i>Attention</span>
-    <span class="pill"><i style="background:#a3e635"></i>Tokens</span>
-    <span class="pill"><i style="background:#ffc46b"></i>Evals</span>
-    <span class="pill"><i style="background:#ffd166"></i>The Lamplighter</span>
-    <span class="pill"><i style="background:#5aa9ff"></i>Covers</span>
-  </div>
-</div>
+<iframe id="page" src="../index.html" scrolling="no" title="The front page"></iframe>
 <script>
-/* the flow field, rendered once for the social card */
-const ctx = document.getElementById('c').getContext('2d');
-const W = 1200, H = 630, N = 9000;
-const px = new Float32Array(N), py = new Float32Array(N), ph = new Float32Array(N);
-let seed = 42;
-const hash = (x, y) => {
-  let h = x * 374761393 + y * 668265263 + seed * 1013904223;
-  h = (h ^ (h >> 13)) * 1274126177;
-  return ((h ^ (h >> 16)) & 0xffff) / 0xffff;
-};
-const sm = (t) => t * t * (3 - 2 * t);
-const noise = (x, y) => {
-  const xi = Math.floor(x), yi = Math.floor(y), xf = sm(x - xi), yf = sm(y - yi);
-  const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1);
-  return (a + (b - a) * xf) + ((c + (d - c) * xf) - (a + (b - a) * xf)) * yf;
-};
-const stops = [[34,211,238],[129,140,248],[244,114,182]];
-const mix = (u) => {
-  const f = u * (stops.length - 1), i = Math.min(stops.length - 2, Math.floor(f)), k = f - i;
-  return stops[i].map((v, j) => (v + (stops[i + 1][j] - v) * k) | 0);
-};
-ctx.fillStyle = '#05060a';
-ctx.fillRect(0, 0, W, H);
-for (let i = 0; i < N; i++) { px[i] = Math.random() * W; py[i] = Math.random() * H; ph[i] = Math.random(); }
-ctx.globalCompositeOperation = 'lighter';
-for (let step = 0; step < 130; step++) {
-  for (let i = 0; i < N; i++) {
-    const a = noise(px[i] * 0.0022, py[i] * 0.0022) * Math.PI * 4;
-    const ox = px[i], oy = py[i];
-    px[i] += Math.cos(a) * 1.6;
-    py[i] += Math.sin(a) * 1.6;
-    const [r, g, b] = mix(ph[i]);
-    ctx.strokeStyle = `rgba(${r},${g},${b},0.05)`;
-    ctx.lineWidth = 1.1;
-    ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(px[i], py[i]); ctx.stroke();
-    if (px[i] < 0 || px[i] > W || py[i] < 0 || py[i] > H) { px[i] = Math.random() * W; py[i] = Math.random() * H; }
-  }
-}
+const frame = document.getElementById('page');
+frame.addEventListener('load', () => {
+  const doc = frame.contentDocument;
+  const style = doc.createElement('style');
+  style.textContent = `
+    [data-navigator], nav.top a:not(.brand), .under .sub, .under .actions, .spec, .proof .foot,
+    .crop.bl, .crop.br, .fig1 figcaption { display: none !important; }
+    .proof { min-height: 0 !important; padding-bottom: 0 !important; }
+    .title { padding: 14px 12px 0 !important; }
+    .byline { margin-bottom: 0 !important; }
+    h1.headline { font-size: 104px !important; }
+    .under { margin-top: 0 !important; grid-template-columns: 1fr 1fr !important; }
+    .headline-note { margin: -8px 0 0 auto !important; }
+    .fig1 { margin-top: 26px !important; }
+  `;
+  doc.head.append(style);
+});
 </script>
