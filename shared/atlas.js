@@ -66,6 +66,17 @@ export const ATLAS = [
            'client work', 'product', 'business', 'startup', 'impressive'],
   },
 
+  {
+    id: 'claims', title: 'Claims Desk', href: 'apps/claims/index.html',
+    kind: 'ai', depth: 'play', minutes: 3,
+    blurb: 'Reads an insurance claim — email, scanned form, invoice — checks it against the policy '
+         + 'and itself, and recommends a decision with the evidence for every line.',
+    hook: 'Watch it read the scans, then spot what is wrong with the stolen bike.',
+    tags: ['ai', 'ocr', 'document ai', 'insurance', 'claims', 'automation', 'tesseract', 'extraction',
+           'fraud', 'rules', 'human in the loop', 'workflow', 'insurtech', 'fintech',
+           'client work', 'product', 'business', 'startup', 'impressive'],
+  },
+
   /* ── machine learning ─────────────────────────────────────────────────── */
   {
     id: 'attention', title: 'Attention', href: 'apps/attention/index.html',
