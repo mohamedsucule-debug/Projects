@@ -108,3 +108,19 @@ test('internal links point at files that exist', () => {
     }
   }
 });
+
+test('no page gives the same id to two elements', () => {
+  /* The README's list of things caught by looking includes six links set in
+     shouty capitals because a heading and a list both claimed one id. The
+     front page did it again: the contact sheet and the sign-off were both
+     "contact", so "Write to me" jumped to a strip of film. The browser does
+     not complain, and getElementById just quietly returns the first one. */
+  for (const href of pages) {
+    const ids = [...read(href).matchAll(/\sid="([^"$]+)"/g)].map((m) => m[1]);
+    const seen = new Set();
+    for (const id of ids) {
+      assert.ok(!seen.has(id), `${href} uses id="${id}" more than once`);
+      seen.add(id);
+    }
+  }
+});

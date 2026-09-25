@@ -7,14 +7,14 @@
   It used to be its own composition: a flow field and a headline, drawn here
   and nowhere else, so the card and the page it advertised were two designs
   that only agreed until one of them changed. It is now the front page itself,
-  in a frame, with everything taken out that is not the headline and the wall
-  of live pieces behind it. Change the hero and the card follows.
+  in a frame, with everything taken out that is not the corrected headline
+  and the top of the contact sheet. Change the page and the card follows.
 
   To regenerate: serve the repo, open this file at exactly 1200×630, wait a
-  few seconds for the wall to fill, and screenshot it to assets/og.png.
+  few seconds for the pen to finish, and screenshot it to assets/og.png.
 -->
 <style>
-  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: #05060a; }
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: #f3efe5; }
   iframe { border: 0; width: 1200px; height: 630px; display: block; }
 </style>
 <iframe id="page" src="../index.html" scrolling="no" title="The front page"></iframe>
@@ -24,16 +24,16 @@ frame.addEventListener('load', () => {
   const doc = frame.contentDocument;
   const style = doc.createElement('style');
   style.textContent = `
-    [data-navigator], nav.top a.ghost, .door .meta, .door .cue, .door .ctas { display: none !important; }
-    .door { min-height: 630px !important; height: 630px; padding-bottom: 0 !important; }
-    .door .say { padding: 10px 0 64px !important; }
-    .door h1 { font-size: 82px !important; margin-bottom: 22px !important; }
-    .door .sub { font-size: 21px !important; max-width: 34ch !important; }
-    .wall .plane { left: 44% !important; }
+    [data-navigator], nav.top a:not(.brand), .under .sub, .under .actions, .spec, .proof .foot,
+    .crop.bl, .crop.br, .fig1 figcaption { display: none !important; }
+    .proof { min-height: 0 !important; padding-bottom: 0 !important; }
+    .title { padding: 14px 12px 0 !important; }
+    .byline { margin-bottom: 0 !important; }
+    h1.headline { font-size: 104px !important; }
+    .under { margin-top: 0 !important; grid-template-columns: 1fr 1fr !important; }
+    .headline-note { margin: -8px 0 0 auto !important; }
+    .fig1 { margin-top: 26px !important; }
   `;
   doc.head.append(style);
-  doc.querySelector('.door .sub').innerHTML =
-    'Machine learning from the algorithm up, and twenty-six other things &mdash; ' +
-    '<b>every one of them live in the browser.</b>';
 });
 </script>
